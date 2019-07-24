@@ -1,0 +1,90 @@
+This namelist contains various input parameters for RAMSES run cloud-wind
+
+&RUN_PARAMS 
+verbose=.false.
+hydro=.true.
+pic=.false.
+poisson=.true.
+ncontrol=10
+nsubcycle=1,1,1,1,1,1,1
+nremap=6
+/
+
+&AMR_PARAMS 
+levelmin=4
+levelmax=7
+ngridmax=1400000
+boxlen=3.0
+/
+
+&COOLING_PARAMS
+cooling = .true.
+metal = .true.
+J21 = 0.0
+/
+
+&POISSON_PARAMS 
+gravity_type=1
+gravity_params=0.4964,0.5,0.5,0.5
+/
+
+&BOUNDARY_PARAMS
+nboundary = 6
+ibound_min=-1,+1,-1,-1,-1,-1
+ibound_max=-1,+1,+1,+1,+1,+1
+jbound_min= 0, 0,-1,+1,-1,-1
+jbound_max= 0, 0,-1,+1,+1,+1
+kbound_min= 0, 0, 0, 0,-1,+1
+kbound_max= 0, 0, 0, 0,-1,+1
+bound_type= 2, 2, 2, 3, 2, 2
+/
+
+&UNITS_PARAMS
+units_density = 1.6726219E-24 ! proton masses per cc
+units_time    = 2.9939062E+15 ! G=1, 94.924 Myr
+units_length  = 0.308567758128200E+22 ! kpc
+/
+
+&INIT_PARAMS
+nregion=1
+/
+
+&OUTPUT_PARAMS
+delta_tout=0.001
+tend=0.1
+output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/3d/properpotential/static/'
+/
+
+&HYDRO_PARAMS
+gamma=1.667
+courant_factor=0.8
+slope_type=3
+scheme='muscl'
+riemann='hllc'
+/
+
+&REFINE_PARAMS 
+interpol_var=0
+interpol_type=1
+err_grad_d=0.005
+/
+
+&PROB_PARAMS
+x1_c=0.5
+x2_c=0.5
+x3_c=0.5
+vel_wind=0.0
+T_wind=1.8d6
+ndens_wind=1.d-4
+T_cloud=1.d4
+Rad_cloud=0.5
+R_s=0.795
+n0g=0.27
+r_cut=1.03377 !0.80125748034242250
+Z_wind = 0.1
+Z_cloud = 0.02
+prob_debug = .false.
+subgrid_feedback = .false.
+/
+
+
