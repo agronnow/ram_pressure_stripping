@@ -3,7 +3,8 @@
 !############################################################
 !############################################################
 subroutine boundana(x,u,dx,ibound,ncell)
-  use amr_parameters, ONLY: dp,ndim,nvector,ndens_wind,T_wind,vel_wind,Z_wind
+  use amr_commons, ONLY: t
+  use amr_parameters, ONLY: dp,ndim,nvector,ndens_wind,T_wind,vel_wind,Z_wind,output_dir,orbitfile
   use hydro_parameters, ONLY: nvar,nener,boundary_var,gamma,imetal
   use cooling_module, ONLY: kb
   implicit none
@@ -31,7 +32,15 @@ subroutine boundana(x,u,dx,ibound,ncell)
   integer::ivar,i
   real(dp),dimension(1:nvector,1:nvar),save::q ! Primitive variables
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
-  real(dp)::Pwind,mu
+  real(dp)::Pwind,nH,vel
+  real(dp),allocatable,save::tab_t(:),tab_vel(:)
+  real(dp),save::dt
+  integer::itab,ilun
+  integer,save::ntab
+  character(len=256)::fileloc
+  real(dp),save::mu_wind
+  logical::file_exists
+  logical,save::firstcall=.true.
 
 !#ifdef SOLVERmhd
 !  do ivar=1,nvar+3
@@ -44,22 +53,46 @@ subroutine boundana(x,u,dx,ibound,ncell)
 !  end do
 
   call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
-  scale_prs = scale_d * scale_v**2
 
-!  nWind = 1.d-4
-!  Twind = 1.8d6
-  mu = 1.34
-  Pwind = ndens_wind*kb*T_wind/scale_prs
+  if (firstcall) then
+     nH = ndens_wind*scale_nH
+     call GetMuFromTemperature(T_wind,nH,mu_wind)
 
-  q(1:,1) = ndens_wind*mu	!density
+     fileloc=trim(output_dir)//trim(orbitfile)
+     inquire(file=fileloc,exist=file_exists)
+     ntab = 0
+     if(file_exists) then
+        open(newunit=ilun, file=fileloc)
+        do
+           read(ilun,*,end=10)
+           ntab=ntab+1
+        end do
+10      rewind(ilun)
+        allocate(tab_t(ntab))
+        allocate(tab_vel(ntab))
+        do i=1,ntab
+           read(ilun,*)tab_t(i), tab_vel(i)
+        end do
+        close(ilun)
+     endif
+     dt = tab_t(2) - tab_t(1)
+     firstcall = .false.
+  endif
+  Pwind = ndens_wind*T_wind/scale_T2
+
+  itab = idint(t/dt)+1 !Assume table starts at t=0 and is evenly spaced in t
+  vel = (tab_vel(itab)*(tab_t(itab+1) - t) + tab_vel(itab+1)*(t - tab_t(itab)))/dt
+
+  q(1:ncell,1) = ndens_wind*mu_wind	!density
   q(1:ncell,2) = 0.0	        !x-velocity
-  q(1:ncell,3) = vel_wind*1.e5/scale_v	!y-velocity (given in km/s)
+  q(1:ncell,3) = vel !vel_wind*1.e5/scale_v	!y-velocity (given in km/s)
 #if NDIM == 3
   q(1:ncell,4) = 0.0    !z-velocity
 #endif
   q(1:ncell,ndim+2) = Pwind	!pressure
-  q(1:ncell,imetal) = Z_wind	!metallicity
+  q(1:ncell,imetal) = Z_wind*0.02	!metallicity
   q(1:ncell,imetal+1) = 0.0	!tracer
+  q(1:ncell,imetal+2) = 0.0	!sf tracer
 
   ! Convert primitive to conservative variables
   ! density -> density

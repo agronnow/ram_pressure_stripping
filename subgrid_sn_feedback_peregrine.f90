@@ -1,13 +1,10 @@
-#define SNIA_FEEDBACK
-#define DEBUG_SNIA
-
 !#if NDIM==3
 subroutine subgrid_sn_feedback(ilevel)
   use amr_commons
   use hydro_commons
   use poisson_commons
   use sn_feedback_commons
-  use cooling_module, ONLY: XH=>X, rhoc, mH , twopi, kb
+  use cooling_module, ONLY: XH=>X, rhoc, mH , twopi
   use random
   use mpi_mod
   implicit none
@@ -68,7 +65,7 @@ subroutine subgrid_sn_feedback(ilevel)
 #if NENER>0
   integer::irad
 #endif
-  real(dp)::rho_sfr
+  real(dp)::rho_sfr,probSN
   real(dp),save::tot_sf = 0.0
   real(dp)::ESN
   logical,save::nosn = .true.
@@ -100,24 +97,6 @@ subroutine subgrid_sn_feedback(ilevel)
   real(dp),dimension(:),allocatable::mSN,mSN_loc,vol_gas,ekBlast
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,dq
 
-  logical,save::firstcall = .true.
-#ifdef SNIA_FEEDBACK
-#define NPDFBINS 1000
-#define NSFHISTMAX 10000
-  real(dp),dimension(1:MAXLEVEL),save::sfr_tot = 0.0
-  real(dp),dimension(1:NPDFBINS),save::CDF_SNIa = 0.0
-  real(dp),dimension(1:NPDFBINS)::PDF_SNIa = 0.0
-  real(dp),dimension(1:NDIM),save::xCloud = 0.0
-  real(dp),dimension(1:NSFHISTMAX),save::sfhist = 0.0
-  real(dp),dimension(1:NSFHISTMAX),save::t_sfhist = 0.0
-  character(len=255)::dummyline
-  integer,save::nhist = 1
-  logical,save::sfhist_update = .false.
-  real(dp)::unif_rand,r2,rho_SNIa,area,DTD_A,DTD_s,currad,Phi0,PhiR,mu_cloud,rho0dm,r
-  real(dp)::PoissMeanIa,c_s2,nHc,ctime,csfh,diff,mindiff,signx,binwidth,dt,sfr,sfr_tot_level
-  integer::nSNIa,nt,imin,stat
-  real(dp),dimension(:,:),allocatable::xpdf,xSNIa,min_r2,min_r2_all
-#endif
 
   ! TODO: when f2008 is obligatory - remove this and replace erfc_pre_f08 below by
   ! the f2008 intrinsic erfc() function:
@@ -251,181 +230,6 @@ subroutine subgrid_sn_feedback(ilevel)
 
   allocate(xSN_loc(1:100,1:ndim),mSN_loc(1:100))
 
-#ifdef SNIA_FEEDBACK
-  DTD_A = 10.0**(-12.15) ! +0.10 dex -0.13 dex, [M_sun^-1 yr^-1], from Heringer et al. (2019)
-  DTD_s = -1.34          ! +0.19 -0.17, from Heringer et al. (2019)
-
-  if ((ilevel == levelmin) .and. (sfhist_update)) then
-    nhist = nhist + 1
-    t_sfhist(nhist) = t + tinit_sim
-    sfhist(nhist) = sum(sfr_tot)
-    sfr_tot = 0.0
-    sfhist_update = .false.
-#ifdef DEBUG_SNIA
-    fileloc=trim(output_dir)//'snIa_sfr.log'
-    ilun=130
-    inquire(file=fileloc,exist=file_exist)
-    if(.not.file_exist) then
-       open(ilun, file=fileloc, form='formatted')
-       write(ilun,*)"Time                      sum(sfr_tot)"
-    else
-       open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
-    endif
-    write(ilun,'(3E26.16)') t, sfhist(nhist)
-    close(ilun)
-#endif
-  endif
-
-  if (firstcall) then
-     ! Construct initial Star Formation History
-     fileloc=trim(output_dir)//'sfhistory.dat'
-     ilun=150
-     inquire(file=fileloc,exist=file_exist)
-     nhist = 0
-     if(file_exist) then
-        open(ilun, file=fileloc)
-        read(ilun,*)dummyline
-        do
-           read(ilun,*, iostat=stat)ctime,csfh
-           if ((stat /= 0) .or. (ctime > tinit_sim))exit
-           t_sfhist(nhist+1) = ctime
-           if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
-           sfhist(nhist+1) = csfh
-           nhist=nhist+1
-           write(*,*)myid,nhist,t_sfhist(nhist),sfhist(nhist)
-        end do
-!        t_sfhfile = t_sfhist(nhist)
-        close(ilun)
-     endif     
-
-     if (myid == 1) then
-       ! Calculate SNIa radius Comulative Distribution Function
-       nHc = n0g*scale_nH
-       call GetMuFromTemperature(T_cloud,nHc,mu_cloud)
-       rho0dm = gravity_params(1)
-       Phi0 = -2.0*twopi*rho0dm*R_s**2
-       c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
-       area = 0.0
-       binwidth = Rad_cloud/(NPDFBINS-1.0)
-       do i=1,NPDFBINS
-          currad = (i-1)*binwidth
-          if (currad > 0.0) then
-            PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
-          else
-            PhiR = Phi0
-          endif
-          PDF_SNIa(i) = dexp(-(PhiR-Phi0)/c_s2)
-          area = area + PDF_SNIa(i)*binwidth
-       enddo
-       do i=1,NPDFBINS
-          ! Normalize PDF
-          PDF_SNIa(i) = PDF_SNIa(i)/area
-       enddo
-       do i=1,NPDFBINS
-          CDF_SNIa(i) = sum(PDF_SNIa(1:i))*binwidth
-       enddo
-       xCloud(1) = x1_c
-       xCloud(2) = x2_c
-#if NDIM==3
-       xCloud(3) = x3_c
-#endif
-
-#ifdef DEBUG_SNIA
-       fileloc=trim(output_dir)//'snIa_pdf.dat'
-       ilun=130
-       open(ilun, file=fileloc, form='formatted')
-       write(ilun,*)"rad                      PDF                   CDF"
-       do i=1,NPDFBINS
-          write(ilun,'(3E26.16)') (i-1)*binwidth, PDF_SNIa(i), CDF_SNIa(i)
-       enddo
-       close(ilun)
-#endif
-
-    endif
-  endif
-
-  if ((ilevel == levelmin) .and. .not.(firstcall) .and. (t*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist) > dt_sfhist)) then
-    write(*,*)'Update sfh'
-    sfhist_update = .true.
-  endif
-
-  firstcall = .false.
-
-  ! Find number of SNIa and generate random positions according to PDF on root processor then broadcast results to all cpus
-  if(myid==1)then
-    ! Calculate global SNIa rate as SNR = int_0^t SFR(t-t')*DTD(t') dt' with DTD(t')=A*(t'/Gyr)^s (see e.g. Heringer et al. 2019)
-    rho_SNIa = 0.0
-    do nt=1,nhist
-       if (nt < nhist) then
-          dt = t_sfhist(nt+1) - t_sfhist(nt)
-       else
-          dt = t*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist)
-       endif
-       rho_SNIa = rho_SNIa + sfhist(nhist-nt+1)*DTD_A*(t_sfhist(nt))**DTD_s*dt*1d9 ! SNIa per year
-       !write(*,*)nt,nhist-nt+1,rho_SNIa,t_sfhist(nt),sfhist(nhist-nt+1),dt,DTD_A,DTD_s
-    end do
-    PoissMeanIa=rho_SNIa*scale_t/(3600*24*365.25)*dtnew(ilevel) ! Get expected number of SNIa formed taking units into account
-#if NDIM==2
-    PoissMeanIa = PoissMeanIa*4.0*Rad_cloud/3.0
-#endif
-#ifdef DEBUG_SNIA
-    fileloc=trim(output_dir)//'snIa.log'
-    ilun=130
-    inquire(file=fileloc,exist=file_exist)
-    if(.not.file_exist) then
-       open(ilun, file=fileloc, form='formatted')
-       write(ilun,*)"Time                      rho_SNIa                   PoissMeanIa"
-    else
-       open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
-    endif
-    write(ilun,'(3E26.16)') t, rho_SNIa, PoissMeanIa
-    close(ilun)
-#endif
-    ! Compute Poisson realisation
-    call poissdev(localseed,PoissMeanIa,nSNIa)
-    if (nSNIa > 0) then
-       allocate(xpdf(1:nSNIa,1:ndim),xSNIa(1:nSNIa,1:ndim))
-       ! Generate random positions for SNIa assuming that the stellar distribution follows the initial distribution of star forming gas
-       do iSN=1,nSNIa
-          do idim=1,ndim
-             ! Generate random real on [0,1], transform to [-1,1], store the sign and transform back to [0,1] to allow coordinates on either side of the cloud
-             call ranf(localseed, unif_rand)
-             r = 2.0*unif_rand - 1.0
-             signx = sign(1d0,unif_rand)
-             r = abs(r)
-             mindiff = 1.e22
-             imin = 1
-             do i=1,NPDFBINS
-                diff = abs(CDF_SNIa(i) - r)
-                if (diff < mindiff) then
-                   mindiff = diff
-                   imin = i
-                endif
-             enddo
-             xpdf(iSN,idim) = signx*binwidth*(imin-1) + xCloud(idim)*boxlen ! Random coordinate along each axis
-          enddo
-       enddo
-    endif
-  endif
-
-  call MPI_BCAST(nSNIa,1,MPI_INTEGER,0,MPI_COMM_WORLD,info)
-  if (nSNIa > 0) then
-    if (myid/=1)allocate(xpdf(1:nSNIa,1:ndim),xSNIa(1:nSNIa,1:ndim))
-    allocate(min_r2(1:2,1:nSNIa))
-    call MPI_BARRIER(MPI_COMM_WORLD,info)
-    call MPI_BCAST(xpdf,nSNIa*ndim,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,info)
-    call MPI_BCAST(xSNIa,nSNIa*ndim,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,info)
-    call MPI_BCAST(PoissMeanIa,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,info)
-
-    do iSN=1,nSNIa
-      min_r2(1,iSN) = 1.e22 ! Huge value, must always be greater than min distance to SN
-      min_r2(2,iSN) = myid  ! Tag with rank on each cpu for later use with MPI_MINLOC
-    enddo
-    write(*,*) 'SNIa explosion'
-  endif
-    
-#endif
-
   !------------------------------------------------
   ! Compute number of SNe in each cell
   !------------------------------------------------
@@ -438,9 +242,6 @@ Tpass = 0
 !gpass = 0
 Tfail=0
 maxPoissMean = 0.0
-#ifdef SNIA_FEEDBACK
-sfr = 0.0
-#endif
 
 nSN_loc = 0
 !tot_sf=0
@@ -459,7 +260,7 @@ nSN_loc = 0
         do i=1,ngrid
            ok(i)=son(ind_cell(i))==0
         end do
-	! Temperature criterion
+        ! Temperature criterion
         do i=1,ngrid
            d=uold(ind_cell(i),1)
            u=uold(ind_cell(i),2)/d
@@ -525,31 +326,10 @@ nSN_loc = 0
         !   tot_sf = tot_sf + PoissMean
         !enddo
 
-#ifdef SNIA_FEEDBACK
-        ! Find location of SNIa, i.e. the cell closest to the randomly generated position
-        do iSN=1,nSNIa           
-           x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
-           y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
-           r2 = (x-xpdf(iSN,1))*(x-xpdf(iSN,1))+(y-xpdf(iSN,2))*(y-xpdf(iSN,2))
-#if NDIM==3
-           z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
-           r2 = r2 + (z-xpdf(iSN,3))*(z-xpdf(iSN,3))
-#endif
-           if (r2 < min_r2(1,iSN)) then
-              min_r2(1,iSN)=r2
-              xSNIa(iSN,1) = x
-              xSNIa(iSN,2) = y
-#if NDIM==3
-              xSNIa(iSN,3) = z
-#endif
-           endif
-        enddo
-#endif
-
-        !SNII
         do i=1,ngrid
-           if(ok(i))then !Compute number of SNII if temperature is low enough for star formation
-              d=uold(ind_cell(i),imetal+2) !SF gas density (gas initially within r_SFR)
+           if(ok(i))then
+              ! Compute mean number of events
+              d=uold(ind_cell(i),imetal+2)
               !mcell=d*vol_loc
               ! Free fall time of an homogeneous sphere
               !tstar= .5427*sqrt(1.0/(factG*max(d,smallr)))
@@ -557,121 +337,70 @@ nSN_loc = 0
               ! Gas mass to be converted into stars
               !mgas=dtnew(ilevel)*(sfr_ff(i)/tstar)*mcell
               d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
-              if (d > 0d0) then
-                rho_sfr = 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
-#ifdef SNIA_FEEDBACK
-                if (sfhist_update) then
-                  sfr = sfr + rho_sfr*vol_loc
-                  write(*,*)'sfr',sfr,'rho_sfr',rho_sfr,'vol_loc',vol_loc,'d',d
-                endif
-#endif
-                ! Poisson mean
-                PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel) ! Get expected number of SNe formed taking units into account
-                !PoissMean=mgas/mstar
-                !write(*,*) "PoissMean: ", PoissMean, " rho_sfr: ", rho_sfr, " dt: ", dtnew(ilevel), " vol: ", vol_loc
-                !write(*,*) "dt (yr): ", dtnew(ilevel)*scale_t/(3600*24*365.25), " vol(kpc^3): ", vol_loc*scale_l**ndim
-                !if((trel>0.).and.(.not.cosmo)) PoissMean = PoissMean*min((t/trel),1.0)
+              ! Poisson mean
+              rho_sfr = 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
+              PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel) ! Get expected number of SNe formed taking units into account
+              !PoissMean=mgas/mstar
+              !write(*,*) "PoissMean: ", PoissMean, " rho_sfr: ", rho_sfr, " dt: ", dtnew(ilevel), " vol: ", vol_loc
+              !write(*,*) "dt (yr): ", dtnew(ilevel)*scale_t/(3600*24*365.25), " vol(kpc^3): ", vol_loc*scale_l**ndim
+              !if((trel>0.).and.(.not.cosmo)) PoissMean = PoissMean*min((t/trel),1.0)
 #if NDIM==2
-                PoissMean = PoissMean*4.0*Rad_cloud/3.0
+              PoissMean = PoissMean*4.0*Rad_cloud/3.0
 #endif
-                ! Compute Poisson realisation
-                call poissdev(localseed,PoissMean,nSN)
-                if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
-!               if (nosn) then
-                do iSN=1,nSN
-                   ! Get gas cell position
-                   x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
-                   y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
+              ! Compute Poisson realisation
+              call poissdev(localseed,PoissMean,nSN)
+              if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
+              !nSN = 0
+              !call ranf(localseed, probSN)
+!              if (PoissMean > probSN) nSN = 1
+              if (nSN > 0) then
+               do iSN=1,nSN
+                 ! Get gas cell position
+                 x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
+                 y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
 #if NDIM==3
-                   z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
+                 z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
 #endif
-                   nSN_loc=nSN_loc+1
-                   xSN_loc(nSN_loc,1)=x
-                   xSN_loc(nSN_loc,2)=y
+                 nSN_loc=nSN_loc+1
+                 xSN_loc(nSN_loc,1)=x
+                 xSN_loc(nSN_loc,2)=y
 #if NDIM==3
-                   xSN_loc(nSN_loc,3)=z
+                 xSN_loc(nSN_loc,3)=z
 #endif
-                   mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3)
-                   !if (outputSN) then
-                      fileloc=trim(output_dir)//'sn.dat'
-                      ilun=140
-                      inquire(file=fileloc,exist=file_exist)
-                      if(.not.file_exist) then
-                         open(ilun, file=fileloc, form='formatted')
-                         write(ilun,*)"Time                      x                         y                         z                          Level ProbSN                    rho_sfgas                 ProcID"
-                      else
-                         open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
-                      endif
+                 mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3)
+                 !if (outputSN) then
+                    fileloc=trim(output_dir)//'sn.dat'
+                    ilun=140
+                    inquire(file=fileloc,exist=file_exist)
+                    if(.not.file_exist) then
+                       open(ilun, file=fileloc, form='formatted')
+                       write(ilun,*)"Time                      x                         y                         z                          Level ProbSN                    rho_sfgas                 ProcID"
+                    else
+                       open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
+                    endif
 #if NDIM==2
-                      z = 0.0
+                    z = 0.0
 #endif
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+2), myid
-                      close(ilun)
-                   !endif
-                !   do iSN=1,nSN
-                !      uold(ind_cell(i),ndim+2) = uold(ind_cell(i),ndim+2) + 10.0*2d33/(scale_d*scale_l**3)*ESN/vol_loc
-                !      write(*,*) "SN explosion!"
-                !   end do
-                end do
-              else
-                rho_sfr = 0.0
-                nSN = 0
+                    write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+2), myid
+                    close(ilun)
+                 !endif
+              !   do iSN=1,nSN
+              !      uold(ind_cell(i),ndim+2) = uold(ind_cell(i),ndim+2) + 10.0*2d33/(scale_d*scale_l**3)*ESN/vol_loc
+              !      write(*,*) "SN explosion!"
+              !   end do
+               end do
               endif
            endif
         enddo
      end do
   end do
 
-#ifdef SNIA_FEEDBACK
-  if (nSNIa > 0) then
-    allocate(min_r2_all(1:2,1:nSNIa))
-    call MPI_ALLREDUCE(min_r2,min_r2_all,nSNIa,MPI_2DOUBLE_PRECISION,MPI_MINLOC,MPI_COMM_WORLD,info)
-  endif
-  do iSN=1,nSNIa
-     if (int(min_r2_all(2,iSN)) == myid) then ! The cell containing the SN center is on this processor
-       nSN_loc=nSN_loc+1
-       xSN_loc(nSN_loc,1)=xSNIa(iSN,1)
-       xSN_loc(nSN_loc,2)=xSNIa(iSN,2)
-#if NDIM==3
-       xSN_loc(nSN_loc,3)=xSNIa(iSN,3)
-#endif
-       mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3)
-       !if (outputSN) then
-       fileloc=trim(output_dir)//'snIa.dat'
-       ilun=140
-       inquire(file=fileloc,exist=file_exist)
-       if(.not.file_exist) then
-          open(ilun, file=fileloc, form='formatted')
-          write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID"
-       else
-          open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
-       endif
-#if NDIM==3
-       z = xSNIa(iSN,3)
-#else
-      z = 0.0
-#endif
-       write(ilun,'(4E26.16,E26.16,I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid
-       close(ilun)
-       !endif
-      endif
-  end do
-#endif
-
   nSN_icpu=0
   nSN_icpu(myid)=nSN_loc
   Tpass_all = 0
   Tfail_all = 0
   maxPoissMean_all = 0.0
-
-  sfr_tot_level = 0.0
 #ifndef WITHOUTMPI
-  if (sfhist_update) then
-    write(*,*)'reduce on',myid
-    call MPI_ALLREDUCE(sfr,sfr_tot_level,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD,info)
-    write(*,*)'sfr',sfr,' sfr_tot',sfr_tot_level
-  endif
-
   ! Give an array of number of SN on each cpu available to all cpus
   call MPI_ALLREDUCE(nSN_icpu,nSN_icpu_all,ncpu,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
   nSN_icpu=nSN_icpu_all
@@ -682,11 +411,7 @@ nSN_loc = 0
     call MPI_REDUCE(maxPoissMean,maxPoissMean_all,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD,info)
     if (myid==1)write(*,*)'Tpass:',Tpass_all,' Tfail:', Tfail_all,' maxPoissMean:',maxPoissMean_all
   endif
-#else
-  sfr_tot_level = sfr
 #endif
-
-  if (sfhist_update)sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + sfr_tot_level
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
 
@@ -746,10 +471,6 @@ nSN_loc = 0
   call subgrid_Sedov_blast(xSN,mSN,indSN,vol_gas,dq,ekBlast,nSN)
 
   deallocate(xSN,mSN,indSN,vol_gas,dq,ekBlast)
-
-#ifdef SNIA_FEEDBACK
-  if (nSNIa > 0)deallocate(xpdf,xSNIa,min_r2,min_r2_all)
-#endif
 
   ! Update hydro quantities for split cells
   do ilevel=nlevelmax,levelmin,-1
@@ -833,10 +554,8 @@ subroutine subgrid_average_SN(xSN,vol_gas,dq,ekBlast,ind_blast,nSN,mSN)
   use pm_commons
   use amr_commons
   use hydro_commons
-#if NDIM==2
-  use cooling_module, only: twopi
-#endif
   use mpi_mod
+  use cooling_module, only: twopi
   implicit none
 #ifndef WITHOUTMPI
   integer::info
@@ -851,13 +570,13 @@ subroutine subgrid_average_SN(xSN,vol_gas,dq,ekBlast,ind_blast,nSN,mSN)
   real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
-  real(dp),dimension(1:twotondim,1:ndim)::xc
+  real(dp),dimension(1:twotondim,1:3)::xc
   integer ,dimension(1:nSN)::ind_blast
-  real(dp),dimension(1:nSN)::vol_gas,ekBlast
-  real(dp),dimension(1:nSN,1:ndim)::xSN,dq,u2Blast
+  real(dp),dimension(1:nSN)::vol_gas,ekBlast,mSN
+  real(dp),dimension(1:nSN,1:3)::xSN,dq,u2Blast
 #ifndef WITHOUTMPI
-  real(dp),dimension(1:nSN)::vol_gas_all,ekBlast_all,mSN
-  real(dp),dimension(1:nSN,1:ndim)::dq_all,u2Blast_all
+  real(dp),dimension(1:nSN)::vol_gas_all,ekBlast_all
+  real(dp),dimension(1:nSN,1:3)::dq_all,u2Blast_all
 #endif
   logical ,dimension(1:nvector),save::ok
 
@@ -867,9 +586,9 @@ subroutine subgrid_average_SN(xSN,vol_gas,dq,ekBlast,ind_blast,nSN,mSN)
   ! Mesh spacing in that level
   nx_loc=(icoarse_max-icoarse_min+1)
   skip_loc=(/0.0d0,0.0d0,0.0d0/)
-  if(ndim>0)skip_loc(1)=dble(icoarse_min)
-  if(ndim>1)skip_loc(2)=dble(jcoarse_min)
-  if(ndim>2)skip_loc(3)=dble(kcoarse_min)
+  skip_loc(1)=dble(icoarse_min)
+  skip_loc(2)=dble(jcoarse_min)
+  skip_loc(3)=dble(kcoarse_min)
   scale=boxlen/dble(nx_loc)
   dx_min=scale*0.5D0**nlevelmax
 
@@ -878,8 +597,8 @@ subroutine subgrid_average_SN(xSN,vol_gas,dq,ekBlast,ind_blast,nSN,mSN)
 
   ! Maximum radius of the ejecta
   !rmax=MAX(2.0d0*dx_min*scale_l/aexp,rbubble*3.08d18)
-  !rmax=rmax/scale_l
   rmax=2.0d0*dx_min
+!  rmax=rmax/scale_l
   rmax2=rmax*rmax
 
   ! Initialize the averaged variables
@@ -947,11 +666,10 @@ subroutine subgrid_average_SN(xSN,vol_gas,dq,ekBlast,ind_blast,nSN,mSN)
                     dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
                     if(dr_SN.lt.rmax2)then
-                       write(*,*) "dr_SN: ", dr_SN, "x:",x,"y:",y,"xsn:",xSN(iSN,1),"ysn:",xSN(iSN,2),"rmax2: ", rmax2, " vol_loc: ", vol_loc, "ilevel: ", ilevel
                        if (ilevel < nlevelmax) then
-                         write(*,*) "WARNING!!! SN would add ejecta on coarse level: ",ilevel
-                         write(*,*) "Ejecta cannot be distributed over the desired amount of cells and/or cannot be distributed isotropically, no energy or mass will be added"
-                         mSN(iSN) = 0.0
+                          write(*,*) "WARNING!!! SN ejecta overlaps coarse cell at level: ",ilevel
+                          write(*,*) "Setting energy and mass injection to zero"
+                          mSN(iSN) = 0.0
                        endif
                        vol_gas(iSN)=vol_gas(iSN)+vol_loc
                        ! Take account for grid effects on the conservation of the
@@ -1059,9 +777,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,indSN,vol_gas,dq,ekBlast,nSN)
   ! Mesh spacing in that level
   nx_loc=(icoarse_max-icoarse_min+1)
   skip_loc=(/0.0d0,0.0d0,0.0d0/)
-  if(ndim>0)skip_loc(1)=dble(icoarse_min)
-  if(ndim>1)skip_loc(2)=dble(jcoarse_min)
-  if(ndim>2)skip_loc(3)=dble(kcoarse_min)
+  skip_loc(1)=dble(icoarse_min)
+  skip_loc(2)=dble(jcoarse_min)
+  skip_loc(3)=dble(kcoarse_min)
   scale=boxlen/dble(nx_loc)
   dx_min=scale*0.5D0**nlevelmax
   vol_min=dx_min**3
@@ -1070,8 +788,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,indSN,vol_gas,dq,ekBlast,nSN)
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
 
   ! Maximum radius of the ejecta
-  rmax=2.0d0*dx_min!MAX(2.0d0*dx_min*scale_l/aexp,rbubble*3.08d18)
-  !rmax=rmax/scale_l
+  !rmax=MAX(2.0d0*dx_min*scale_l/aexp,rbubble*3.08d18)
+  rmax=2.0*dx_min
+!  rmax=rmax/scale_l
   rmax2=rmax*rmax
 
   ! Minimum star particle mass
@@ -1084,6 +803,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,indSN,vol_gas,dq,ekBlast,nSN)
 !  mstar_max=mass_star_max*2d33/(scale_d*scale_l**3)
   ! Supernova specific energy from cgs to code units
   ESN=(1d51/(10d0*2d33))/scale_v**2
+
   do iSN=1,nSN
 !     eta_sn2    = eta_sn
 !     if(sf_imf)then
@@ -1107,7 +827,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,indSN,vol_gas,dq,ekBlast,nSN)
         p_gas(iSN)=mSN(iSN)*ESN/ekBlast(iSN)
 !        if(metal)d_metal(iSN)=ZSN(iSN)*mSN(iSN)/ekBlast(iSN)
      endif
-write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " ekBlast: ", ekBlast(iSN), " vol_gas: ", vol_gas(iSN)
+write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " ekBlast: ", ekBlast(iSN)
   end do
 
   ! Loop over levels
@@ -1157,7 +877,7 @@ write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " 
                  z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
 #endif
                  do iSN=1,nSN
-                    ! Check if the cell lies within the SN radius
+                   ! Check if the cell lies within the SN radius
                     dxx=x-xSN(iSN,1)
                     dyy=y-xSN(iSN,2)
 #if NDIM==3
@@ -1168,7 +888,7 @@ write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " 
 #endif
                     if(dr_SN.lt.rmax2)then
                        ! Compute the mass density in the cell
-                       uold(ind_cell(i),1)=uold(ind_cell(i),1)+d_gas(iSN)
+!                       uold(ind_cell(i),1)=uold(ind_cell(i),1)+d_gas(iSN)
                        ! Compute the metal density in the cell
                        !if(metal)uold(ind_cell(i),imetal)=uold(ind_cell(i),imetal)+d_metal(iSN)
                        ! Velocity at a given dr_SN linearly interpolated between zero and uSedov
@@ -1180,14 +900,14 @@ write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " 
                        w=0.0
 #endif
                        ! Add each momentum component of the blast wave to the gas
-                       uold(ind_cell(i),2)=uold(ind_cell(i),2)+d_gas(iSN)*u
-                       uold(ind_cell(i),3)=uold(ind_cell(i),3)+d_gas(iSN)*v
+!                       uold(ind_cell(i),2)=uold(ind_cell(i),2)+d_gas(iSN)*u
+!                       uold(ind_cell(i),3)=uold(ind_cell(i),3)+d_gas(iSN)*v
 #if NDIM==3
-                       uold(ind_cell(i),4)=uold(ind_cell(i),4)+d_gas(iSN)*w
+!                       uold(ind_cell(i),4)=uold(ind_cell(i),4)+d_gas(iSN)*w
 #endif
                        ! Finally update the total energy of the gas
-                       uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
-write(*,*)"SN d: ", d_gas(iSN), " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
+                       uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+p_gas(iSN)!0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
+write(*,*)"SN d: ", d_gas(iSN), " vx: ", u, " vy: ", v, " deltaE: ", p_gas(iSN)!0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
                     endif
                  end do
               endif

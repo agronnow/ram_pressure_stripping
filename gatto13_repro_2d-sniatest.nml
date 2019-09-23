@@ -49,7 +49,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.05
 tend=10.0
-output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/2d/properpotential/cooling+feedback/orbit/dens1e-4/'
+output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/2d/properpotential/cooling+feedback/orbit/dens1e-4/snia_test/'
 /
 
 &HYDRO_PARAMS
@@ -61,6 +61,11 @@ riemann='hllc'
 /
 
 &REFINE_PARAMS 
+x_refine = 24.0
+y_refine = 7.2
+z_refine = 24.0
+r_refine = 1.0
+sfr_refine = 1.e-7
 interpol_var=0
 interpol_type=1
 err_grad_d=0.005
@@ -83,5 +88,8 @@ Z_cloud = 0.02
 orbitfile = 'orbitvelocity-gatto.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
+rho_SN = 6.d-3
+tinit_sim = 7.0
+dt_sfhist = 0.01
 /
 

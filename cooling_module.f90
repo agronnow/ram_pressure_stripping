@@ -247,7 +247,7 @@ subroutine set_model(Nmodel,J0in_in,J0min_in,alpha_in,normfacJ0_in,zreioniz_in, 
   real(kind=8) :: J0min_ref_calc,h,omegab,omega0,omegaL
   integer :: Nmodel,correct_cooling,realistic_ne
   real(kind=8) :: astart,aend,dasura,T2end,mu,ne,minus1
-  Nmodel = 3
+  Nmodel = 1
   if (Nmodel /= -1) then
      teyssier=.false.
      theuns=.false.

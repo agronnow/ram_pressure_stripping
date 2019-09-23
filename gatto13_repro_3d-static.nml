@@ -50,9 +50,9 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.01
-tend=1.0
-output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/3d/properpotential/static/feedback/longevol/'
+delta_tout=1.0
+tend=10.0
+output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/3d/properpotential/static/feedback/longerevol/'
 /
 
 &HYDRO_PARAMS

@@ -29,9 +29,15 @@ subroutine condinit(x,u,dx,nn)
 #endif
   real(dp),dimension(1:nvector,1:nvar),save::q   ! Primitive variables
 
-  integer::i
-  real(dp)::currad,xc,yc,zc,rho0g,rho0dm,mu,rho_cloud,c_s2,Phi0,PhiR,P_wind,P_cloud,nH
+  integer::i,ilun
+  real(dp)::currad,xc,yc,zc,rho0g,rho0dm,rho_cloud,c_s2,Phi0,PhiR,P_wind,P_cloud,nH
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
+  real(dp),save::mu_cloud,mu_wind
+  real(dp),save::r_max=0.0,velinit=0.0
+  real(dp)::tinit
+  character(len=256)::fileloc
+  logical::file_exists = .false.
+  logical,save::firstcall=.true.
 
   ! User-defined initial conditions
 
@@ -41,13 +47,29 @@ subroutine condinit(x,u,dx,nn)
   xc = x1_c*boxlen
   yc = x2_c*boxlen
   zc = x3_c*boxlen
-  nH = n0g*scale_nH
-  mu = 1.2
-!  call GetMuFromTemperature(T_cloud,nH,mu)
-  rho0g=n0g*mu
+  if (firstcall) then
+     nH = n0g*scale_nH
+     call GetMuFromTemperature(T_cloud,nH,mu_cloud)
+     nH = ndens_wind*scale_nH
+     call GetMuFromTemperature(T_wind,nH,mu_wind)
+
+     fileloc=trim(output_dir)//trim(orbitfile)
+     inquire(file=fileloc,exist=file_exists)
+     if(file_exists) then
+        open(newunit=ilun, file=fileloc)
+        read(ilun,*)tinit,velinit
+        close(ilun)
+     else
+        write(*,*)"File ",trim(orbitfile)," missing!"
+     endif
+
+     firstcall = .false.
+  endif
+  
+  rho0g=n0g*mu_cloud
   rho0dm = gravity_params(1)
   Phi0 = -2.0*twopi*rho0dm*R_s**2
-  c_s2 = kb*T_cloud/(mu*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
+  c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
   P_wind = ndens_wind*T_wind/scale_T2
 
   do i=1,nn
@@ -56,17 +78,24 @@ subroutine condinit(x,u,dx,nn)
 #else
     currad = dsqrt((x(i,1)-xc)**2 + (x(i,2)-yc)**2)
 #endif
+
     PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
     rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
-    P_cloud = (rho_cloud*T_cloud/mu)/scale_T2
+    P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
     if (P_cloud < P_wind) then
-      q(i,1) = ndens_wind*mu
+      q(i,1) = ndens_wind*mu_wind
       q(i,ndim+2) = P_wind
+      q(i,2) = 0.0      !x-velocity
+      q(i,3) = velinit ! vel_wind*1.e5/scale_v !y-velocity (given in km/s)
+#if NDIM==3
+      q(i,4) = 0.0      !z-velocity
+#endif
+      q(i,imetal) = Z_wind*0.02
+      q(i,imetal+1) = 0.0	!tracer
+      q(i,imetal+2) = 0.0     !sf gas tracer
     else
       q(i,1) = rho_cloud
       q(i,ndim+2) = P_cloud
-    endif
-    if (currad < Rad_cloud) then
       q(i,2) = 0.0      !x-velocity
       q(i,3) = 0.0      !y-velocity
 #if NDIM==3
@@ -74,18 +103,16 @@ subroutine condinit(x,u,dx,nn)
 #endif
       q(i,imetal) = Z_cloud*0.02 !metallicity converted from relative to solar to absolute assuming Z_sol=0.02 as hardcoded in other parts of RAMSES
       q(i,imetal+1) = 1.0 !tracer
-    else
-      q(i,2) = 0.0      !x-velocity
-      q(i,3) = vel_wind*1.e5/scale_v !y-velocity (given in km/s)
-#if NDIM==3
-      q(i,4) = 0.0      !z-velocity
-#endif
-      q(i,imetal) = Z_wind*0.02
-      q(i,imetal+1) = 0.0	!tracer
+      if (currad < Rad_cloud) then
+        q(i,imetal+2) = 1.0     !sf gas tracer
+      else
+        q(i,imetal+2) = 0.0     !sf gas tracer
+      endif
+!      if (currad > r_max)r_max=currad
     endif
 !    write(*,*) "i ", i, " r ", currad, " rho: ", q(i,1), " P:",q(i,ndim+2), "mu:", mu,"Phi:",PhiR!" vy: ", q(i,3), " P: ", q(i,ndim+2), " T ", (q(i,ndim+2)*mu/q(i,1))*scale_t2, " x1: ", x1_c
   enddo
-!write(*,*)'r_cut:',r_cut
+!write(*,*)'r_max:',r_max, 'mu_wind:',mu_wind,'mu_cloud:',mu_cloud
 
   ! Convert primitive to conservative variables
   ! density -> density

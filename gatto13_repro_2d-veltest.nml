@@ -4,14 +4,14 @@ This namelist contains various input parameters for RAMSES run cloud-wind
 verbose=.false.
 hydro=.true.
 pic=.false.
-poisson=.true.
+poisson=.false.
 ncontrol=10
 nsubcycle=1,1,1,1,1,1,1
 nremap=6
 /
 
 &AMR_PARAMS 
-levelmin=8
+levelmin=11
 levelmax=11
 ngridmax=400000
 boxlen=80.0
@@ -47,9 +47,9 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.05
+delta_tout=0.1
 tend=10.0
-output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/2d/properpotential/cooling+feedback/orbit/dens1e-4/'
+output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/2d/properpotential/cooling+feedback/orbit/veltest/'
 /
 
 &HYDRO_PARAMS
@@ -72,16 +72,16 @@ x2_c=0.15
 x3_c=0.5
 vel_wind=228.0
 T_wind=1.8d6
-ndens_wind=1.d-4
+ndens_wind=2.d-4
 T_cloud=1.d4
 Rad_cloud=0.5
 R_s=0.795
 n0g=0.27
-r_cut=1.5575 !0.903545 !1.03377 !0.80125748034242250
+r_cut=0.903545 !1.5575 !1.03377 !0.80125748034242250
 Z_wind = 0.1
 Z_cloud = 0.02
 orbitfile = 'orbitvelocity-gatto.dat'
 prob_debug = .false.
-subgrid_feedback=.true.
+subgrid_feedback=.false.
 /
 

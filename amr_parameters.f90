@@ -248,6 +248,7 @@ module amr_parameters
   real(dp)::mass_cut_refine=-1.0 ! Mass threshold for particle-based refinement
   integer::ivar_refine=-1 ! Variable index for refinement
   logical::sink_refine=.false. ! Fully refine on sink particles
+  real(dp)::sfr_refine=0.0 ! SFR threshold for SF-based refinement
 
   ! Initial condition files for each level
   logical::multiple=.false.
@@ -309,7 +310,11 @@ module amr_parameters
   real(dp)::n0g = 0.0
   real(dp)::Z_wind = 0.0
   real(dp)::Z_cloud = 0.0
+  character(len=256)::orbitfile
   logical::prob_debug = .false.
   logical::subgrid_feedback = .true.
+  real(dp)::rho_SN = 6d-3
+  real(dp)::tinit_sim = 0.0
+  real(dp)::dt_sfhist = 0.0
 
 end module amr_parameters
