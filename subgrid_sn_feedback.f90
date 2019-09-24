@@ -1,5 +1,6 @@
 #define SNIA_FEEDBACK
 #define DEBUG_SNIA
+#define SNIA_HERINGER19
 
 !#if NDIM==3
 subroutine subgrid_sn_feedback(ilevel)
@@ -252,8 +253,13 @@ subroutine subgrid_sn_feedback(ilevel)
   allocate(xSN_loc(1:100,1:ndim),mSN_loc(1:100))
 
 #ifdef SNIA_FEEDBACK
+#ifdef SNIA_HERINGER19
   DTD_A = 10.0**(-12.15) ! +0.10 dex -0.13 dex, [M_sun^-1 yr^-1], from Heringer et al. (2019)
   DTD_s = -1.34          ! +0.19 -0.17, from Heringer et al. (2019)
+#else
+  DTD_A = 2.11d-13       ! [M_sun^-1 yr^-1], from Maoz et al. (2012)
+  DTD_s = -1.12          ! From Maoz et al. (2012)
+#endif
 
   if ((ilevel == levelmin) .and. (sfhist_update)) then
     nhist = nhist + 1
@@ -261,7 +267,6 @@ subroutine subgrid_sn_feedback(ilevel)
     sfhist(nhist) = sum(sfr_tot)
     sfr_tot = 0.0
     sfhist_update = .false.
-#ifdef DEBUG_SNIA
     fileloc=trim(output_dir)//'snIa_sfr.log'
     ilun=130
     inquire(file=fileloc,exist=file_exist)
@@ -273,7 +278,6 @@ subroutine subgrid_sn_feedback(ilevel)
     endif
     write(ilun,'(3E26.16)') t, sfhist(nhist)
     close(ilun)
-#endif
   endif
 
   if (firstcall) then
@@ -296,7 +300,27 @@ subroutine subgrid_sn_feedback(ilevel)
         end do
 !        t_sfhfile = t_sfhist(nhist)
         close(ilun)
-     endif     
+     endif
+
+     ! Append the SFH computed during previous runs, relevant if restarting an earlier run
+     fileloc=trim(output_dir)//'snIa_sfr.log'
+     inquire(file=fileloc,exist=file_exist)
+     if(file_exist) then
+        open(ilun, file=fileloc)
+        read(ilun,*)dummyline
+        do
+           read(ilun,*, iostat=stat)ctime,csfh
+           ctime = ctime*scale_t/3.154e16
+           if ((stat /= 0) .or. (ctime > tinit_sim + t*scale_t/3.154e16))exit
+           t_sfhist(nhist+1) = ctime
+           if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
+           sfhist(nhist+1) = csfh
+           nhist=nhist+1
+           write(*,*)myid,nhist,t_sfhist(nhist),sfhist(nhist)
+        end do
+!        t_sfhfile = t_sfhist(nhist)
+        close(ilun)
+     endif
 
      if (myid == 1) then
        ! Calculate SNIa radius Comulative Distribution Function
