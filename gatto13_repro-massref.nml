@@ -6,16 +6,16 @@ hydro=.true.
 pic=.false.
 poisson=.true.
 ncontrol=10
-nsubcycle=1,1,1,1,1,1,1
+nsubcycle=2,2,2,2,2,2,2,2,2,2,2,2,2
 nremap=6
+cost_weighting=.false.
 /
 
 &AMR_PARAMS 
-levelmin=4
-levelmax=10
-ngridmax=1400000
-npartmax=20000
-boxlen=32.0
+levelmin=6
+levelmax=13
+ngridmax=200000
+boxlen=12.0
 /
 
 &COOLING_PARAMS
@@ -25,7 +25,7 @@ metal = .true.
 
 &POISSON_PARAMS 
 gravity_type=1
-gravity_params=1.87412,0.5,0.5,0.3
+gravity_params=0.4946,0.5,0.5,0.5
 /
 
 &BOUNDARY_PARAMS
@@ -50,9 +50,9 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.01
-tend=1.0
-output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/3d/'
+delta_tout=0.05
+tend=0.5
+output_dir='/data/p287802/sims/test/gatto13_repro/3d/fornax/static/'
 /
 
 &HYDRO_PARAMS
@@ -63,32 +63,41 @@ scheme='muscl'
 riemann='hllc'
 /
 
-&REFINE_PARAMS 
+&REFINE_PARAMS
+x_refine = 24.0
+y_refine = 7.2
+z_refine = 24.0
+r_refine = 1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,1.2,-1.0,-1.0
+sfr_refine = 1.e-7
+m_refine = -1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,2.0,2.0
 interpol_var=0
 interpol_type=1
-err_grad_d=0.01
+err_grad_d=0.23
 /
 
-&SF_PARAMS
-t_star=0.01
-n_star=0.1
-eps_star=0.1
+&FEEDBACK_PARAMS
+f_ek = 0.0
 /
 
 &PROB_PARAMS
 x1_c=0.5
-x2_c=0.3
+x2_c=0.5
 x3_c=0.5
-vel_wind=200.0
+vel_wind=0.0
 T_wind=1.8d6
 ndens_wind=1.d-4
 T_cloud=1.d4
-Rad_cloud=0.41
-R_s=0.5
-n0g=0.27
+Rad_cloud=0.875877
+R_s=4.0
+n0g=8.2449355
+r_cut=0.875877 !1.5575 !1.03377 !0.80125748034242250
 Z_wind = 0.1
-Z_cloud = 0.2
-prob_debug = .true.
+Z_cloud = 0.02
+orbitfile = '/data/p287802/src/ramses/patch/asger/gatto13_repro/orbitvelocity-fornax.dat'
+sfhistfile = '/data/p287802/src/ramses/patch/asger/gatto13_repro/sfhist-fornax.dat'
+prob_debug = .false.
+subgrid_feedback=.true.
+rho_SN = 6.d-3
+tinit_sim = 12.0
+dt_sfhist = 0.01
 /
-
-

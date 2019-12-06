@@ -11,20 +11,21 @@ nremap=6
 /
 
 &AMR_PARAMS 
-levelmin=8
+levelmin=7
 levelmax=11
 ngridmax=400000
-boxlen=80.0
+boxlen=48.0
 /
 
 &COOLING_PARAMS
 cooling = .true.
 metal = .true.
+J21 = 3
 /
 
 &POISSON_PARAMS 
 gravity_type=1
-gravity_params=0.4946,0.5,0.15,0.5
+gravity_params=1.87412,0.5,0.5,0.2
 /
 
 &BOUNDARY_PARAMS
@@ -49,7 +50,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.05
 tend=10.0
-output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/2d/properpotential/cooling+feedback/orbit/dens1e-4/'
+output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/2d/cooling/feedback/subgrid_sn/bigvol/'
 /
 
 &HYDRO_PARAMS
@@ -68,20 +69,17 @@ err_grad_d=0.005
 
 &PROB_PARAMS
 x1_c=0.5
-x2_c=0.15
+x2_c=0.2
 x3_c=0.5
 vel_wind=228.0
 T_wind=1.8d6
 ndens_wind=1.d-4
 T_cloud=1.d4
-Rad_cloud=0.5
-R_s=0.795
+Rad_cloud=0.41
+R_s=0.5
 n0g=0.27
-r_cut=1.5575 !0.903545 !1.03377 !0.80125748034242250
 Z_wind = 0.1
 Z_cloud = 0.02
-orbitfile = 'orbitvelocity-gatto.dat'
-prob_debug = .false.
-subgrid_feedback=.true.
 /
+
 

@@ -311,7 +311,6 @@ module amr_parameters
   real(dp)::Z_wind = 0.0
   real(dp)::Z_cloud = 0.0
   character(len=256)::orbitfile
-  character(len=256)::sfhistfile
   logical::prob_debug = .false.
   logical::subgrid_feedback = .true.
   real(dp)::rho_SN = 6d-3

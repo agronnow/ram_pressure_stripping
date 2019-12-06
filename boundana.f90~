@@ -59,7 +59,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
      call GetMuFromTemperature(T_wind,nH,mu_wind)
 
      if (vel_wind > 0.0)then
-        fileloc=trim(orbitfile)
+        fileloc=trim(output_dir)//trim(orbitfile)
         inquire(file=fileloc,exist=file_exists)
         ntab = 0
         if(file_exists) then

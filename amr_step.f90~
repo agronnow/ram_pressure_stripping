@@ -445,7 +445,7 @@ recursive subroutine amr_step(ilevel,icount)
   !----------------------------------
 !#if NDIM==3
                                call timer('feedback','start')
-  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
+  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel)
 !#endif
 
   !---------------------------------------

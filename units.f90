@@ -36,7 +36,7 @@ subroutine units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
   scale_nh = x/mh * scale_d
 
 ! scale_prs converts pressure in user units into dyne/cm^2
-  scale_prs = scale_v**2 * scale_d
+  scale_prs = scale_t2 * scale_d
 
 ! output unit information; only main process
 !NOTE: add pressure unit

@@ -6,21 +6,15 @@ hydro=.true.
 pic=.false.
 poisson=.true.
 ncontrol=10
-nsubcycle=1,1,1,1,1,1,1
-nremap=6
+nsubcycle=1,1,1
+nremap=10
 /
 
 &AMR_PARAMS 
 levelmin=4
-levelmax=10
-ngridmax=1400000
-npartmax=20000
-boxlen=32.0
-/
-
-&COOLING_PARAMS
-cooling = .true.
-metal = .true.
+levelmax=11
+ngridmax=1000000
+boxlen=8.0
 /
 
 &POISSON_PARAMS 
@@ -29,14 +23,12 @@ gravity_params=1.87412,0.5,0.5,0.3
 /
 
 &BOUNDARY_PARAMS
-nboundary = 6
-ibound_min=-1,+1,-1,-1,-1,-1
-ibound_max=-1,+1,+1,+1,+1,+1
-jbound_min= 0, 0,-1,+1,-1,-1
-jbound_max= 0, 0,-1,+1,+1,+1
-kbound_min= 0, 0, 0, 0,-1,+1
-kbound_max= 0, 0, 0, 0,-1,+1
-bound_type= 2, 2, 2, 3, 2, 2
+nboundary = 4
+ibound_min= -1, +1,-1,-1
+ibound_max= -1, +1,+1,+1
+jbound_min=0,0,+1,-1
+jbound_max=0,0,+1,-1
+bound_type= 2, 2, 2, 3
 /
 
 &UNITS_PARAMS
@@ -50,9 +42,9 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.01
+delta_tout=0.03
 tend=1.0
-output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/3d/'
+output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/no_wind/'
 /
 
 &HYDRO_PARAMS
@@ -69,26 +61,17 @@ interpol_type=1
 err_grad_d=0.01
 /
 
-&SF_PARAMS
-t_star=0.01
-n_star=0.1
-eps_star=0.1
-/
-
 &PROB_PARAMS
 x1_c=0.5
-x2_c=0.3
+x2_x=0.3
 x3_c=0.5
-vel_wind=200.0
+vel_wind=20.0
 T_wind=1.8d6
 ndens_wind=1.d-4
 T_cloud=1.d4
 Rad_cloud=0.41
 R_s=0.5
 n0g=0.27
-Z_wind = 0.1
-Z_cloud = 0.2
-prob_debug = .true.
 /
 
 

@@ -15,7 +15,7 @@ levelmin=4
 levelmax=10
 ngridmax=1400000
 npartmax=20000
-boxlen=32.0
+boxlen=8.0
 /
 
 &COOLING_PARAMS
@@ -52,7 +52,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.01
 tend=1.0
-output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/3d/'
+output_dir='/net/roland/data/users/gronnow/sims/test/gatto13_repro/3d/cooling+sf/subgrid/'
 /
 
 &HYDRO_PARAMS
@@ -88,7 +88,6 @@ R_s=0.5
 n0g=0.27
 Z_wind = 0.1
 Z_cloud = 0.2
-prob_debug = .true.
 /
 
 
