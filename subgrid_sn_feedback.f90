@@ -1,6 +1,7 @@
 #define SNIA_FEEDBACK
 #define DEBUG_SNIA
 #define SNIA_HERINGER19
+#define SNIA_PLUMMER
 
 !#if NDIM==3
 subroutine subgrid_sn_feedback(ilevel, icount)
@@ -343,22 +344,29 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
      if (myid==1) then
        ! Calculate SNIa radius Comulative Distribution Function
+#ifndef SNIA_PLUMMER
        nHc = n0g*scale_nH
        call GetMuFromTemperature(T_cloud,nHc,mu_cloud)
        rho0dm = gravity_params(1)
        Phi0 = -2.0*twopi*rho0dm*R_s**2
        c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
+       Pinf= dexp(-(Phi0*R_s*dlog(1+Rad_cloud/R_s)/Rad_cloud - Phi0)/c_s2)
+#endif
        area = 0.0
        binwidth = Rad_cloud/(NPDFBINS-1.0)
-       Pinf= dexp(-(Phi0*R_s*dlog(1+Rad_cloud/R_s)/Rad_cloud - Phi0)/c_s2)
+       
        do i=1,NPDFBINS
           currad = (i-1)*binwidth
+#ifdef SNIA_PLUMMER
+          PDF_SNIa(i) = (3.0/(2.0*twopi*r_plummer**3))*(1.0+currad/r_plummer**2)**(-2.5)
+#else
           if (currad > 0.0) then
             PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
           else
             PhiR = Phi0
           endif
           PDF_SNIa(i) = dexp(-(PhiR-Phi0)/c_s2)-Pinf
+#endif
           area = area + PDF_SNIa(i)*binwidth
        enddo
        do i=1,NPDFBINS
