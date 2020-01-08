@@ -291,7 +291,7 @@ module amr_parameters
   integer::IOGROUPSIZE=0           ! Main snapshot
   integer::IOGROUPSIZECONE=0       ! Lightcone
   integer::IOGROUPSIZEREP=0        ! Subfolder size
-  logical::withoutmkdir=.true.    !If true mkdir should be done before the run
+  logical::withoutmkdir=.false.    !If true mkdir should be done before the run
   logical::print_when_io=.false.   !If true print when IO
   logical::synchro_when_io=.false. !If true synchronize when IO
 
@@ -317,5 +317,6 @@ module amr_parameters
   real(dp)::rho_SN = 6d-3
   real(dp)::tinit_sim = 0.0
   real(dp)::dt_sfhist = 0.0
+  real(dp)::r_plummer = 0.0
 
 end module amr_parameters
