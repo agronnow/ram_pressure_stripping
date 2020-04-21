@@ -413,8 +413,7 @@ subroutine userflag_fine(ilevel)
   ! End loop over grids
 
   ! Do the same for hydro solver
-  ! Only do hydro refinement below level where mass criterium is used
-  if((hydro) .and. (m_refine(ilevel) < 0.0d0))call hydro_flag(ilevel)
+  if(hydro)call hydro_flag(ilevel)
 
 #ifdef RT
   ! Do the same for RT solver
@@ -438,6 +437,7 @@ subroutine poisson_refine(ind_cell,ok,ncell,ilevel)
   implicit none
   integer::ncell,ilevel
   integer,dimension(1:nvector)::ind_cell
+  real(dp),dimension(1:nvector,1:ndim)::xx
   logical,dimension(1:nvector)::ok
   !-------------------------------------------------
   ! This routine sets flag1 to 1 if cell statisfy

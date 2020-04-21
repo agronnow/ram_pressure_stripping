@@ -6,6 +6,7 @@ subroutine gravana(x,f,dx,ncell)
   use amr_parameters
   use poisson_parameters
   use cooling_module, ONLY: twopi
+  use incgamma
   implicit none
   integer ::ncell                         ! Size of input arrays
   real(dp)::dx                            ! Cell size
@@ -17,7 +18,11 @@ subroutine gravana(x,f,dx,ncell)
   ! f(i,1:ndim) is the gravitational acceleration in user units.
   !================================================================
   integer::i
-  real(dp)::r,rx,ry,rz,rho0,xmass,ymass,zmass,acc_nfw
+  real(dp)::r,rx,ry,rz,rho0,xmass,ymass,zmass,acc
+#ifdef EINASTO
+  logical, save::firstcall
+  real(dp), save::gamma3n
+#endif
 
   rho0 =gravity_params(1)
   xmass = x1_c*boxlen
@@ -34,14 +39,23 @@ subroutine gravana(x,f,dx,ncell)
 #endif
      r=sqrt(rx**2+ry**2+rz**2)
      if (r < r_cut) then
-       acc_nfw=-2*twopi*rho0*R_s**3*(dlog(1+r/R_s)-r/(r+R_s))/r**2
+#ifdef EINASTO
+       if (firstcall) then
+         gamma3n = cmpgamma(3d0*ein_n)
+         firstcall = .false.
+       endif
+       acc = -2d0*twopi*rho0*R_s**3*ein_n*(gamma3n - gammainc3n((r/R_s)**(1d0/(ein_n))))/r**2
+#else
+       ! NFW
+       acc=-2d0*twopi*rho0*R_s**3*(dlog(1+r/R_s)-r/(r+R_s))/r**2
+#endif
      else
-       acc_nfw=0.0
+       acc=0.0
      endif
-     f(i,1)=acc_nfw*rx/r
-     f(i,2)=acc_nfw*ry/r
+     f(i,1)=acc*rx/r
+     f(i,2)=acc*ry/r
 #if NDIM == 3
-     f(i,3)=acc_nfw*rz/r
+     f(i,3)=acc*rz/r
 #endif
   end do
 

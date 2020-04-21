@@ -59,7 +59,8 @@ subroutine read_hydro_params(nml_ok)
        & ,err_grad_A,err_grad_B,err_grad_C,err_grad_B2 &
        & ,floor_A,floor_B,floor_C,floor_B2,interpol_mag_type &
 #endif
-       & ,interpol_var,interpol_type,sink_refine,sfr_refine
+       & ,interpol_var,interpol_type,sink_refine,sfr_refine &
+       & ,sfr_ref_levelmax,sn_mass_refine,r_sn_refine,hydro_ref_levelmax,geometry_ref_levelmax
 
   ! Boundary parameters
   namelist/boundary_params/nboundary,bound_type &

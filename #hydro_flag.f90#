@@ -195,7 +195,7 @@ subroutine hydro_flag(ilevel)
 ! Added by AG: Refine based on cell mass before adding SN explosions
         if(nSN_prev > 0)then
            vol_loc=dx_loc**3
-           mref = sn_mass_refine*2d33/(scale_d*scale_l**3)
+           mref = sn_mass_refine*scale_d*scale_l**3/2d33
            ! Compute cell center in code units
            do idim=1,ndim
               do i=1,ngrid

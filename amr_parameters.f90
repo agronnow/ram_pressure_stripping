@@ -246,7 +246,12 @@ module amr_parameters
   real(dp),dimension(1:MAXLEVEL)::b_refine = 1.0 ! Ellipticity (Z/X)
   real(dp)::var_cut_refine=-1.0 ! Threshold for variable-based refinement
   real(dp)::mass_cut_refine=-1.0 ! Mass threshold for particle-based refinement
+  integer::hydro_ref_levelmax = 100 ! Max level for gradient based refinement
+  integer::geometry_ref_levelmax = 100 ! Max level for geometry based refinement
   real(dp)::sfr_refine=0.0 ! SFR threshold for SF-based refinement
+  integer(dp)::sfr_ref_levelmax = 100 ! Max level for SF-based refinement
+  real(dp)::sn_mass_refine=0.0 ! Mass threshold for refinement in SN regions
+  real(dp)::r_sn_refine=0.0 ! Radius around SN to consider for SN mass refinement
   integer::ivar_refine=-1 ! Variable index for refinement
   logical::sink_refine=.false. ! Fully refine on sink particles
 
@@ -291,7 +296,7 @@ module amr_parameters
   integer::IOGROUPSIZE=0           ! Main snapshot
   integer::IOGROUPSIZECONE=0       ! Lightcone
   integer::IOGROUPSIZEREP=0        ! Subfolder size
-  logical::withoutmkdir=.false.    !If true mkdir should be done before the run
+  logical::withoutmkdir=.true.    !If true mkdir should be done before the run
   logical::print_when_io=.false.   !If true print when IO
   logical::synchro_when_io=.false. !If true synchronize when IO
 
@@ -318,5 +323,6 @@ module amr_parameters
   real(dp)::tinit_sim = 0.0
   real(dp)::dt_sfhist = 0.0
   real(dp)::r_plummer = 0.0
+  real(dp)::ein_n = 0.0
 
 end module amr_parameters

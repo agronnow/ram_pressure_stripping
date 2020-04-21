@@ -7,6 +7,7 @@ subroutine condinit(x,u,dx,nn)
   use hydro_parameters
   use poisson_parameters
   use cooling_module, ONLY: twopi, kb, mh
+  use incgamma
   implicit none
   integer ::nn                            ! Number of cells
   real(dp)::dx                            ! Cell size
@@ -30,19 +31,24 @@ subroutine condinit(x,u,dx,nn)
   real(dp),dimension(1:nvector,1:nvar),save::q   ! Primitive variables
 
   integer::i,ilun
-  real(dp)::currad,xc,yc,zc,rho0g,rho0dm,rho_cloud,c_s2,Phi0,PhiR,P_wind,P_cloud,nH
+  real(dp)::currad,xc,yc,zc,rho0g,rho0dm,rho_cloud,c_s2,PhiR,P_wind,P_cloud,nH
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
-  real(dp),save::mu_cloud,mu_wind
+  real(dp),save::mu_cloud,mu_wind,Phi0
   real(dp),save::r_max=0.0,velinit=0.0
   real(dp)::tinit
   character(len=256)::fileloc
   logical::file_exists = .false.
   logical,save::firstcall=.true.
+#ifdef EINASTO
+  real(dp),save::gamma3n,ein_M
+#endif
 
   ! User-defined initial conditions
 
   call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
   scale_prs = scale_d * scale_v**2
+
+  rho0dm = gravity_params(1)
 
   xc = x1_c*boxlen
   yc = x2_c*boxlen
@@ -66,12 +72,18 @@ subroutine condinit(x,u,dx,nn)
      else
         velinit = vel_wind
      endif
+#ifdef EINASTO
+     gamma3n = cmpgamma(3d0*ein_n)
+     ein_M = 2d0*twopi*rho0dm*R_s**3*ein_n*gamma3n
+     Phi0 = -ein_M*cmpgamma(2d0*ein_n)/(R_s*gamma3n)
+#else
+     ! NFW
+     Phi0 = -2d0*twopi*rho0dm*R_s**2
+#endif
      firstcall = .false.
   endif
   
   rho0g=n0g*mu_cloud
-  rho0dm = gravity_params(1)
-  Phi0 = -2.0*twopi*rho0dm*R_s**2
   c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
   P_wind = ndens_wind*T_wind/scale_T2
 
@@ -82,7 +94,12 @@ subroutine condinit(x,u,dx,nn)
     currad = dsqrt((x(i,1)-xc)**2 + (x(i,2)-yc)**2)
 #endif
 
+#ifdef EINASTO
+    PhiR = -ein_M*(R_s*gamma3n + currad*gammainc2n((currad/R_s)**(1d0/ein_n)) - R_s*gammainc3n((currad/R_s)**(1d0/ein_n)))/(R_s*currad*gamma3n)
+#else
+    ! NFW
     PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
+#endif
     rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
     if (P_cloud < P_wind) then

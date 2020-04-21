@@ -77,6 +77,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
   real(kind=8)::dtcool,nISM,nCOM,damp_factor,cooling_switch,t_blast
   real(dp)::polytropic_constant=1.
   integer,dimension(1:nvector),save::ind_cell,ind_leaf
+  logical,dimension(1:nvector)::ok_cool
   real(kind=8),dimension(1:nvector),save::nH,T2,delta_T2,ekk,err,emag
   real(kind=8),dimension(1:nvector),save::T2min,Zsolar,boost
   real(dp),dimension(1:3)::skip_loc
@@ -283,6 +284,12 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
      ! Compute T2=T/mu in Kelvin
      do i=1,nleaf
         T2(i)=T2(i)/nH(i)*scale_T2
+        !Modified from default: Only apply cooling in cells above temperature floor
+        if ((T2(i) > Tmufloor) .and. (abs(uold(ind_leaf(i),imetal)-Z_wind*0.02*uold(ind_leaf(i),1)) > 1d-8))then
+           ok_cool(i) = .true.
+        else
+           ok_cool(i) = .false.
+        endif
      end do
 
      ! Compute nH in H/cc
@@ -443,13 +450,13 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
      else
         ! Compute net cooling at constant nH
         if(cooling.and..not.neq_chem)then
-           call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf)
+           call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf,ok_cool)
         endif
      endif
 #else
      ! Compute net cooling at constant nH
      if(cooling.and..not.neq_chem)then
-        call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf)
+        call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf,ok_cool)
      endif
 #endif
 #ifdef RT

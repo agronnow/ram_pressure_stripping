@@ -1,8 +1,3 @@
-#define SNIA_FEEDBACK
-#define DEBUG_SNIA
-#define SNIA_HERINGER19
-#define SNIA_PLUMMER
-
 !#if NDIM==3
 subroutine subgrid_sn_feedback(ilevel, icount)
   use amr_commons
@@ -124,6 +119,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   real(dp),dimension(:,:),allocatable::xpdf,xSNIa,min_r2,min_r2_all
   logical::doSNIa
 #endif
+
+  logical,save::firstsn = .true.
 
   ! TODO: when f2008 is obligatory - remove this and replace erfc_pre_f08 below by
   ! the f2008 intrinsic erfc() function:
@@ -316,7 +313,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
            sfhist(nhist+1) = csfh
            nhist=nhist+1
-           write(*,*)myid,nhist,t_sfhist(nhist),sfhist(nhist)
+           if (myid==1)write(*,*)nhist,t_sfhist(nhist),sfhist(nhist)
         end do
 !        t_sfhfile = t_sfhist(nhist)
         close(ilun)
@@ -455,7 +452,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
                   endif
                enddo
                xpdf(iSN,idim) = signx*binwidth*(imin-1) + xCloud(idim)*boxlen ! Random coordinate along each axis
-!write(*,*)'unif_rand',unif_rand,'signx',signx,'r',r,'binwidth',binwidth,'imin',imin
+write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(',idim,')=',xpdf(iSN,idim)
             enddo
          enddo
       endif
@@ -638,6 +635,12 @@ nSN_loc = 0
                 call poissdev(localseed,PoissMean,nSN)
                 if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
 !               if (nosn) then
+#ifdef SN_INJECT
+                if ((firstsn) .and. (x > 0.5*boxlen - 0.75*dx_loc) .and. (y > 0.5*boxlen - 0.75*dx_loc) .and. (x < 0.5*boxlen) .and. (y < 0.5*boxlen) .and. (z > 0.5*boxlen - 0.75*dx_loc) .and. (z < 0.5*boxlen))then
+                   nSN = 1
+                   firstsn = .false.
+                endif
+#endif
                 do iSN=1,nSN
                    ! Get gas cell position
                    x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
@@ -728,9 +731,8 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
   sfr_tot_level = 0.0
 #ifndef WITHOUTMPI
   if (sfhist_update) then
-    write(*,*)'reduce on',myid
     call MPI_ALLREDUCE(sfr,sfr_tot_level,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD,info)
-    write(*,*)'sfr',sfr,' sfr_tot',sfr_tot_level
+    if(myid==1)write(*,*)'reduce sfr: sfr on cpu 1=',sfr,' sfr_tot=',sfr_tot_level
   endif
 
   ! Give an array of number of SN on each cpu available to all cpus
@@ -795,22 +797,46 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
   deallocate(xSN_all,mSN_all)
 #endif
 
-
   nSN=nSN_tot
+
   allocate(vol_gas(1:nSN,1:RADCELL_MAX),dq(1:nSN,1:ndim),ekBlast(1:nSN),rSN(1:nSN))
   allocate(indSN(1:nSN))
 
-  ! Compute the grid discretization effects
+#ifdef DELAYED_SN
+  if(nSN_prev > 0)then
+     ! Add SN from previous time step
+     ! Compute blast radius
+     call subgrid_average_SN(sn_coords,rSN,vol_gas,dq,ekBlast,indSN,nSN_prev)
+
+     ! Modify hydro quantities to account for a Sedov blast wave
+     call subgrid_Sedov_blast(sn_coords,mSN,rSN,indSN,vol_gas,dq,ekBlast,nSN_prev)
+  endif
+#else
+  ! Compute blast radius
   call subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,indSN,nSN)
 
   ! Modify hydro quantities to account for a Sedov blast wave
   call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,dq,ekBlast,nSN)
+#endif
+
+#ifdef DELAYED_SN
+  if (nSN > 0)then
+     if (nSN > NMAX_SN) then
+        write(*,*)"WARNING: Too many SN for DELAYED_SN module!!!"
+     else
+        sn_coords(nSN_prev+1:nSN_prev+nSN) = xSN
+        nSN_prev = nSN_prev+nSN
+        write(*,*)"nSN_prev",nSN_prev," SNcoords:",sn_coords(nSN_prev+1,1),",",sn_coords(nSN_prev+1,2),",",sn_coords(nSN_prev+1,3)
+     endif
+  endif
+#endif
 
   deallocate(xSN,mSN,indSN,vol_gas,dq,ekBlast,rSN)
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0)deallocate(xpdf,xSNIa,min_r2,min_r2_all)
 #endif
+
 
   ! Update hydro quantities for split cells
   do ilevel=nlevelmax,levelmin,-1
@@ -1014,7 +1040,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
 #endif
                        do radcells=1,RADCELL_MAX
                           if(sqrt(dr_SN) .lt. 1.001*dx_min*radcells) then
-                             if ((ilevel < nlevelmax) .and. (radcells*dx_min < SNmaxrad(iSN))) then
+                             if ((ilevel < nlevelmax) .and. (radcells <= SNmaxrad(iSN))) then
                                 if (radcells == 1) then
                                    SNmaxrad(iSN) = 1 ! SN is centered on a coarse cell, this issue will be dealt with in subgrid_sedov_blast
                                 else
@@ -1041,8 +1067,8 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
   call MPI_ALLREDUCE(SNmaxrad,SNmaxrad_all,nSN  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
 #endif
 
-  mindiff = 1d10
   do iSN=1,nSN
+     mindiff = 1d10
      do radcells=1,RADCELL_MAX
         massdiff = abs(SN_blast_mass - mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33)
 write(*,*)'radcells',radcells,' massdiff',massdiff,' mtot',mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33
@@ -1060,7 +1086,7 @@ write(*,*)'radcells',radcells,' massdiff',massdiff,' mtot',mtot_all(iSN,radcells
         SNvol(iSN) = vol_gas_all(iSN,SNmaxrad_all(iSN))
      endif
 
-     if(myid==1)write(*,*)"SN rad: ", rSN(iSN), " SN rad (cells): ", min(radcells,SNmaxrad_all(iSN)), " SN Mass: ", SNmenc(iSN), "blast temperature: ",(1d51*(gamma-1.0)/(SNmenc(iSN)*scale_d*scale_l**3/2d33))*scale_T2
+     if(myid==1)write(*,*)"SN rad: ", rSN(iSN), " SN rad (cells): ", rSN(iSN)/dx_min, " SN Mass: ", SNmenc(iSN)*scale_d*scale_l**3/2d33, "blast temperature: ",(1d51*(gamma-1.0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16)
 
      ! Loop over levels
      do ilevel=levelmin,nlevelmax
@@ -1249,7 +1275,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,dq,ekBlast,nSN)
         p_gas(iSN)=mSN(iSN)*ESN/ekBlast(iSN)
 !        if(metal)d_metal(iSN)=ZSN(iSN)*mSN(iSN)/ekBlast(iSN)
      endif
-write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " ekBlast: ", ekBlast(iSN), " vol_gas: ", vol_gas(iSN)
+!write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " ekBlast: ", ekBlast(iSN), " vol_gas: ", vol_gas(iSN)
   end do
 
   ! Loop over levels
@@ -1330,7 +1356,7 @@ write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " 
                        ! Finally update the total energy of the gas
                        uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !write(*,*)"SN d: ", d_gas(iSN), " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
-write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
+!write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
                     endif
                  end do
               endif
