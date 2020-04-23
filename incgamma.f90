@@ -714,7 +714,7 @@ function gammainc2n(x)
 !  real ( kind = 8 ) cmpgamma
   real ( kind = 8 ) fac
   real ( kind = 8 ), save::gamma2n
-  logical, save::firstcall
+  logical, save::firstcall=.true.
   integer ( kind = 4 ) ifault
   gammainc2n = 0.0
   if (firstcall) then
@@ -738,7 +738,7 @@ function gammainc3n(x)
 !  real ( kind = 8 ) cmpgamma
   real ( kind = 8 ) fac
   real ( kind = 8 ), save::gamma3n
-  logical, save::firstcall
+  logical, save::firstcall=.true.
   integer ( kind = 4 ) ifault
   gammainc3n = 0.0
   if (firstcall) then
