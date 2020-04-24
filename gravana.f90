@@ -20,7 +20,7 @@ subroutine gravana(x,f,dx,ncell)
   integer::i
   real(dp)::r,rx,ry,rz,rho0,xmass,ymass,zmass,acc
 #ifdef EINASTO
-  logical, save::firstcall
+  logical, save::firstcall = .true.
   real(dp), save::gamma3n
 #endif
 
