@@ -721,7 +721,7 @@ function gammainc2n(x)
      gamma2n = cmpgamma(2d0*ein_n)
      firstcall = .false.
   endif
-  gammainc2n = gamma2n*(1d0 - gammad(x, 2d0, ifault))
+  gammainc2n = gamma2n*(1d0 - gammad(x, 2d0*ein_n, ifault))
 
   return
 end function gammainc2n
@@ -745,7 +745,7 @@ function gammainc3n(x)
      gamma3n = cmpgamma(3d0*ein_n)
      firstcall = .false.
   endif
-  gammainc3n = gamma3n*(1d0 - gammad(x, 3d0, ifault))
+  gammainc3n = gamma3n*(1d0 - gammad(x, 3d0*ein_n, ifault))
 
   return
 end function gammainc3n
