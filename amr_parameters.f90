@@ -324,6 +324,7 @@ module amr_parameters
   real(dp)::vsfr_pow = 0.0
   real(dp)::tinit_sim = 0.0
   real(dp)::dt_sfhist = 0.0
+  real(dp)::dt_sfrlog = 0.0
   real(dp)::r_plummer = 0.0
   real(dp)::ein_n = 0.0
 

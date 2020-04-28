@@ -100,6 +100,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,dq,vol_gas
 
   logical,save::firstcall = .true.
+  logical,save::calc_sfr = .false.
 #ifdef SNIA_FEEDBACK
 #define NPDFBINS 1000
 #define NSFHISTMAX 10000
@@ -273,27 +274,62 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   endif
 
   nSNIa = 0
-  if ((ilevel == levelmin) .and. (sfhist_update)) then
-    nhist = nhist + 1
-    t_sfhist(nhist) = t*scale_t/3.154e16 + tinit_sim
-    sfhist(nhist) = sum(sfr_tot)
+  if ((ilevel == levelmin) .and. (calc_sfr)) then
+    calc_sfr = .false.
+    if (sfhist_update) then
+       nhist = nhist + 1
+       t_sfhist(nhist) = t*scale_t/3.154e16 + tinit_sim
+       sfhist(nhist) = sum(sfr_tot)
 #if NDIM==2
-    sfhist(nhist) = sfhist(nhist)*4.0*Rad_cloud/3.0
+       sfhist(nhist) = sfhist(nhist)*4.0*Rad_cloud/3.0
 #endif
-    sfr_tot = 0.0
-    sfhist_update = .false.
-    if (myid==1) then
-      fileloc=trim(output_dir)//'snIa_sfr.log'
-      ilun=130
-      inquire(file=fileloc,exist=file_exist)
-      if(.not.file_exist) then
-         open(ilun, file=fileloc, form='formatted')
-         write(ilun,*)"Time                      sum(sfr_tot)"
-      else
-         open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
-      endif
-      write(ilun,'(3E26.16)') t, sfhist(nhist)
-      close(ilun)
+       sfr_tot = 0.0
+       sfhist_update = .false.
+       if (myid==1) then
+          fileloc=trim(output_dir)//'snIa_sfr.log'
+          ilun=130
+          inquire(file=fileloc,exist=file_exist)
+          if(.not.file_exist) then
+             open(ilun, file=fileloc, form='formatted')
+             write(ilun,*)"Time                      sum(sfr_tot)"
+          else
+             open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
+          endif
+          write(ilun,'(3E26.16)') t, sfhist(nhist)
+          close(ilun)
+
+          fileloc=trim(output_dir)//'sfr.log'
+          ilun=130
+          inquire(file=fileloc,exist=file_exist)
+          if(.not.file_exist) then
+             open(ilun, file=fileloc, form='formatted')
+             write(ilun,*)"Time                      sum(sfr_tot)"
+          else
+             open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
+          endif
+          write(ilun,'(3E26.16)') t, cursfr
+          close(ilun)
+       endif
+    else
+       t_sfrlog = t*scale_t/3.154e16 + tinit_sim
+       cursfr = sum(sfr_tot)
+#if NDIM==2
+       cursfr = cursfr*4.0*Rad_cloud/3.0
+#endif
+       sfr_tot = 0.0
+       if (myid==1) then
+          fileloc=trim(output_dir)//'sfr.log'
+          ilun=130
+          inquire(file=fileloc,exist=file_exist)
+          if(.not.file_exist) then
+             open(ilun, file=fileloc, form='formatted')
+             write(ilun,*)"Time                      sum(sfr_tot)"
+          else
+             open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
+          endif
+          write(ilun,'(3E26.16)') t, cursfr
+          close(ilun)
+       endif
     endif
   endif
 
@@ -376,7 +412,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
        xCloud(1) = x1_c
        xCloud(2) = x2_c
 #if NDIM==3
-      xCloud(3) = x3_c
+       xCloud(3) = x3_c
 #endif
 
 #ifdef DEBUG_SNIA
@@ -392,9 +428,15 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      endif
   endif
 
-  if ((ilevel == levelmin) .and. .not.(firstcall) .and. (t*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist) > dt_sfhist)) then
-    write(*,*)'Update sfh',t*scale_t/3.154e16,tinit_sim,t_sfhist(nhist),dt_sfhist
-    sfhist_update = .true.
+  if ((ilevel == levelmin) .and. .not.(firstcall) then
+    if (t*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist) > dt_sfhist) then
+       write(*,*)'Update sfh',t*scale_t/3.154e16,tinit_sim,t_sfhist(nhist),dt_sfhist
+       sfhist_update = .true.
+       calc_sfr = .true.
+    else if (t*scale_t/3.154e16 + tinit_sim - t_sfrlog > dt_sfrlog) then
+       write(*,*)'Calculate sfr'
+       calc_sfr = .true.
+    endif
   endif
 
   firstcall = .false.
@@ -617,7 +659,7 @@ nSN_loc = 0
               if (d > 0d0) then
                 rho_sfr = vsfr_fac*d**vsfr_pow ! 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
 #ifdef SNIA_FEEDBACK
-                if (sfhist_update) then
+                if (calc_sfr) then
                   sfr = sfr + rho_sfr*vol_loc
 !                  write(*,*)'sfr',sfr,'rho_sfr',rho_sfr,'vol_loc',vol_loc,'d',d
                 endif
@@ -730,9 +772,9 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 
   sfr_tot_level = 0.0
 #ifndef WITHOUTMPI
-  if (sfhist_update) then
+  if (calc_sfr) then
     call MPI_ALLREDUCE(sfr,sfr_tot_level,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD,info)
-    if(myid==1)write(*,*)'reduce sfr: sfr on cpu 1=',sfr,' sfr_tot=',sfr_tot_level
+    if(myid==1)write(*,*)'reduce sfr: sfr on cpu 1=',sfr,' sfr_tot=',sfr_tot_level,' level=',ilevel
   endif
 
   ! Give an array of number of SN on each cpu available to all cpus
@@ -749,7 +791,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
   sfr_tot_level = sfr
 #endif
 
-  if (sfhist_update)sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + sfr_tot_level
+  if (calc_sfr)sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + sfr_tot_level
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
 
