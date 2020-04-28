@@ -266,14 +266,15 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   DTD_s = -1.12          ! From Maoz et al. (2012)
 #endif
 
-  doSNIa = .false.
-  if (ilevel == nlevelmax) then ! Only generate SNIa at the last subcycle of the finest level
-     if (icount == 2) then
-        if(nsubcycle(ilevel)==2)doSNIa = .true.
-     else
-        doSNIa = .true.
-     endif
-  endif
+  doSNIa = .true.
+!  doSNIa = .false.
+!  if (ilevel == nlevelmax) then ! Only generate SNIa at the last subcycle of the finest level
+!     if (icount == 2) then
+!        if(nsubcycle(ilevel)==2)doSNIa = .true.
+!     else
+!        doSNIa = .true.
+!     endif
+!  endif
 
   nSNIa = 0
   if ((ilevel == levelmin) .and. (calc_sfr)) then
@@ -793,7 +794,11 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
   sfr_tot_level = sfr
 #endif
 
-  if (calc_sfr)sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + sfr_tot_level
+  if (calc_sfr) then
+     nsubcycle = nsubcycle(ilevel) ! Assume the same no. of subcycles on every level, will not work otherwise!!!
+     weigth = 1d0/(nsubcycle**(ilevel-levelmin))
+     sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
+  endif
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
 
