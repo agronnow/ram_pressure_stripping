@@ -267,15 +267,16 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   DTD_s = -1.12          ! From Maoz et al. (2012)
 #endif
 
-  doSNIa = .true.
-!  doSNIa = .false.
-!  if (ilevel == nlevelmax) then ! Only generate SNIa at the last subcycle of the finest level
+  doSNIa = .false.
+  if (ilevel == nlevelmax) then
+     doSNIa = .true.
+! Only generate SNIa at the last subcycle of the finest level
 !     if (icount == 2) then
 !        if(nsubcycle(ilevel)==2)doSNIa = .true.
 !     else
 !        doSNIa = .true.
 !     endif
-!  endif
+  endif
 
   nSNIa = 0
   if ((ilevel == levelmin) .and. (calc_sfr)) then
