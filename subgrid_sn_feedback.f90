@@ -615,7 +615,7 @@ nSN_loc = 0
               !mgas=dtnew(ilevel)*(sfr_ff(i)/tstar)*mcell
               d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
               if (d > 0d0) then
-                rho_sfr = 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
+                rho_sfr = vsfr_fac*d**vsfr_pow ! 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
 #ifdef SNIA_FEEDBACK
                 if (sfhist_update) then
                   sfr = sfr + rho_sfr*vol_loc

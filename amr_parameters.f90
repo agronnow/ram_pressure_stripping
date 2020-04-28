@@ -320,6 +320,8 @@ module amr_parameters
   logical::prob_debug = .false.
   logical::subgrid_feedback = .true.
   real(dp)::rho_SN = 6d-3
+  real(dp)::vsfr_fac = 0.0
+  real(dp)::vsfr_pow = 0.0
   real(dp)::tinit_sim = 0.0
   real(dp)::dt_sfhist = 0.0
   real(dp)::r_plummer = 0.0
