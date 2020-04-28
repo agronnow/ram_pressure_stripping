@@ -103,6 +103,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   logical,save::calc_sfr = .false.
   real(dp),save::t_sfrlog = 0.0
   real(dp)::cursfr = 0.0
+  real(dp)::weight = 0.0
 #ifdef SNIA_FEEDBACK
 #define NPDFBINS 1000
 #define NSFHISTMAX 10000
@@ -795,8 +796,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 #endif
 
   if (calc_sfr) then
-     nsubcycle = nsubcycle(ilevel) ! Assume the same no. of subcycles on every level, will not work otherwise!!!
-     weigth = 1d0/(nsubcycle**(ilevel-levelmin))
+     weight = 1d0/(nsubcycle(ilevel)**(ilevel-levelmin)) ! Assume the same no. of subcycles on every level, will not work otherwise!!!
      sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
   endif
 
