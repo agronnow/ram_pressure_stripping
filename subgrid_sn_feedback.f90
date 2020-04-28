@@ -102,6 +102,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   logical,save::firstcall = .true.
   logical,save::calc_sfr = .false.
   real(dp),save::t_sfrlog = 0.0
+  real(dp)::cursfr = 0.0
 #ifdef SNIA_FEEDBACK
 #define NPDFBINS 1000
 #define NSFHISTMAX 10000
