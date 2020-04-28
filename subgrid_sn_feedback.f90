@@ -101,6 +101,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
   logical,save::firstcall = .true.
   logical,save::calc_sfr = .false.
+  real(dp),save::t_sfrlog = 0.0
 #ifdef SNIA_FEEDBACK
 #define NPDFBINS 1000
 #define NSFHISTMAX 10000
@@ -428,13 +429,13 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      endif
   endif
 
-  if ((ilevel == levelmin) .and. .not.(firstcall) then
+  if ((ilevel == levelmin) .and. .not.(firstcall)) then
     if (t*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist) > dt_sfhist) then
-       write(*,*)'Update sfh',t*scale_t/3.154e16,tinit_sim,t_sfhist(nhist),dt_sfhist
+       if (myid==1)write(*,*)'Update sfh',t*scale_t/3.154e16,tinit_sim,t_sfhist(nhist),dt_sfhist
        sfhist_update = .true.
        calc_sfr = .true.
     else if (t*scale_t/3.154e16 + tinit_sim - t_sfrlog > dt_sfrlog) then
-       write(*,*)'Calculate sfr'
+       if(myid==1)write(*,*)'Calculate sfr'
        calc_sfr = .true.
     endif
   endif
