@@ -10,6 +10,9 @@ module sn_feedback_commons
 #ifdef DELAYED_SN
   integer::nSN_prev = 0
   real(dp),dimension(NMAX_SN,3)::sn_coords
+  real(dp),dimension(NMAX_SN)::rsn_sq
+  integer,dimension(NMAX_SN)::sn_level
+
 #endif
 
 end module sn_feedback_commons
