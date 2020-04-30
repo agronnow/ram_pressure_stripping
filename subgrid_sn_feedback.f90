@@ -797,7 +797,8 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 #endif
 
   if (calc_sfr) then
-     weight = 1d0/(nsubcycle(ilevel)**(ilevel-levelmin)) ! Assume the same no. of subcycles on every level, will not work otherwise!!!
+     weight = nsubcycle(levelmin)/(prod(nsubcycle(levelmin:ilevel)))
+!weight = 1d0/(nsubcycle(ilevel)**(ilevel-levelmin)) ! Assume the same no. of subcycles on every level, will not work otherwise!!!
      sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
   endif
 
