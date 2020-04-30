@@ -849,22 +849,25 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 
   nSN=nSN_tot
 
-  allocate(vol_gas(1:nSN,1:RADCELL_MAX),dq(1:nSN,1:ndim),ekBlast(1:nSN),rSN(1:nSN))
-  allocate(indSN(1:nSN))
-
 #ifdef DELAYED_SN
   if(nSN_prev > 0)then
+     allocate(vol_gas(1:nSN_prev,1:RADCELL_MAX),dq(1:nSN_prev,1:ndim),ekBlast(1:nSN_prev),rSN(1:nSN_prev),SNlevel(1:nSN_prev))
+     allocate(indSN(1:nSN_prev))
      ! Add SN from previous time step
      ! Compute blast radius
-     call subgrid_average_SN(sn_coords,rSN,vol_gas,dq,ekBlast,indSN,nSN_prev)
+     call subgrid_average_SN(sn_coords,rSN,vol_gas,dq,ekBlast,indSN,nSN_prev,SNlevel,.true.)
 
      ! Modify hydro quantities to account for a Sedov blast wave
      call subgrid_Sedov_blast(sn_coords,mSN,rSN,indSN,vol_gas,dq,ekBlast,nSN_prev)
+     deallocate(vol_gas,dq,ekBlast,rSN,indSN,SNlevel)
   endif
 #endif
 
+  allocate(vol_gas(1:nSN,1:RADCELL_MAX),dq(1:nSN,1:ndim),ekBlast(1:nSN),rSN(1:nSN),SNlevel(1:nSN))
+  allocate(indSN(1:nSN))
+
   ! Compute blast radius
-  call subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,indSN,nSN)
+  call subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,indSN,nSN,SNlevel,.false.)
 
   ! Modify hydro quantities to account for a Sedov blast wave
   call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,dq,ekBlast,nSN)
@@ -976,7 +979,7 @@ end subroutine subgrid_sn_feedback
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
+subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN,SNlevel,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -1003,13 +1006,19 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
   integer ,dimension(1:nSN)::ind_blast,SNlevel!,SNmaxrad,SNmaxrad_all
   real(dp),dimension(1:nSN)::ekBlast,rSN
   real(dp),dimension(1:nSN,1:RADCELL_MAX)::vol_gas,vol_gas_all,mtot,mtot_all
-  integer,dimension(1:nSN,1:RADCELL_MAX)::maxlevel,maxlevel_all
+  integer,dimension(1:nSN,1:RADCELL_MAX)::snmaxlevel,snmaxlevel_all
   real(dp),dimension(1:nSN,1:ndim)::xSN,dq,u2Blast
+  logical::file_exist
+  integer::ilun
+  character(LEN=256)::fileloc
 #ifndef WITHOUTMPI
   real(dp),dimension(1:nSN)::ekBlast_all,SNmenc,SNvol
   real(dp),dimension(1:nSN,1:ndim)::dq_all,u2Blast_all
 #endif
   logical ,dimension(1:nvector),save::ok
+
+  logical::delayed ! Don't flag SN for refinement and delayed blast multiple times
+  character::delayedstr
 
   real(dp)::SN_blast_mass = 60.0
 
@@ -1035,7 +1044,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
   rmax2=rmax*rmax
 
   ! Initialize the averaged variables
-  vol_gas=0.0;dq=0.0;u2Blast=0.0;ekBlast=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0,
+  vol_gas=0.0;dq=0.0;u2Blast=0.0;ekBlast=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0;snmaxlevel=0.0;
 !  SNmaxrad=RADCELL_MAX
 
   do iSN=1,nSN
@@ -1108,7 +1117,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
 !                                   SNmaxrad(iSN) = radcells-1 ! SN radius must be smaller than this to avoid overlapping coarse cells
 !                                endif
 !                             endif
-                             if (ilevel > maxlevel(iSN,radcells))maxlevel(iSN,radcells) = ilevel
+                             if (.not. delayed) then
+                                if (ilevel > snmaxlevel(iSN,radcells))snmaxlevel(iSN,radcells) = ilevel
+                             endif
                              mtot(iSN,radcells) = mtot(iSN,radcells) + uold(ind_cell(i),1)*vol_loc
                              vol_gas(iSN,radcells) = vol_gas(iSN,radcells) + vol_loc
 !write(*,*)'radcells',radcells,' mtot',mtot(iSN,radcells),' vol',vol_gas(iSN,radcells)
@@ -1126,7 +1137,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
 #ifndef WITHOUTMPI
   call MPI_ALLREDUCE(vol_gas,vol_gas_all,nSN*RADCELL_MAX  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(mtot,mtot_all,nSN*RADCELL_MAX  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
-  call MPI_ALLREDUCE(maxlevel,maxlevel_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
+  if (.not. delayed)call MPI_ALLREDUCE(snmaxlevel,snmaxlevel_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
 !  call MPI_ALLREDUCE(SNmaxrad,SNmaxrad_all,nSN  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
 #endif
 
@@ -1138,8 +1149,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
         if (massdiff < mindiff) then
            mindiff = massdiff
            rSN(iSN) = radcells*dx_min
-           SNlevel(iSN) = maxval(maxlevel_all(iSN,1:radcells))
-           if (SNlevel(iSN) == minval(maxlevel_all(iSN,1:radcells)))SNlevel(iSN) = 0 ! Disable SN based refinement if entire SN blast is on the same level
+           if (.not. delayed) then
+             SNlevel(iSN) = maxval(snmaxlevel_all(iSN,1:radcells))
+             if (SNlevel(iSN) == minval(snmaxlevel_all(iSN,1:radcells)))SNlevel(iSN) = 0 ! Disable SN based refinement if entire SN blast is on the same level
+           endif
            SNmenc(iSN) = mtot_all(iSN,radcells)
            SNvol(iSN) = vol_gas_all(iSN,radcells)
         endif
@@ -1151,22 +1164,27 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN)
 !        SNvol(iSN) = vol_gas_all(iSN,SNmaxrad_all(iSN))
 !     endif
 
-     if(myid==1)
+     if(myid==1) then
        fileloc=trim(output_dir)//'snblast.dat'
        ilun=140
        inquire(file=fileloc,exist=file_exist)
        if(.not.file_exist) then
           open(ilun, file=fileloc, form='formatted')
-          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast mass (Msun)          Blast temperature (K)"
+          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast mass (Msun)          Blast temperature (K)   Delayed SN"
        else
           open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
        endif
 #if NDIM==3
-       z = xSNIa(iSN,3)
+       z = xSN(iSN,3)
 #else
        z = 0.0
 #endif
-       write(ilun,'(4E26.16,E26.16,I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, rSN(iSN), rSN(iSN)/dx_min, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16)
+       if (delayed)then
+          delayedstr = 'Y'
+       else
+          delayedstr = 'N'
+       endif
+       write(ilun,'(4E26.16,E26.16,I5,A)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), rSN(iSN)/dx_min, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), delayedstr
        close(ilun)
      endif
 
