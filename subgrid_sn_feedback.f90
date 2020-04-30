@@ -888,7 +888,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
         rsn_sq(nSN_prev) = rSN(iSN)
         write(*,*)"nSNdelay",nSN_prev," SNcoords:",sn_coords(nSN_prev,1),",",sn_coords(nSN_prev,2),",",sn_coords(nSN_prev,3)
      endif
-  endif
+  enddo
 #endif
 
   deallocate(xSN,mSN,indSN,vol_gas,dq,ekBlast,rSN)

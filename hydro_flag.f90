@@ -215,9 +215,10 @@ subroutine hydro_flag(ilevel)
 #if NDIM == 3
                     rsq = rsq + (xx(i,3) - sn_coords(iSN,3))**2
 #endif
-!                 if((rsq <= r_sn_refine**2) .and. (uold(ind_cell(i),1)*vol_loc >= mref)) ok(i)=.true.
-                 if((rsq <= rsn_sq(iSN)) .and. (ilevel < sn_level(iSN))) ok(i)=.true.
-              enddo
+!                   if((rsq <= r_sn_refine**2) .and. (uold(ind_cell(i),1)*vol_loc >= mref)) ok(i)=.true.
+                    if((rsq <= rsn_sq(iSN)) .and. (ilevel < sn_level(iSN))) ok(i)=.true.
+                 enddo
+              endif
            end do
 !           write(*,*)"sn_refine on level", ilevel," number of ref: ",count(ok)
         endif
