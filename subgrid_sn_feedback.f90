@@ -95,7 +95,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  integer::nx_loc
 !  integer,dimension(:),allocatable::ind_grid
 !  logical,dimension(:),allocatable::ok_free
-  integer,dimension(:),allocatable::indSN
+  integer,dimension(:),allocatable::indSN,SNlevel
   real(dp),dimension(:),allocatable::mSN,mSN_loc,ekBlast,rSN
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,dq,vol_gas
 
@@ -887,7 +887,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
       if (SNlevel(iSN) > 0) then
         nSN_prev = nSN_prev + 1
         sn_level(nSN_prev) = SNlevel(iSN)
-        sn_coords(nSN_prev) = xSN(iSN)
+        sn_coords(nSN_prev,:) = xSN(iSN,:)
         rsn_sq(nSN_prev) = rSN(iSN)
         write(*,*)"nSNdelay",nSN_prev," SNcoords:",sn_coords(nSN_prev,1),",",sn_coords(nSN_prev,2),",",sn_coords(nSN_prev,3)
      endif
