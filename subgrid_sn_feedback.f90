@@ -1185,7 +1185,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN,SNlevel,d
        else
           delayedstr = 'N'
        endif
-       write(ilun,'(5E26.16,I5,2E26.16,A3)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), rSN(iSN)/dx_min, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), delayedstr
+       write(ilun,'(5E26.16,I5,2E26.16,A3)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), delayedstr
        close(ilun)
      endif
 
