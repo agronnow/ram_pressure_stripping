@@ -797,7 +797,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 #endif
 
   if (calc_sfr) then
-     weight = nsubcycle(levelmin)/(product(nsubcycle(levelmin:ilevel)))
+     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:ilevel)))
 !weight = 1d0/(nsubcycle(ilevel)**(ilevel-levelmin)) ! Assume the same no. of subcycles on every level, will not work otherwise!!!
      sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
   endif
@@ -1185,7 +1185,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,dq,ekBlast,ind_blast,nSN,SNlevel,d
        else
           delayedstr = 'N'
        endif
-       write(ilun,'(8E26.16,A)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), rSN(iSN)/dx_min, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), delayedstr
+       write(ilun,'(5E26.16,I5,2E26.16,A3)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), rSN(iSN)/dx_min, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), delayedstr
        close(ilun)
      endif
 
