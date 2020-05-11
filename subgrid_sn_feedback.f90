@@ -160,20 +160,6 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
   ESN=1d51/(10.*2d33)/scale_v**2
 
-  ! Star formation time scale from Gyr to code units
-  ! SFR apply here for long lived stars only
-!  t0=t_star*(1d9*365.*24.*3600.)/scale_t
-!  trel=sf_trelax*1d6*(365.*24.*3600.)/scale_t
-
-  ! ISM density threshold from H/cc to code units
-!  nISM = n_star
-!  if(cosmo)then
-!     nCOM = del_star*omega_b*rhoc*(h0/100.)**2/aexp**3*XH/mH
-!     nISM = MAX(nCOM,nISM)
-!  endif
-!  d0   = nISM/scale_nH
-!  d00  = n_star/scale_nH
-
   scale_m = scale_d*scale_l**3
 
   ! Cells center position relative to grid center position
@@ -191,68 +177,6 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      call rans(ncpu,iseed,allseed)
      localseed=allseed(myid,1:IRandNumSize)
   end if
-
-!  !------------------------------------------------
-!  ! Convert hydro variables to primitive variables
-!  !------------------------------------------------
-!  ncache=active(ilevel)%ngrid
-!  do igrid=1,ncache,nvector
-!     ngrid=MIN(nvector,ncache-igrid+1)
-!     do i=1,ngrid
-!        ind_grid(i)=active(ilevel)%igrid(igrid+i-1)
-!     end do
-!     do ind=1,twotondim
-!        iskip=ncoarse+(ind-1)*ngridmax
-!        do i=1,ngrid
-!           ind_cell(i)=iskip+ind_grid(i)
-!        end do
-!        do i=1,ngrid
-!           d=uold(ind_cell(i),1)
-!           u=uold(ind_cell(i),2)/d
-!           v=uold(ind_cell(i),3)/d
-!#if NDIM==3
-!!           w=uold(ind_cell(i),4)/d
-!#endif
-!           e=uold(ind_cell(i),ndim+2)
-!#ifdef SOLVERmhd
-!           bx1=uold(ind_cell(i),6)
-!           by1=uold(ind_cell(i),7)
-!#if NDIM==3
-!           bz1=uold(ind_cell(i),8)
-!#endif
-!           bx2=uold(ind_cell(i),nvar+1)
-!           by2=uold(ind_cell(i),nvar+2)
-!#if NDIM==3
-!           bz2=uold(ind_cell(i),nvar+3)
-!           e=e-0.125d0*((bx1+bx2)**2+(by1+by2)**2+(bz1+bz2)**2)
-!#else
-!           e=e-0.125d0*((bx1+bx2)**2+(by1+by2)**2)
-!#endif
-!#endif
-!           e=e-0.5d0*d*(u**2+v**2+w**2)
-!#if NENER>0
-!           do irad=0,nener-1
-!              e=e-uold(ind_cell(i),inener+irad)
-!           end do
-!#endif
-!           uold(ind_cell(i),1)=d
-!           uold(ind_cell(i),2)=u
-!           uold(ind_cell(i),3)=v
-!#if NDIM==3
-!           uold(ind_cell(i),4)=w
-!#endif
-!           prs = e/d
-!           !uold(ind_cell(i),5)=e/d
-!        end do
-!        do ivar=imetal,nvar
-!           do i=1,ngrid
-!              d=uold(ind_cell(i),1)
-!              w=uold(ind_cell(i),ivar)/d
-!              uold(ind_cell(i),ivar)=w
-!           end do
-!        end do
-!     end do
-!  end do
 
 ! get values of uold for density and velocities in virtual boundaries
 #ifndef WITHOUTMPI
@@ -273,6 +197,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #endif
 
   doSNIa = .false.
+#if defined(SNIA_FEEDBACK) && !defined(SN_INJECT)
   if (ilevel == nlevelmax) then
      doSNIa = .true.
 ! Only generate SNIa at the last subcycle of the finest level
@@ -282,6 +207,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !        doSNIa = .true.
 !     endif
   endif
+#endif
 
   nSNIa = 0
   if ((ilevel == levelmin) .and. (calc_sfr)) then
@@ -532,8 +458,6 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   !------------------------------------------------
   ! Compute number of SNe in each cell
   !------------------------------------------------
-!  ntot=0
-!  ndebris_tot=0
   ! Loop over grids
   ncache=active(ilevel)%ngrid
 !dpass = 0
@@ -619,14 +543,6 @@ nSN_loc = 0
 !           end do
 !        endif
         tot_sf = 0
-        ! Calculate number of new stars in each cell using Poisson statistics
-        !do i=1,ngrid
-        !   nstar(i)=0
-           ! Poisson mean
-        !   rho_sfr = 10.0**(0.9+1.91*dlog10(uold(ind_cell(i),1)*0.02439303604))
-        !   PoissMean=rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel)*2d33/scale_m/mstar
-        !   tot_sf = tot_sf + PoissMean
-        !enddo
 
 #ifdef SNIA_FEEDBACK
         if (doSNIa) then
@@ -658,13 +574,8 @@ nSN_loc = 0
         !SNII
         do i=1,ngrid
            if(ok(i))then !Compute number of SNII if temperature is low enough for star formation
+#ifndef SN_INJECT
               d=uold(ind_cell(i),imetal+1) !SF gas density (gas initially within r_SFR)
-              !mcell=d*vol_loc
-              ! Free fall time of an homogeneous sphere
-              !tstar= .5427*sqrt(1.0/(factG*max(d,smallr)))
-              !if(.not.sf_virial) sfr_ff(i) = eps_star
-              ! Gas mass to be converted into stars
-              !mgas=dtnew(ilevel)*(sfr_ff(i)/tstar)*mcell
               d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
               if (d > 0d0) then
                 rho_sfr = vsfr_fac*d**vsfr_pow ! 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
@@ -676,10 +587,6 @@ nSN_loc = 0
 #endif
                 ! Poisson mean
                 PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel) ! Get expected number of SNe formed taking units into account
-                !PoissMean=mgas/mstar
-                !write(*,*) "PoissMean: ", PoissMean, " rho_sfr: ", rho_sfr, " dt: ", dtnew(ilevel), " vol: ", vol_loc
-                !write(*,*) "dt (yr): ", dtnew(ilevel)*scale_t/(3600*24*365.25), " vol(kpc^3): ", vol_loc*scale_l**ndim
-                !if((trel>0.).and.(.not.cosmo)) PoissMean = PoissMean*min((t/trel),1.0)
 #if NDIM==2
                 PoissMean = PoissMean*4.0*Rad_cloud/3.0
 #endif
@@ -687,7 +594,8 @@ nSN_loc = 0
                 call poissdev(localseed,PoissMean,nSN)
                 if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
 !               if (nosn) then
-#ifdef SN_INJECT
+#else
+!SN injection test sim
                 if (nSN_alltime==0)then
                    x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
                    y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
@@ -697,6 +605,7 @@ nSN_loc = 0
                       nSN = 1
                       nSN_alltime = 1
                    endif
+                   PoissMean = 0.0
                 endif
 #endif
                 do iSN=1,nSN
@@ -712,7 +621,7 @@ nSN_loc = 0
 #if NDIM==3
                    xSN_loc(nSN_loc,3)=z
 #endif
-                   mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3)
+                   mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
                    !if (outputSN) then
                       fileloc=trim(output_dir)//'sn.dat'
                       ilun=140
@@ -726,7 +635,11 @@ nSN_loc = 0
 #if NDIM==2
                       z = 0.0
 #endif
+#ifdef SN_INJECT
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid !No passive tracer in SN injection test sim
+#else
                       write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid
+#endif
                       close(ilun)
                    !endif
                 !   do iSN=1,nSN
@@ -757,7 +670,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 #if NDIM==3
        xSN_loc(nSN_loc,3)=xSNIa(iSN,3)
 #endif
-       mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3)
+       mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
        !if (outputSN) then
        fileloc=trim(output_dir)//'snIa.dat'
        ilun=140
@@ -808,8 +721,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 #endif
 
   if (calc_sfr) then
-     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:ilevel)))
-!weight = 1d0/(nsubcycle(ilevel)**(ilevel-levelmin)) ! Assume the same no. of subcycles on every level, will not work otherwise!!!
+     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:ilevel))) !weight by number of subcycles on level such that the SFR on finer levels are correctly averaged when finding the total SFR during next coarse time step
      sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
   endif
 
@@ -890,19 +802,10 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
   call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,volSN,nSN,SNlevel,.false.)
 
 #ifdef DELAYED_SN
-!  if (nSN > 0)then
-!     if (nSN > NMAX_SN) then
-!        write(*,*)"WARNING: Too many SN for DELAYED_SN module!!!"
-!     else
-!        sn_coords(nSN_prev+1:nSN_prev+nSN) = xSN
-!        nSN_prev = nSN_prev+nSN
-!        write(*,*)"nSN_prev",nSN_prev," SNcoords:",sn_coords(nSN_prev+1,1),",",sn_coords(nSN_prev+1,2),",",sn_coords(nSN_prev+1,3)
-!     endif
-!  endif
-  !   nSN_prev = 0
   inew=0
   nrem = 0
   if (nSN_prev > 0) then
+     if (nSN_prev > NMAX_SN)write(*,*)"WARNING: Too many SN for DELAYED_SN module!!!"
      do iSN=1,nSN_prev
         if (sn_isrefined(iSN)==0)then
            inew = inew+1
@@ -953,69 +856,6 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
         call make_virtual_fine_dp(uold(1,ivar),ilevel)
      enddo
   enddo
-
-!  write(*,*) "Tot sf: ", tot_sf
-!write(*,*) "dens crit (d>", d0, "): ", dpass, " temp crit: ", Tpass, " refine crit: ", gpass
-
-
-!  !---------------------------------------------------------
-!  ! Convert hydro variables back to conservative variables
-!  !---------------------------------------------------------
-!  ncache=active(ilevel)%ngrid
-!  do igrid=1,ncache,nvector
-!     ngrid=MIN(nvector,ncache-igrid+1)
-!     do i=1,ngrid
-!        ind_grid(i)=active(ilevel)%igrid(igrid+i-1)
-!     end do
-!     do ind=1,twotondim
-!        iskip=ncoarse+(ind-1)*ngridmax
-!        do i=1,ngrid
-!           ind_cell(i)=iskip+ind_grid(i)
-!        end do
-!        do i=1,ngrid
-!           d=uold(ind_cell(i),1)
-!           u=uold(ind_cell(i),2)
-!           v=uold(ind_cell(i),3)
-!#if NDIM==3
-!           w=uold(ind_cell(i),4)
-!#endif
-!           !e=uold(ind_cell(i),5)*d
-!#ifdef SOLVERmhd
-!           bx1=uold(ind_cell(i),6)
-!           by1=uold(ind_cell(i),7)
-!#if NDIM==3
-!           bz1=uold(ind_cell(i),8)
-!#endif
-!           bx2=uold(ind_cell(i),nvar+1)
-!           by2=uold(ind_cell(i),nvar+2)
-!#if NDIM==3
-!           bz2=uold(ind_cell(i),nvar+3)
-!#endif
-!           !e=e+0.125d0*((bx1+bx2)**2+(by1+by2)**2+(bz1+bz2)**2)
-!#endif
-!           !e=e+0.5d0*d*(u**2+v**2+w**2)
-!#if NENER>0
-!           !do irad=0,nener-1
-!           !   e=e+uold(ind_cell(i),inener+irad)
-!           !end do
-!#endif
-!           uold(ind_cell(i),1)=d
-!           uold(ind_cell(i),2)=d*u
-!           uold(ind_cell(i),3)=d*v
-!#if NDIM==3
-!           uold(ind_cell(i),4)=d*w
-!#endif
-!           !uold(ind_cell(i),5)=e
-!        end do
-!        do ivar=imetal,nvar
-!           do i=1,ngrid
-!              d=uold(ind_cell(i),1)
-!              w=uold(ind_cell(i),ivar)
-!              uold(ind_cell(i),ivar)=d*w
-!           end do
-!        end do
-!     end do
-!  end do
 
 end subroutine subgrid_sn_feedback
 !#endif
