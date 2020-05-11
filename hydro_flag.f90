@@ -195,7 +195,7 @@ subroutine hydro_flag(ilevel)
 #ifdef DELAYED_SN
 ! Added by AG: Refine based on cell mass before adding SN explosions
         if(nSN_prev > 0)then
-           write(*,*)"refinement on level ",ilevel
+           if(myid==1)write(*,*)"refinement on level ",ilevel
            !           vol_loc=dx_loc**3
 !           mref = sn_mass_refine*2d33/(scale_d*scale_l**3)
            ! Compute cell center in code units
