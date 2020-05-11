@@ -727,6 +727,7 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
 
+#ifdef DELAYED_SN
   if ((nSN_tot .eq. 0).and.(nSN_prev .eq. 0)) return
 
   if(myid==1)then
@@ -735,6 +736,15 @@ write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
      write(*,*)'Number of delayed SN explosions=',nSN_prev
      write(*,*)'-----------------------------------------------'
   endif
+#else
+  if (nSN_tot .eq. 0) return
+
+  if(myid==1)then
+     write(*,*)'-----------------------------------------------'
+     write(*,*)'Number of SN explosions=',nSN_tot
+     write(*,*)'-----------------------------------------------'
+  endif
+#endif
 
   ! Allocate arrays for the position and the mass of the SN
   allocate(xSN(1:nSN_tot,1:ndim))
@@ -889,7 +899,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
-  integer ,dimension(1:nSN)::ind_blast,SNlevel,flagrefine,flagrefine_all!,SNmaxrad,SNmaxrad_all
+  integer ,dimension(1:nSN)::ind_blast,SNlevel,flagrefine,flagrefine_all
+#ifndef DELAYED_SN
+  integer ,dimension(1:nSN)::SNmaxrad
+#endif
   real(dp),dimension(1:nSN)::ekBlast,rSN,volSN
   real(dp),dimension(1:nSN,1:RADCELL_MAX)::vol_gas,vol_gas_all,mtot,mtot_all
   integer,dimension(1:nSN,1:RADCELL_MAX)::snmaxlevel,snmaxlevel_all
@@ -921,21 +934,18 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
   ! Conversion factor from user units to cgs units
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
 
-  ! Maximum radius of the ejecta
-  !rmax=MAX(2.0d0*dx_min*scale_l/aexp,rbubble*3.08d18)
-  !rmax=rmax/scale_l
-  rmax=2.0d0*dx_min
-  rmax2=rmax*rmax
-
   ! Initialize the averaged variables
-  vol_gas=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0;snmaxlevel=0;snmaxlevel_all=0;flagrefine=0;flagrefine_all=0;
-!  SNmaxrad=RADCELL_MAX
+  vol_gas=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0;snmaxlevel=0;snmaxlevel_all=0;flagrefine=0;flagrefine_all=0
+#ifndef DELAYED_SN
+  SNmaxrad=RADCELL_MAX
+#endif
 
   do iSN=1,nSN
+#ifdef DELAYED_SN
      if (delayed)then
         if(sn_isrefined(iSN)==0)cycle
      endif
-        
+#endif
         ! Loop over levels
         do ilevel=levelmin,nlevelmax
            ! Computing local volume (important for averaging hydro quantities)
@@ -1036,10 +1046,11 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
 #endif
 
   do iSN=1,nSN
+#ifdef DELAYED_SN
      if (delayed)then
         if(sn_isrefined(iSN)==0)cycle
      endif
-
+#endif
      mindiff = 1d10
      do radcells=1,RADCELL_MAX
         massdiff = abs(SN_blast_mass - mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33)
@@ -1050,18 +1061,22 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
            if (.not. delayed) then
               SNlevel(iSN) = maxval(snmaxlevel_all(iSN,1:radcells))
               if (flagrefine_all(iSN) == 0)SNlevel(iSN) = 0 ! Disable SN based refinement if entire SN blast is on the same level
+#ifndef DELAYED_SN
+              if ((snmaxlevel_all(iSN,radcells) < snmaxlevel_all(iSN,1)) .and. (SNmaxrad(iSN) > radcells))SNmaxrad(iSN) = radcells-1
+#endif
            endif
            SNmenc(iSN) = mtot_all(iSN,radcells)
            SNvol(iSN) = vol_gas_all(iSN,radcells)
         endif
      enddo
      if (delayed)SNlevel(iSN) = 0
-!     if (SNmaxrad_all(iSN)*dx_min <= rSN(iSN)) then
-!        if (myid==1)write(*,*)"WARNING: SN should extend ",rSN(iSN), " kpc but can only extend ",SNmaxrad_all(iSN)*dx_min," kpc without overlapping coarse cells!!!"
-!        rSN(iSN) = SNmaxrad_all(iSN)*dx_min
-!        SNmenc(iSN) = mtot_all(iSN,SNmaxrad_all(iSN))
-!        SNvol(iSN) = vol_gas_all(iSN,SNmaxrad_all(iSN))
-!     endif
+#ifndef DELAYED_SN
+     if (SNmaxrad(iSN)*dx_min < rSN(iSN)) then
+        if (myid==1)write(*,*)"WARNING: SN should extend ",rSN(iSN), " kpc but can only extend ",SNmaxrad(iSN)*dx_min," kpc without overlapping coarser cells!!!"
+        rSN(iSN) = SNmaxrad(iSN)*dx_min
+        SNmenc(iSN) = mtot_all(iSN,SNmaxrad(iSN))
+        SNvol(iSN) = vol_gas_all(iSN,SNmaxrad(iSN))
+     endif
 
      if(myid==1) then
        fileloc=trim(output_dir)//'snblast.dat'
@@ -1078,6 +1093,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
 #else
        z = 0.0
 #endif
+#ifdef DELAYED_SN
        if (delayed)then
           delayedstr1 = 'Y'
        else
@@ -1089,6 +1105,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
           delayedstr = 'Y'
        endif
        write(ilun,'(5E26.16,I5,2E26.16,A7,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), delayedstr1,delayedstr
+#else
+       write(ilun,'(5E26.16,I5,2E26.16,I5)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN)
+#endif
        close(ilun)
      endif
 
@@ -1234,38 +1253,21 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
   ! Conversion factor from user units to cgs units
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
 
-  ! Maximum radius of the ejecta
-  rmax=2.0d0*dx_min!MAX(2.0d0*dx_min*scale_l/aexp,rbubble*3.08d18)
-  !rmax=rmax/scale_l
-  rmax2=rmax*rmax
-
-  ! Minimum star particle mass
-!  if(m_star < 0d0)then
-!     mstar=n_star/(scale_nH*aexp**3)*vol_min
-!  else
-!     mstar=m_star*mass_sph
-!  endif
-!  msne_min=mass_sne_min*2d33/(scale_d*scale_l**3)
-!  mstar_max=mass_star_max*2d33/(scale_d*scale_l**3)
   ! Supernova specific energy from cgs to code units
   ESN=(1d51/(10d0*2d33))/scale_v**2
   do iSN=1,nSN
+#ifdef DELAYED_SN
      if (delayed)then
         if (sn_isrefined(iSN)==0)cycle
      endif
-!     eta_sn2    = eta_sn
-!     if(sf_imf)then
-!        if(mSN(iSN).le.mstar_max)then
-!           if(mSN(iSN).ge.msne_min) eta_sn2 = eta_ssn
-!           if(mSN(iSN).lt.msne_min) eta_sn2 = 0.0
-!        endif
-!     endif
+#endif
 !     if(vol_gas(iSN)>0d0)then
-     mSN(iSN)=10.0*2d33/(scale_d*scale_l**3)
+     mSN(iSN)=10d0*2d33/(scale_d*scale_l**3)
      d_gas(iSN)=mSN(iSN)/vol_gas(iSN)
 !        if(metal)d_metal(iSN)=ZSN(iSN)*mSN(iSN)/vol_gas(iSN)
 !        if(ekBlast(iSN)==0d0)then
      p_gas(iSN)=mSN(iSN)*ESN/vol_gas(iSN)
+#ifdef DELAYED_SN
      if (myid==1) then
         if (SNlevel(iSN) > 0) then
            write(*,*)'SN ',iSN,' will be skipped'
@@ -1273,6 +1275,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
            write(*,*)"SN at ",xSN(iSN,1), " ",xSN(iSN,2)," ",xSN(iSN,3)," ",p_gas(iSN)*0.67*scale_t2," ",vol_gas(iSN)
         endif
      endif
+#endif
 !        else
 !           p_gas(iSN)=(1d0-f_ek)*mSN(iSN)*ESN/vol_gas(iSN)
 !           uSedov(iSN)=sqrt(f_ek*ESN/ekBlast(iSN))
@@ -1334,9 +1337,11 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
                  z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
 #endif
                  do iSN=1,nSN
+#ifdef DELAYED_SN
                     if (delayed)then
                        if (sn_isrefined(iSN)==0)cycle
                     endif
+#endif
                     if (SNlevel(iSN) == 0)then
                        ! Check if the cell lies within the SN radius
                        dxx=x-xSN(iSN,1)
@@ -1347,28 +1352,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
 #else
                        dr_SN=dxx**2+dyy**2
 #endif
-                       if(dr_SN.lt.(1.001*rSN(iSN))**2)then!rmax2)then
-!                          write(*,*)'SN in cell on level ',ilevel
-!                          vol=vol+vol_loc
-                          ! Compute the mass density in the cell
-                          !uold(ind_cell(i),1)=uold(ind_cell(i),1)+d_gas(iSN)
-                          ! Compute the metal density in the cell
-                          !if(metal)uold(ind_cell(i),imetal)=uold(ind_cell(i),imetal)+d_metal(iSN)
-                          ! Velocity at a given dr_SN linearly interpolated between zero and uSedov
-                          u=0.0!uSedov(iSN)*(dxx/rmax-dq(iSN,1))!+vSN(iSN,1)
-                          v=0.0!uSedov(iSN)*(dyy/rmax-dq(iSN,2))!+vSN(iSN,2)
-                          !#if NDIM==3
-                          !                       w=uSedov(iSN)*(dzz/rmax-dq(iSN,3))!+vSN(iSN,3)
-                          !#else
-                          w=0.0
-                          !#endif
-                          ! Add each momentum component of the blast wave to the gas
-                          !uold(ind_cell(i),2)=uold(ind_cell(i),2)+d_gas(iSN)*u
-                          !uold(ind_cell(i),3)=uold(ind_cell(i),3)+d_gas(iSN)*v
-#if NDIM==3
-                          !uold(ind_cell(i),4)=uold(ind_cell(i),4)+d_gas(iSN)*w
-#endif
-                          ! Finally update the total energy of the gas
+                       if(dr_SN.lt.(1.001*rSN(iSN))**2)then
+                          ! Update the total energy of the gas
                           uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+p_gas(iSN)
                           !write(*,*)"SN d: ", d_gas(iSN), " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !                          write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)

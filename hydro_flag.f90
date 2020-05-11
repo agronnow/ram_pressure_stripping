@@ -211,14 +211,14 @@ subroutine hydro_flag(ilevel)
               end do
            end do
            do iSN=1,nSN_prev
-              if (sn_level(iSN) > 0) then
+              if (ilevel < sn_level(iSN)) then
                  do i=1,ngrid
                     rsq = (xx(i,1) - sn_coords(iSN,1))**2 + (xx(i,2) - sn_coords(iSN,2))**2
 #if NDIM == 3
                     rsq = rsq + (xx(i,3) - sn_coords(iSN,3))**2
 #endif
 !                   if((rsq <= r_sn_refine**2) .and. (uold(ind_cell(i),1)*vol_loc >= mref)) ok(i)=.true.
-                    if((rsq <= rsn_sq(iSN)) .and. (ilevel < sn_level(iSN)))then
+                    if(rsq <= rsn_sq(iSN))then
                        ok(i)=.true.
                        write(*,*)"SN refinement on level ",ilevel," for SN with radius ", sqrt(rsn_sq(iSN))," and level ",sn_level(iSN)
                     endif
