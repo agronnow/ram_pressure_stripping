@@ -124,11 +124,13 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   logical::doSNIa
 #endif
 
+#ifdef DELAYED_SN
   real(dp),dimension(NMAX_SN,3)::sn_coords_new
   real(dp),dimension(NMAX_SN)::rsn_sq_new
   integer,dimension(NMAX_SN)::sn_level_new
   integer,dimension(NMAX_SN)::sn_isrefined_all
   integer::nrem,inew
+#endif
   integer,save::nSN_alltime = 0
 
   ! TODO: when f2008 is obligatory - remove this and replace erfc_pre_f08 below by
