@@ -43,6 +43,8 @@ subroutine condinit(x,u,dx,nn)
   real(dp),save::gamma3n,ein_M
 #endif
 
+!  call region_condinit(x,q,dx,nn)
+!if (1==0)then
   ! User-defined initial conditions
 
   call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
@@ -130,10 +132,10 @@ subroutine condinit(x,u,dx,nn)
       endif
 !      if (currad > r_max)r_max=currad
     endif
-!    write(*,*) "i ", i, " r ", currad, " rho: ", q(i,1), " P:",q(i,ndim+2), "mu:", mu,"Phi:",PhiR!" vy: ", q(i,3), " P: ", q(i,ndim+2), " T ", (q(i,ndim+2)*mu/q(i,1))*scale_t2, " x1: ", x1_c
+!    write(*,*) "i ", i, " r ", currad, " rho: ", q(i,1), " P:",q(i,ndim+2), "Phi:",PhiR,"gammainc2n:",gammainc2n((currad/R_s)**(1d0/ein_n)),"gammainc3n",gammainc3n((currad/R_s)**(1d0/ein_n))!" vy: ", q(i,3), " P: ", q(i,ndim+2), " T ", (q(i,ndim+2)*mu/q(i,1))*scale_t2, " x1: ", x1_c
   enddo
 !write(*,*)'r_max:',r_max, 'mu_wind:',mu_wind,'mu_cloud:',mu_cloud
-
+!endif
   ! Convert primitive to conservative variables
   ! density -> density
   u(1:nn,1)=q(1:nn,1)

@@ -41,6 +41,7 @@ subroutine hydro_flag(ilevel)
 #endif
 
   if(ilevel==nlevelmax)return
+!  write(*,*)"cells on level ",ilevel,": ",numbtot(1,ilevel)
   if(numbtot(1,ilevel)==0)return
 
   ! Rescaling factors
@@ -194,7 +195,8 @@ subroutine hydro_flag(ilevel)
 #ifdef DELAYED_SN
 ! Added by AG: Refine based on cell mass before adding SN explosions
         if(nSN_prev > 0)then
-!           vol_loc=dx_loc**3
+           write(*,*)"refinement on level ",ilevel
+           !           vol_loc=dx_loc**3
 !           mref = sn_mass_refine*2d33/(scale_d*scale_l**3)
            ! Compute cell center in code units
            do idim=1,ndim
@@ -216,8 +218,13 @@ subroutine hydro_flag(ilevel)
                     rsq = rsq + (xx(i,3) - sn_coords(iSN,3))**2
 #endif
 !                   if((rsq <= r_sn_refine**2) .and. (uold(ind_cell(i),1)*vol_loc >= mref)) ok(i)=.true.
-                    if((rsq <= rsn_sq(iSN)) .and. (ilevel < sn_level(iSN))) ok(i)=.true.
+                    if((rsq <= rsn_sq(iSN)) .and. (ilevel < sn_level(iSN)))then
+                       ok(i)=.true.
+                       write(*,*)"SN refinement on level ",ilevel," for SN with radius ", sqrt(rsn_sq(iSN))," and level ",sn_level(iSN)
+                    endif
                  enddo
+                 if (ilevel+1 == sn_level(iSN))sn_isrefined(iSN) = 1
+                 
               endif
            end do
 !           write(*,*)"sn_refine on level", ilevel," number of ref: ",count(ok)

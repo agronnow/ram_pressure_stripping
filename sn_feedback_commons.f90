@@ -12,6 +12,7 @@ module sn_feedback_commons
   real(dp),dimension(NMAX_SN,3)::sn_coords
   real(dp),dimension(NMAX_SN)::rsn_sq
   integer,dimension(NMAX_SN)::sn_level
+  integer,dimension(NMAX_SN)::sn_isrefined = 0
 
 #endif
 

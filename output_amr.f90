@@ -55,8 +55,8 @@ subroutine dump_all
         call output_info(filename)
         filename=TRIM(filedir)//'makefile.txt'
         call output_makefile(filename)
-        filename=TRIM(filedir)//'patches.txt'
-        call output_patch(filename)
+!        filename=TRIM(filedir)//'patches.txt'
+!        call output_patch(filename)
         if(cooling .and. .not. neq_chem)then
            filename=TRIM(filedir)//'cooling_'//TRIM(nchar)//'.out'
            call output_cool(filename)
@@ -80,7 +80,7 @@ subroutine dump_all
         filename=TRIM(filedir)//'compilation.txt'
         OPEN(UNIT=11, FILE=filename, FORM='formatted')
         write(11,'(" compile date = ",A)')TRIM(builddate)
-        write(11,'(" patch dir    = ",A)')TRIM(patchdir)
+!        write(11,'(" patch dir    = ",A)')TRIM(patchdir)
         write(11,'(" remote repo  = ",A)')TRIM(gitrepo)
         write(11,'(" local branch = ",A)')TRIM(gitbranch)
         write(11,'(" last commit  = ",A)')TRIM(githash)
