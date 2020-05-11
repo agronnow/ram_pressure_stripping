@@ -1079,6 +1079,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
         SNmenc(iSN) = mtot_all(iSN,SNmaxrad(iSN))
         SNvol(iSN) = vol_gas_all(iSN,SNmaxrad(iSN))
      endif
+#endif
 
      if(myid==1) then
        fileloc=trim(output_dir)//'snblast.dat'
