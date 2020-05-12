@@ -919,8 +919,6 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
   character(len=5)::delayedstr1
   character(len=5)::delayedstr
 
-  real(dp)::SN_blast_mass = 60.0
-
   if(nSN==0)return
   if(verbose)write(*,*)'Entering average_SN'
 

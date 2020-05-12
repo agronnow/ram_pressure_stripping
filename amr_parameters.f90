@@ -300,32 +300,32 @@ module amr_parameters
   logical::print_when_io=.false.   !If true print when IO
   logical::synchro_when_io=.false. !If true synchronize when IO
 
-  real(dp)::r_cut = 0.0 !Truncation radius for potential, should be set such that the pressure at this radius is approx. P_wind
-
-  ! Problem specific parameters for Gatto13 sim
-  real(dp)::x1_c = 0.0
-  real(dp)::x2_c = 0.0
-  real(dp)::x3_c = 0.0
-  real(dp)::vel_wind = 0.0
-  real(dp)::T_wind = 0.0
-  real(dp)::ndens_wind = 0.0
-  real(dp)::T_cloud = 0.0
-  real(dp)::Rad_cloud = 0.0
-  real(dp)::R_s = 0.0
-  real(dp)::n0g = 0.0
-  real(dp)::Z_wind = 0.0
-  real(dp)::Z_cloud = 0.0
-  character(len=256)::orbitfile
-  character(len=256)::sfhistfile
-  logical::prob_debug = .false.
-  logical::subgrid_feedback = .true.
-  real(dp)::rho_SN = 6d-3
-  real(dp)::vsfr_fac = 0.0
-  real(dp)::vsfr_pow = 0.0
-  real(dp)::tinit_sim = 0.0
-  real(dp)::dt_sfhist = 0.0
-  real(dp)::dt_sfrlog = 0.0
-  real(dp)::r_plummer = 0.0
-  real(dp)::ein_n = 0.0
+  ! Problem specific parameters for dSph ram pressure stripping sim
+  real(dp)::x1_c = 0.0                  ! Center x coordinate of dSph                                          [kpc]
+  real(dp)::x2_c = 0.0                  ! Center y coordinate of dSph                                          [kpc]
+  real(dp)::x3_c = 0.0                  ! Center z coordinate of dSph                                          [kpc]
+  real(dp)::vel_wind = 0.0              ! Set to zero for static sim, otherwise vel. from file will be used    []
+  real(dp)::T_wind = 0.0                ! Temperature of corona gas                                            [K]
+  real(dp)::ndens_wind = 0.0            ! Corona gas particle number density                                   [amu cm^-3]
+  real(dp)::T_cloud = 0.0               ! Temperature of dSph gas                                              [K]
+  real(dp)::Rad_cloud = 0.0             ! Radius of the dSph gas (where pressure is in equilibrium w/ corona)  [kpc]
+  real(dp)::r_cut = 0.0                 ! Truncation radius of potential, should generally equal Rad_cloud     [kpc]
+  real(dp)::R_s = 0.0                   ! DM profile scale length (R_s for NFW or Einasto "h" parameter)       [kpc]
+  real(dp)::n0g = 0.0                   ! Central gas particle number density                                  [amu cm^-3]
+  real(dp)::Z_wind = 0.0                ! Metallicity of corona gas in solar metallicity fraction              []
+  real(dp)::Z_cloud = 0.0               ! Metallicity of dSph gas in solar metallicity fraction                []
+  character(len=256)::orbitfile         ! Path to file containing orbit velocity up to end time of simulation
+  character(len=256)::sfhistfile        ! Path to file containing star formation history
+  logical::prob_debug = .false.         ! Turn some extra debug logging on/off
+  logical::subgrid_feedback = .true.    ! Turn SN feedback on/off
+  real(dp)::SN_blast_mass = 0.0         ! Mass to enclose within SN explosion region                           [Msun]
+  real(dp)::rho_SN = 0.0                ! SN rate defined as SNe per solar mass of formed stars                [Msun^-1]
+  real(dp)::vsfr_fac = 0.0              ! Factor "A" in volumetric SF law (Bacchini et al.) A*rho^alpha        [yr^-1]
+  real(dp)::vsfr_pow = 0.0              ! Exponent "alpha" in volumetric SF law A*rho^alpha                    []
+  real(dp)::tinit_sim = 0.0             ! Initial cosmic time of simulation for use in SNIa rate calculation   [Gyr]
+  real(dp)::dt_sfhist = 0.0             ! Time interval between SF history updates in SNIa rate calculation    [Gyr]
+  real(dp)::dt_sfrlog = 0.0             ! Time interval between SF history log output                          [Gyr]
+  real(dp)::r_plummer = 0.0             ! Plummer radius used in SNIa location probability calculation         [kpc]
+  real(dp)::ein_n = 0.0                 ! Einasto DM profile n (shape) parameter                               []
 
 end module amr_parameters
