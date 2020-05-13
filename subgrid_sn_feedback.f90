@@ -1120,7 +1120,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
        close(ilun)
      endif
 
+#ifdef DELAYED_SN
      if (SNlevel(iSN) > 0)return
+#endif
      ! Loop over levels
      do ilevel=levelmin,nlevelmax
         ! Computing local volume (important for averaging hydro quantities)
@@ -1350,8 +1352,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
                     if (delayed)then
                        if (sn_isrefined(iSN)==0)cycle
                     endif
-#endif
                     if (SNlevel(iSN) == 0)then
+#endif
                        ! Check if the cell lies within the SN radius
                        dxx=x-xSN(iSN,1)
                        dyy=y-xSN(iSN,2)
@@ -1367,7 +1369,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
                           !write(*,*)"SN d: ", d_gas(iSN), " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !                          write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
                        endif
+#ifdef DELAYED_SN
                    endif
+#endif
                  end do
               endif
            end do
