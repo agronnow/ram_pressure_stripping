@@ -606,9 +606,14 @@ nSN_loc = 0
                    if ((x - 0.5*boxlen < 0.51*dx_min) .and. (x > 0.5*boxlen) .and. (y - 0.5*boxlen < 0.51*dx_min) .and. (z - 0.5*boxlen < 0.51*dx_min) .and. (y > 0.5*boxlen) .and. (z > 0.5*boxlen))then
                       nSN = 1
                       nSN_alltime = 1
+                   else
+                      nSN = 0
                    endif
-                   PoissMean = 0.0
+                else
+                   nSN = 0
                 endif
+                PoissMean = 0.0
+                rho_sfr = 0.0
 #endif
                 do iSN=1,nSN
                    ! Get gas cell position
