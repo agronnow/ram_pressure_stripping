@@ -603,7 +603,7 @@ nSN_loc = 0
                    y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
                    z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
 !                   write(*,*)abs(x - 0.51*boxlen), abs(y - 0.5*boxlen), abs(z - 0.5*boxlen), dx_loc
-                   if (x - 0.5*boxlen < 0.8*dx_loc) .and. (x > 0.5*boxlen) .and. (y - 0.5*boxlen < 0.8*dx_loc) .and. (z - 0.5*boxlen < 0.8*dx_loc) .and. (y > 0.5*boxlen) .and. (z > 0.5*boxlen))then
+                   if ((x - 0.5*boxlen < 0.8*dx_loc) .and. (x > 0.5*boxlen) .and. (y - 0.5*boxlen < 0.8*dx_loc) .and. (z - 0.5*boxlen < 0.8*dx_loc) .and. (y > 0.5*boxlen) .and. (z > 0.5*boxlen))then
                       nSN = 1
                       nSN_alltime = 1
                    endif
