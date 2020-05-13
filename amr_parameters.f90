@@ -327,5 +327,8 @@ module amr_parameters
   real(dp)::dt_sfrlog = 0.0             ! Time interval between SF history log output                          [Gyr]
   real(dp)::r_plummer = 0.0             ! Plummer radius used in SNIa location probability calculation         [kpc]
   real(dp)::ein_n = 0.0                 ! Einasto DM profile n (shape) parameter                               []
+  real(dp)::SN_inject_x = 0.0           ! Center x coordinate of injection SN for runs with SN_INJECT defined  [kpc]
+  real(dp)::SN_inject_y = 0.0           ! Center y coordinate of injection SN for runs with SN_INJECT defined  [kpc]
+  real(dp)::SN_inject_z = 0.0           ! Center z coordinate of injection SN for runs with SN_INJECT defined  [kpc]
 
 end module amr_parameters
