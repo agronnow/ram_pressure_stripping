@@ -649,10 +649,12 @@ nSN_loc = 0
                 !      write(*,*) "SN explosion!"
                 !   end do
                 end do
+#ifndef SN_INJECT
               else
                 rho_sfr = 0.0
                 nSN = 0
               endif
+#endif
            endif
         enddo
      end do
