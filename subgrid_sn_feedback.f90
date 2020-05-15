@@ -119,7 +119,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   logical,save::sfhist_update = .false.
   real(dp)::unif_rand,r2,rho_SNIa,area,DTD_A,DTD_s,currad,Phi0,PhiR,mu_cloud,rho0dm,r,Pinf
   real(dp)::PoissMeanIa,c_s2,nHc,ctime,csfh,diff,mindiff,signx,dt,sfr,sfr_tot_level
-  integer::nSNIa,nt,imin,stat
+  integer::nSNIa,nt,imin,stat,clevel
   real(dp),dimension(:,:),allocatable::xpdf,xSNIa,min_r2,min_r2_all
   logical::doSNIa
 #endif
@@ -455,41 +455,33 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 
      ! Find location of SNIa, i.e. the cell closest to the randomly generated position
      ! Loop over levels
-     do ilevel=levelmin,nlevelmax
+     do clevel=levelmin,nlevelmax
         ! Cells center position relative to grid center position
         do ind=1,twotondim
            iz=(ind-1)/4
            iy=(ind-1-4*iz)/2
            ix=(ind-1-2*iy-4*iz)
-           xc(ind,1)=(dble(ix)-0.5D0)*0.5D0**ilevel
-           xc(ind,2)=(dble(iy)-0.5D0)*0.5D0**ilevel
+           xc(ind,1)=(dble(ix)-0.5D0)*0.5D0**clevel
+           xc(ind,2)=(dble(iy)-0.5D0)*0.5D0**clevel
 #if NDIM==3
-           xc(ind,3)=(dble(iz)-0.5D0)*0.5D0**ilevel
+           xc(ind,3)=(dble(iz)-0.5D0)*0.5D0**clevel
 #endif
         end do
 
         ! Loop over grids
-        ncache=active(ilevel)%ngrid
+        ncache=active(clevel)%ngrid
         do igrid=1,ncache,nvector
            ngrid=MIN(nvector,ncache-igrid+1)
            do i=1,ngrid
-              ind_grid(i)=active(ilevel)%igrid(igrid+i-1)
+              ind_grid(i)=active(clevel)%igrid(igrid+i-1)
            end do
 
            ! Loop over cells
            do ind=1,twotondim
               iskip=ncoarse+(ind-1)*ngridmax
-              do i=1,ngrid
-                 ind_cell(i)=iskip+ind_grid(i)
-              end do
-
-              ! Flag leaf cells
-              do i=1,ngrid
-                 ok(i)=son(ind_cell(i))==0
-              end do
 
               do i=1,ngrid
-                 if(ok(i))then
+                 if(son(iskip+ind_grid(i))==0)then
                      do iSN=1,nSNIa
                          x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
                          y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
