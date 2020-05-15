@@ -514,17 +514,17 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   !------------------------------------------------
   ! Loop over grids
   ncache=active(ilevel)%ngrid
-!dpass = 0
-Tpass = 0
-!gpass = 0
-Tfail=0
-maxPoissMean = 0.0
+  !dpass = 0
+  Tpass = 0
+  !gpass = 0
+  Tfail=0
+  maxPoissMean = 0.0
 #ifdef SNIA_FEEDBACK
-sfr = 0.0
+  sfr = 0.0
 #endif
 
-nSN_loc = 0
-!tot_sf=0
+  nSN_loc = 0
+  !tot_sf=0
   do igrid=1,ncache,nvector
      ngrid=MIN(nvector,ncache-igrid+1)
      do i=1,ngrid
@@ -540,7 +540,7 @@ nSN_loc = 0
         do i=1,ngrid
            ok(i)=son(ind_cell(i))==0
         end do
-	! Temperature criterion
+	    ! Temperature criterion
         do i=1,ngrid
            d=uold(ind_cell(i),1)
            u=uold(ind_cell(i),2)/d
@@ -693,39 +693,39 @@ nSN_loc = 0
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0) then
-write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),xSNIa(1,3),myid
-    allocate(min_r2_all(1:2,1:nSNIa))
-    call MPI_ALLREDUCE(min_r2,min_r2_all,nSNIa,MPI_2DOUBLE_PRECISION,MPI_MINLOC,MPI_COMM_WORLD,info)
-  endif
-  do iSN=1,nSNIa
-     if (int(min_r2_all(2,iSN)) == myid) then ! The cell containing the SN center is on this processor
-       nSN_loc=nSN_loc+1
-       xSN_loc(nSN_loc,1)=xSNIa(iSN,1)
-       xSN_loc(nSN_loc,2)=xSNIa(iSN,2)
+     write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),xSNIa(1,3),myid
+     allocate(min_r2_all(1:2,1:nSNIa))
+     call MPI_ALLREDUCE(min_r2,min_r2_all,nSNIa,MPI_2DOUBLE_PRECISION,MPI_MINLOC,MPI_COMM_WORLD,info)
+     do iSN=1,nSNIa
+        if (int(min_r2_all(2,iSN)) == myid) then ! The cell containing the SN center is on this processor
+           nSN_loc=nSN_loc+1
+           xSN_loc(nSN_loc,1)=xSNIa(iSN,1)
+           xSN_loc(nSN_loc,2)=xSNIa(iSN,2)
 #if NDIM==3
-       xSN_loc(nSN_loc,3)=xSNIa(iSN,3)
+           xSN_loc(nSN_loc,3)=xSNIa(iSN,3)
 #endif
-       mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
-       !if (outputSN) then
-       fileloc=trim(output_dir)//'snIa.dat'
-       ilun=140
-       inquire(file=fileloc,exist=file_exist)
-       if(.not.file_exist) then
-          open(ilun, file=fileloc, form='formatted')
-          write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID"
-       else
-          open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
-       endif
+           mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
+           !if (outputSN) then
+           fileloc=trim(output_dir)//'snIa.dat'
+           ilun=140
+           inquire(file=fileloc,exist=file_exist)
+           if(.not.file_exist) then
+              open(ilun, file=fileloc, form='formatted')
+              write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID"
+           else
+              open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
+           endif
 #if NDIM==3
-       z = xSNIa(iSN,3)
+           z = xSNIa(iSN,3)
 #else
-      z = 0.0
+          z = 0.0
 #endif
-       write(ilun,'(4E26.16,E26.16,I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid
-       close(ilun)
-       !endif
-      endif
-  end do
+           write(ilun,'(4E26.16,E26.16,I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid
+           close(ilun)
+           !endif
+        endif
+     end do
+  endif
 #endif
 
   nSN_icpu=0
