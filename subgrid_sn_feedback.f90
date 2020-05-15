@@ -200,7 +200,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
   doSNIa = .false.
 #if defined(SNIA_FEEDBACK) && !defined(SN_INJECT)
-  if (ilevel == nlevelmax) then
+  if (ilevel == levelmin) then
      doSNIa = .true.
 ! Only generate SNIa at the last subcycle of the finest level
 !     if (icount == 2) then
@@ -451,7 +451,67 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         min_r2(1,iSN) = 1.e22 ! Huge value, must always be greater than min distance to SN
         min_r2(2,iSN) = myid  ! Tag with rank on each cpu for later use with MPI_MINLOC
       enddo
-      write(*,*) 'SNIa explosion'
+      if(myid==1)write(*,*) 'SNIa explosion'
+
+     ! Find location of SNIa, i.e. the cell closest to the randomly generated position
+     ! Loop over levels
+     do ilevel=levelmin,nlevelmax
+        ! Cells center position relative to grid center position
+        do ind=1,twotondim
+           iz=(ind-1)/4
+           iy=(ind-1-4*iz)/2
+           ix=(ind-1-2*iy-4*iz)
+           xc(ind,1)=(dble(ix)-0.5D0)*0.5D0**ilevel
+           xc(ind,2)=(dble(iy)-0.5D0)*0.5D0**ilevel
+#if NDIM==3
+           xc(ind,3)=(dble(iz)-0.5D0)*0.5D0**ilevel
+#endif
+        end do
+
+        ! Loop over grids
+        ncache=active(ilevel)%ngrid
+        do igrid=1,ncache,nvector
+           ngrid=MIN(nvector,ncache-igrid+1)
+           do i=1,ngrid
+              ind_grid(i)=active(ilevel)%igrid(igrid+i-1)
+           end do
+
+           ! Loop over cells
+           do ind=1,twotondim
+              iskip=ncoarse+(ind-1)*ngridmax
+              do i=1,ngrid
+                 ind_cell(i)=iskip+ind_grid(i)
+              end do
+
+              ! Flag leaf cells
+              do i=1,ngrid
+                 ok(i)=son(ind_cell(i))==0
+              end do
+
+              do i=1,ngrid
+                 if(ok(i))then
+                     do iSN=1,nSNIa
+                         x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
+                         y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
+                         r2 = (x-xpdf(iSN,1))*(x-xpdf(iSN,1))+(y-xpdf(iSN,2))*(y-xpdf(iSN,2))
+#if NDIM==3
+                         z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
+                         r2 = r2 + (z-xpdf(iSN,3))*(z-xpdf(iSN,3))
+#endif
+                         if (r2 < min_r2(1,iSN)) then
+                            min_r2(1,iSN)=r2
+                            xSNIa(iSN,1) = x
+                            xSNIa(iSN,2) = y
+#if NDIM==3
+                            xSNIa(iSN,3) = z
+#endif
+                         endif
+                     enddo
+                 endif
+              enddo
+           enddo
+        enddo
+      enddo
     endif
   endif
     
@@ -545,33 +605,6 @@ nSN_loc = 0
 !           end do
 !        endif
         tot_sf = 0
-
-#ifdef SNIA_FEEDBACK
-        if (doSNIa) then
-          ! Find location of SNIa, i.e. the cell closest to the randomly generated position
-          do iSN=1,nSNIa
-            do i=1,ngrid
-              if (son(ind_cell(i))==0) then
-                 x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
-                 y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
-                 r2 = (x-xpdf(iSN,1))*(x-xpdf(iSN,1))+(y-xpdf(iSN,2))*(y-xpdf(iSN,2))
-#if NDIM==3
-                 z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
-                 r2 = r2 + (z-xpdf(iSN,3))*(z-xpdf(iSN,3))
-#endif
-                 if (r2 < min_r2(1,iSN)) then
-                    min_r2(1,iSN)=r2
-                    xSNIa(iSN,1) = x
-                    xSNIa(iSN,2) = y
-#if NDIM==3
-                   xSNIa(iSN,3) = z
-#endif
-                 endif
-              endif
-            enddo
-          enddo
-        endif
-#endif
 
         !SNII
         do i=1,ngrid
@@ -668,7 +701,7 @@ nSN_loc = 0
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0) then
-write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),myid
+write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),xSNIa(1,3),myid
     allocate(min_r2_all(1:2,1:nSNIa))
     call MPI_ALLREDUCE(min_r2,min_r2_all,nSNIa,MPI_2DOUBLE_PRECISION,MPI_MINLOC,MPI_COMM_WORLD,info)
   endif
@@ -1086,6 +1119,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
         SNvol(iSN) = vol_gas_all(iSN,SNmaxrad(iSN))
      endif
 #endif
+    if (rSN(iSN) == 0)then
+       if (myid==1)write(*,*)"WARNING: Skipping SN with radius 0"
+       cycle
+    endif
 
      if(myid==1) then
        fileloc=trim(output_dir)//'snblast.dat'
@@ -1121,7 +1158,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
      endif
 
 #ifdef DELAYED_SN
-     if (SNlevel(iSN) > 0)return
+     if (SNlevel(iSN) > 0)cycle
 #endif
      ! Loop over levels
      do ilevel=levelmin,nlevelmax
@@ -1267,6 +1304,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
   ! Supernova specific energy from cgs to code units
   ESN=(1d51/(10d0*2d33))/scale_v**2
   do iSN=1,nSN
+     if (rSN(iSN) == 0)cycle
 #ifdef DELAYED_SN
      if (delayed)then
         if (sn_isrefined(iSN)==0)cycle
