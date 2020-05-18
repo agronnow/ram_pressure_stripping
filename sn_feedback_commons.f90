@@ -5,7 +5,7 @@ module sn_feedback_commons
 
   implicit none
 
-  integer,dimension(IRandNumSize) :: localseed=-1
+  integer,dimension(IRandNumSize) :: localseedsn=-1
   integer::iseed=0
 #ifdef DELAYED_SN
   integer::nSN_prev = 0

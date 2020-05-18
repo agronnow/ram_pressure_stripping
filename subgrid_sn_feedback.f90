@@ -175,9 +175,9 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   end do
 
   ! If necessary, initialize random number generator
-  if(localseed(1)==-1)then
+  if(localseedsn(1)==-1)then
      call rans(ncpu,iseed,allseed)
-     localseed=allseed(myid,1:IRandNumSize)
+     localseedsn=allseed(myid,1:IRandNumSize)
   end if
 
 ! get values of uold for density and velocities in virtual boundaries
@@ -411,14 +411,14 @@ subroutine subgrid_sn_feedback(ilevel, icount)
       close(ilun)
 #endif
       ! Compute Poisson realisation
-      call poissdev(localseed,PoissMeanIa,nSNIa)
+      call poissdev(localseedsn,PoissMeanIa,nSNIa)
       if (nSNIa > 0) then
          allocate(xpdf(1:nSNIa,1:ndim),xSNIa(1:nSNIa,1:ndim))
          ! Generate random positions for SNIa assuming that the stellar distribution follows the initial distribution of star forming gas
          do iSN=1,nSNIa
             do idim=1,ndim
                ! Generate random real on [0,1], transform to [-1,1], store the sign and transform back to [0,1] to allow coordinates on either side of the cloud
-               call ranf(localseed, unif_rand)
+               call ranf(localseedsn, unif_rand)
                r = 2.0*unif_rand - 1.0
                signx = sign(1d0,r)
                r = abs(r)
@@ -618,8 +618,8 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                 PoissMean = PoissMean*4.0*Rad_cloud/3.0
 #endif
                 ! Compute Poisson realisation
-!                oldseed = localseed
-                call poissdev(localseed,PoissMean,nSN)
+!                oldseed = localseedsn
+                call poissdev(localseedsn,PoissMean,nSN)
                 if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
 !               if (nosn) then
 #else
@@ -670,9 +670,9 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                       z = 0.0
 #endif
 #ifdef SN_INJECT
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5,4I24)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
 #else
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5,4I24)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
 #endif
                       close(ilun)
                    !endif
@@ -713,7 +713,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
            inquire(file=fileloc,exist=file_exist)
            if(.not.file_exist) then
               open(ilun, file=fileloc, form='formatted')
-              write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID Seeds"
+              write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID"!  Seeds"
            else
               open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
            endif
@@ -722,7 +722,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 #else
           z = 0.0
 #endif
-           write(ilun,'(4E26.16,E26.16,I5,4I24)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+           write(ilun,'(4E26.16,E26.16,I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
            close(ilun)
            !endif
         endif
@@ -1448,15 +1448,14 @@ end subroutine subgrid_Sedov_blast
 subroutine output_seeds(filename)
   use amr_commons
   use hydro_commons
-  use pm_commons
   use mpi_mod
   use sn_feedback_commons
   implicit none
 
   integer::info
   integer ,dimension(1:IRandNumSize,1:ncpu)::allseeds
-  character(LEN=256)::filename
-  integer::ilun
+  character(LEN=256)::filename, fileloc
+  integer::ilun,icpu
 
   if(verbose)write(*,*)'Entering output_seeds'
   if(myid==1)then
@@ -1466,7 +1465,7 @@ subroutine output_seeds(filename)
      write(ilun,*)"ProcID  Seeds"
   end if
   
-  call MPI_GATHER(localseed,IRandNumSize,MPI_INTEGER,allseeds,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
+  call MPI_GATHER(localseedsn,IRandNumSize,MPI_INTEGER,allseeds,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
   if(myid==1)then
       do icpu=1,ncpu
          write(ilun,'(I6,4I24)') icpu, allseeds(1,icpu), allseeds(2,icpu), allseeds(3,icpu), allseeds(4,icpu) ! Assumes IRandNumSize=4
@@ -1480,7 +1479,6 @@ end subroutine output_seeds
 subroutine init_subgrid_feedback
   use amr_commons
   use hydro_commons
-  use pm_commons
   use mpi_mod
   use sn_feedback_commons
   implicit none
@@ -1488,7 +1486,7 @@ subroutine init_subgrid_feedback
   integer ,dimension(1:IRandNumSize,1:ncpu)::allseeds
   character(LEN=256)::fileloc
   character(LEN=5)::nchar
-  integer::ilun
+  integer::ilun,icpu
 
   if(verbose)write(*,*)'Entering init_subgrid_feedback'
   if(nrestart>0)then
@@ -1503,7 +1501,7 @@ subroutine init_subgrid_feedback
         close(ilun)
       endif
 
-      call MPI_SCATTER(allseeds,IRandNumSize,MPI_INTEGER,localseed,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
+      call MPI_SCATTER(allseeds,IRandNumSize,MPI_INTEGER,localseedsn,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
   endif
   if(verbose)write(*,*)'Exiting init_subgrid_feedback'
 end subroutine init_subgrid_feedback
