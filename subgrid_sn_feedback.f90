@@ -618,6 +618,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                 PoissMean = PoissMean*4.0*Rad_cloud/3.0
 #endif
                 ! Compute Poisson realisation
+!                oldseed = localseed
                 call poissdev(localseed,PoissMean,nSN)
                 if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
 !               if (nosn) then
@@ -661,7 +662,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                       inquire(file=fileloc,exist=file_exist)
                       if(.not.file_exist) then
                          open(ilun, file=fileloc, form='formatted')
-                         write(ilun,*)"Time                      x                         y                         z                          Level ProbSN                    rho_sfgas                 ProcID"
+                         write(ilun,*)"Time                      x                         y                         z                          Level ProbSN                    rho_sfgas                 ProcID"!  Seeds"
                       else
                          open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
                       endif
@@ -669,9 +670,9 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                       z = 0.0
 #endif
 #ifdef SN_INJECT
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid !No passive tracer in SN injection test sim
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5,4I24)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
 #else
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5,4I24)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
 #endif
                       close(ilun)
                    !endif
@@ -693,9 +694,10 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0) then
-     write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),xSNIa(1,3),myid
+     !write(*,*)'min_r2',min_r2(1,1),xSNIa(1,1),xSNIa(1,2),xSNIa(1,3),myid
      allocate(min_r2_all(1:2,1:nSNIa))
      call MPI_ALLREDUCE(min_r2,min_r2_all,nSNIa,MPI_2DOUBLE_PRECISION,MPI_MINLOC,MPI_COMM_WORLD,info)
+
      do iSN=1,nSNIa
         if (int(min_r2_all(2,iSN)) == myid) then ! The cell containing the SN center is on this processor
            nSN_loc=nSN_loc+1
@@ -711,7 +713,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
            inquire(file=fileloc,exist=file_exist)
            if(.not.file_exist) then
               open(ilun, file=fileloc, form='formatted')
-              write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID"
+              write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID Seeds"
            else
               open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
            endif
@@ -720,7 +722,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 #else
           z = 0.0
 #endif
-           write(ilun,'(4E26.16,E26.16,I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid
+           write(ilun,'(4E26.16,E26.16,I5,4I24)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
            close(ilun)
            !endif
         endif
@@ -1439,6 +1441,73 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
   if(verbose)write(*,*)'Exiting Sedov_blast'
 
 end subroutine subgrid_Sedov_blast
+
+
+! Routines to output and read seeds used for the supernova related random number generation
+! Ensures that the SN feedback continues properly when restarting a simulation
+subroutine output_seeds(filename)
+  use amr_commons
+  use hydro_commons
+  use pm_commons
+  use mpi_mod
+  use sn_feedback_commons
+  implicit none
+
+  integer::info
+  integer ,dimension(1:IRandNumSize,1:ncpu)::allseeds
+  character(LEN=256)::filename
+  integer::ilun
+
+  if(verbose)write(*,*)'Entering output_seeds'
+  if(myid==1)then
+     ! Open file
+     fileloc=TRIM(filename)
+     open(newunit=ilun,file=fileloc,form='formatted')
+     write(ilun,*)"ProcID  Seeds"
+  end if
+  
+  call MPI_GATHER(localseed,IRandNumSize,MPI_INTEGER,allseeds,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
+  if(myid==1)then
+      do icpu=1,ncpu
+         write(ilun,'(I6,4I24)') icpu, allseeds(1,icpu), allseeds(2,icpu), allseeds(3,icpu), allseeds(4,icpu) ! Assumes IRandNumSize=4
+      enddo
+      close(ilun)
+  endif
+  if(verbose)write(*,*)'Exiting output_seeds'
+end subroutine output_seeds
+
+
+subroutine init_subgrid_feedback
+  use amr_commons
+  use hydro_commons
+  use pm_commons
+  use mpi_mod
+  use sn_feedback_commons
+  implicit none
+  integer::info
+  integer ,dimension(1:IRandNumSize,1:ncpu)::allseeds
+  character(LEN=256)::fileloc
+  character(LEN=5)::nchar
+  integer::ilun
+
+  if(verbose)write(*,*)'Entering init_subgrid_feedback'
+  if(nrestart>0)then
+      call title(nrestart,nchar)
+      if(myid==1)then
+        ! Open file
+        fileloc=trim(output_dir)//'subgrid_sn_seeds_'//TRIM(nchar)//'.txt'
+        open(newunit=ilun,file=fileloc,form='formatted')
+        do icpu=1,ncpu
+            read(ilun,'(I6,4I24)') icpu, allseeds(1,icpu), allseeds(2,icpu), allseeds(3,icpu), allseeds(4,icpu) ! Assumes IRandNumSize=4
+        enddo
+        close(ilun)
+      endif
+
+      call MPI_SCATTER(allseeds,IRandNumSize,MPI_INTEGER,localseed,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
+  endif
+  if(verbose)write(*,*)'Exiting init_subgrid_feedback'
+end subroutine init_subgrid_feedback
+
 !###########################################################
 !###########################################################
 !###########################################################
