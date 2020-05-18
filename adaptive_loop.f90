@@ -50,7 +50,7 @@ subroutine adaptive_loop
 #endif
   if(pic)call init_part              ! Initialize particle variables
   if(pic)call init_tree              ! Initialize particle tree
-  if(subgrid_sn_feedback)call init_subgrid_feedback
+  if(subgrid_feedback)call init_subgrid_feedback
   if(nrestart==0)call init_refine_2  ! Build initial AMR grid again
 
 #ifndef WITHOUTMPI
