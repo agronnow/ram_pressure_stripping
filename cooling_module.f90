@@ -671,15 +671,16 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool)
   do i=1,ncell
      if (tau(i)<=0.)then
         tau_negative=.true.
-        write(*,*)"WARNING: Negative temp: tau=",tau(i)," tau_ini=",tau_ini(i)," rho=",nH(i)," Z=",zzz(i)," t_max=",time_max(i)," t_old=",time_old(i)," t=",time(i)," ok_cool=",ok_cool(i)
+        !write(*,*)"WARNING: Negative temp: tau=",tau(i)," tau_ini=",tau_ini(i)," rho=",nH(i)," Z=",zzz(i)," t_max=",time_max(i)," t_old=",time_old(i)," t=",time(i)," ok_cool=",ok_cool(i)
         tau(i) = Tmufloor
      endif
   end do
-!  if (tau_negative) then
+  if (tau_negative) then
+      write(*,*)'WARNING: Negative temperature in solve_cooling, replaced with cooling floor'
 !     write(*,*)'ERROR in solve_cooling :'
 !     write(*,*)'Final temperature is negative'
 !     STOP
-!  endif
+  endif
 
   ! Compute delta T
   do i=1,ncell
