@@ -85,14 +85,6 @@ subroutine dump_all
         write(11,'(" local branch = ",A)')TRIM(gitbranch)
         write(11,'(" last commit  = ",A)')TRIM(githash)
         CLOSE(11)
-
-        if(subgrid_feedback)then
-             filename=TRIM(filedir)//'subgrid_sn_seeds'//TRIM(nchar)//'.txt'
-             call output_seeds(filename)
-#ifndef WITHOUTMPI
-             if(synchro_when_io) call MPI_BARRIER(MPI_COMM_WORLD,info)
-#endif
-        endif
      endif
 #ifndef WITHOUTMPI
      if(synchro_when_io) call MPI_BARRIER(MPI_COMM_WORLD,info)
@@ -187,6 +179,13 @@ subroutine dump_all
 #endif
      if(myid==1.and.print_when_io) write(*,*)'End output timer'
 
+     if(subgrid_feedback)then
+         filename=TRIM(filedir)//'subgrid_sn_seeds'//TRIM(nchar)//'.txt'
+         call output_seeds(filename)
+#ifndef WITHOUTMPI
+         if(synchro_when_io) call MPI_BARRIER(MPI_COMM_WORLD,info)
+#endif
+     endif
   end if
 
 end subroutine dump_all
