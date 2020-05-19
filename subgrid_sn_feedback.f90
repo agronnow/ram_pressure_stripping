@@ -1484,7 +1484,7 @@ subroutine init_subgrid_feedback
   implicit none
   integer::info
   integer ,dimension(1:IRandNumSize,1:ncpu)::allseeds
-  character(LEN=256)::fileloc
+  character(LEN=256)::fileloc,dummy
   character(LEN=5)::nchar
   integer::ilun,icpu,ccpu
 
@@ -1493,8 +1493,9 @@ subroutine init_subgrid_feedback
       call title(nrestart,nchar)
       if(myid==1)then
         ! Open file
-        fileloc=trim(output_dir)//'subgrid_sn_seeds_'//TRIM(nchar)//'.txt'
+        fileloc=trim(output_dir)//'subgrid_sn_seeds'//TRIM(nchar)//'.txt'
         open(newunit=ilun,file=fileloc,form='formatted')
+        read(ilun,*)dummy
         do icpu=1,ncpu
             read(ilun,'(I6,4I24)') ccpu, allseeds(1,icpu), allseeds(2,icpu), allseeds(3,icpu), allseeds(4,icpu) ! Assumes IRandNumSize=4
         enddo
