@@ -1494,10 +1494,11 @@ subroutine init_subgrid_feedback
       if(myid==1)then
         ! Open file
         fileloc=trim(output_dir)//'subgrid_sn_seeds'//TRIM(nchar)//'.txt'
-        open(newunit=ilun,file=fileloc,form='formatted')
+        write(*,*)"sn seed file: ",fileloc
+        open(newunit=ilun,file=fileloc)
         read(ilun,*)dummy
         do icpu=1,ncpu
-            read(ilun,'(I6,4I24)') ccpu, allseeds(1,icpu), allseeds(2,icpu), allseeds(3,icpu), allseeds(4,icpu) ! Assumes IRandNumSize=4
+            read(ilun,*) ccpu, allseeds(:,icpu)
         enddo
         close(ilun)
       endif
