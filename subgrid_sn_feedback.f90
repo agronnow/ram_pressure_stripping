@@ -1493,8 +1493,7 @@ subroutine init_subgrid_feedback
       call title(nrestart,nchar)
       if(myid==1)then
         ! Open file
-        fileloc=trim(output_dir)//'subgrid_sn_seeds'//TRIM(nchar)//'.txt'
-        write(*,*)"sn seed file: ",fileloc
+        fileloc=trim(output_dir)//'output_'//TRIM(nchar)//'/subgrid_sn_seeds'//TRIM(nchar)//'.txt'
         open(newunit=ilun,file=fileloc)
         read(ilun,*)dummy
         do icpu=1,ncpu
