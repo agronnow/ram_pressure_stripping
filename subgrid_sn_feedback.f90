@@ -523,19 +523,37 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   sfr = 0.0
 #endif
 
-! get values of uold for density and velocities in virtual boundaries
-#ifndef WITHOUTMPI
-  do ivar=1,nvar
-     call make_virtual_fine_dp(uold(1,ivar),ilevel)
-  end do
-#endif
+
 
   nSN_loc = 0
   !tot_sf=0
+  ! Loop over levels
+  do clevel=levelmin,nlevelmax
+! get values of uold for density and velocities in virtual boundaries
+#ifndef WITHOUTMPI
+  do ivar=1,nvar
+     call make_virtual_fine_dp(uold(1,ivar),clevel)
+  end do
+#endif
+        ! Cells center position relative to grid center position
+        do ind=1,twotondim
+           iz=(ind-1)/4
+           iy=(ind-1-4*iz)/2
+           ix=(ind-1-2*iy-4*iz)
+           xc(ind,1)=(dble(ix)-0.5D0)*0.5D0**clevel
+           xc(ind,2)=(dble(iy)-0.5D0)*0.5D0**clevel
+#if NDIM==3
+           xc(ind,3)=(dble(iz)-0.5D0)*0.5D0**clevel
+#endif
+        end do
+
+        ! Loop over grids
+        ncache=active(clevel)%ngrid
+
   do igrid=1,ncache,nvector
      ngrid=MIN(nvector,ncache-igrid+1)
      do i=1,ngrid
-        ind_grid(i)=active(ilevel)%igrid(igrid+i-1)
+        ind_grid(i)=active(clevel)%igrid(igrid+i-1)
      end do
      ! Star formation criterion ---> logical array ok(i)
      do ind=1,twotondim
@@ -620,7 +638,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                 endif
 #endif
                 ! Poisson mean
-                PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel) ! Get expected number of SNe formed taking units into account
+                PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(clevel) ! Get expected number of SNe formed taking units into account
 #if NDIM==2
                 PoissMean = PoissMean*4.0*Rad_cloud/3.0
 #endif
@@ -677,9 +695,9 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                       z = 0.0
 #endif
 #ifdef SN_INJECT
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, clevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
 #else
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, clevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
 #endif
                       close(ilun)
                    !endif
@@ -698,6 +716,17 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         enddo
      end do
   end do
+  sfr_tot_level = 0.0
+#ifndef WITHOUTMPI
+  if (calc_sfr) then
+    call MPI_ALLREDUCE(sfr,sfr_tot_level,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD,info)
+    if(myid==1)write(*,*)'reduce sfr: sfr on cpu 1=',sfr,' sfr_tot=',sfr_tot_level,' level=',clevel
+
+!     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:clevel))) !weight by number of subcycles on level such that the SFR on finer levels are correctly averaged when finding the total SFR during next coarse time step
+     sfr_tot(clevel-levelmin+1) = sfr_tot(clevel-levelmin+1) + sfr_tot_level
+  endif
+#endif
+enddo
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0) then
@@ -743,12 +772,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   Tfail_all = 0
   maxPoissMean_all = 0.0
 
-  sfr_tot_level = 0.0
-#ifndef WITHOUTMPI
-  if (calc_sfr) then
-    call MPI_ALLREDUCE(sfr,sfr_tot_level,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD,info)
-    if(myid==1)write(*,*)'reduce sfr: sfr on cpu 1=',sfr,' sfr_tot=',sfr_tot_level,' level=',ilevel
-  endif
+!!!
 
   ! Give an array of number of SN on each cpu available to all cpus
   call MPI_ALLREDUCE(nSN_icpu,nSN_icpu_all,ncpu,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
@@ -760,14 +784,14 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
     call MPI_REDUCE(maxPoissMean,maxPoissMean_all,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD,info)
     if (myid==1)write(*,*)'Tpass:',Tpass_all,' Tfail:', Tfail_all,' maxPoissMean:',maxPoissMean_all
   endif
-#else
-  sfr_tot_level = sfr
-#endif
+!#else
+!  sfr_tot_level = sfr
+!#endif
 
-  if (calc_sfr) then
-     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:ilevel))) !weight by number of subcycles on level such that the SFR on finer levels are correctly averaged when finding the total SFR during next coarse time step
-     sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
-  endif
+!  if (calc_sfr) then
+!     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:ilevel))) !weight by number of subcycles on level such that the SFR on finer levels are correctly averaged when finding the total SFR during next coarse time step
+!     sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
+!  endif
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
 
@@ -904,10 +928,10 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 
 
   ! Update hydro quantities for split cells
-  do ilevel=nlevelmax,levelmin,-1
-     call upload_fine(ilevel)
+  do clevel=nlevelmax,levelmin,-1
+     call upload_fine(clevel)
      do ivar=1,nvar
-        call make_virtual_fine_dp(uold(1,ivar),ilevel)
+        call make_virtual_fine_dp(uold(1,ivar),clevel)
      enddo
   enddo
 

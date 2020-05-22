@@ -189,10 +189,10 @@ recursive subroutine amr_step(ilevel,icount)
                                call timer('feedback','start')
      if(hydro.and.star.and.eta_sn>0.and.f_w>0)call kinetic_feedback
 
+
+     if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
   endif
 
-                               call timer('feedback','start')
-  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
 
   !--------------------
   ! Poisson source term
