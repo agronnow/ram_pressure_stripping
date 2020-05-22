@@ -523,6 +523,13 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   sfr = 0.0
 #endif
 
+! get values of uold for density and velocities in virtual boundaries
+#ifndef WITHOUTMPI
+  do ivar=1,nvar
+     call make_virtual_fine_dp(unew(1,ivar),ilevel)
+  end do
+#endif
+
   nSN_loc = 0
   !tot_sf=0
   do igrid=1,ncache,nvector
@@ -585,12 +592,6 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
               Tpass=Tpass+1
            endif
         end do
-! get values of uold for density and velocities in virtual boundaries
-#ifndef WITHOUTMPI
-  do ivar=1,nvar
-     call make_virtual_fine_dp(unew(1,ivar),ilevel)
-  end do
-#endif
 !        ! Geometrical criterion
 !        if(ivar_refine>0)then
 !           do i=1,ngrid
