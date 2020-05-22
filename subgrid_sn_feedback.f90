@@ -512,6 +512,25 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   !------------------------------------------------
   ! Compute number of SNe in each cell
   !------------------------------------------------
+
+  ! Mesh spacing in that level
+  dx=0.5D0**ilevel
+  nx_loc=(icoarse_max-icoarse_min+1)
+  skip_loc=(/0.0d0,0.0d0,0.0d0/)
+  if(ndim>0)skip_loc(1)=dble(icoarse_min)
+  if(ndim>1)skip_loc(2)=dble(jcoarse_min)
+  if(ndim>2)skip_loc(3)=dble(kcoarse_min)
+
+  ! Cells center position relative to grid center position
+  do ind=1,twotondim
+     iz=(ind-1)/4
+     iy=(ind-1-4*iz)/2
+     ix=(ind-1-2*iy-4*iz)
+     xc(ind,1)=(dble(ix)-0.5D0)*dx
+     xc(ind,2)=(dble(iy)-0.5D0)*dx
+     xc(ind,3)=(dble(iz)-0.5D0)*dx
+  end do
+
   ! Loop over grids
   ncache=active(ilevel)%ngrid
   !dpass = 0
@@ -523,37 +542,19 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   sfr = 0.0
 #endif
 
-
+! get values of uold for density and velocities in virtual boundaries
+!#ifndef WITHOUTMPI
+!  do ivar=1,nvar
+!     call make_virtual_fine_dp(unew(1,ivar),ilevel)
+!  end do
+!#endif
 
   nSN_loc = 0
   !tot_sf=0
-  ! Loop over levels
-  do clevel=levelmin,nlevelmax
-! get values of uold for density and velocities in virtual boundaries
-#ifndef WITHOUTMPI
-  do ivar=1,nvar
-     call make_virtual_fine_dp(uold(1,ivar),clevel)
-  end do
-#endif
-        ! Cells center position relative to grid center position
-        do ind=1,twotondim
-           iz=(ind-1)/4
-           iy=(ind-1-4*iz)/2
-           ix=(ind-1-2*iy-4*iz)
-           xc(ind,1)=(dble(ix)-0.5D0)*0.5D0**clevel
-           xc(ind,2)=(dble(iy)-0.5D0)*0.5D0**clevel
-#if NDIM==3
-           xc(ind,3)=(dble(iz)-0.5D0)*0.5D0**clevel
-#endif
-        end do
-
-        ! Loop over grids
-        ncache=active(clevel)%ngrid
-
   do igrid=1,ncache,nvector
      ngrid=MIN(nvector,ncache-igrid+1)
      do i=1,ngrid
-        ind_grid(i)=active(clevel)%igrid(igrid+i-1)
+        ind_grid(i)=active(ilevel)%igrid(igrid+i-1)
      end do
      ! Star formation criterion ---> logical array ok(i)
      do ind=1,twotondim
@@ -567,26 +568,26 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         end do
 	    ! Temperature criterion
         do i=1,ngrid
-           d=max(uold(ind_cell(i),1),smallr)
-           u=uold(ind_cell(i),2)/d
-           v=uold(ind_cell(i),3)/d
+           d=max(unew(ind_cell(i),1),smallr)
+           u=unew(ind_cell(i),2)/d
+           v=unew(ind_cell(i),3)/d
 #if NDIM==3
-           w=uold(ind_cell(i),4)/d
+           w=unew(ind_cell(i),4)/d
 #else
            w=0.0
 #endif
-           e=uold(ind_cell(i),ndim+2)
+           e=unew(ind_cell(i),ndim+2)
            prs=e
 #ifdef SOLVERmhd
-           bx1=uold(ind_cell(i),6)
-           by1=uold(ind_cell(i),7)
+           bx1=unew(ind_cell(i),6)
+           by1=unew(ind_cell(i),7)
 #if NDIM==3
-           bz1=uold(ind_cell(i),8)
+           bz1=unew(ind_cell(i),8)
 #endif
-           bx2=uold(ind_cell(i),nvar+1)
-           by2=uold(ind_cell(i),nvar+2)
+           bx2=unew(ind_cell(i),nvar+1)
+           by2=unew(ind_cell(i),nvar+2)
 #if NDIM==3
-           bz2=uold(ind_cell(i),nvar+3)
+           bz2=unew(ind_cell(i),nvar+3)
            prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2+(bz1+bz2)**2)
 #else
            prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2)
@@ -595,12 +596,12 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
            prs=prs-0.5d0*d*(u**2+v**2+w**2)
 #if NENER>0
            do irad=0,nener-1
-              prs=prs-uold(ind_cell(i),inener+irad)
+              prs=prs-unew(ind_cell(i),inener+irad)
            end do
 #endif
            prs = prs*(gamma-1.0)
            T2=prs*scale_T2*0.6/d
-           nH=max(uold(ind_cell(i),1),smallr)*scale_nH
+           nH=max(unew(ind_cell(i),1),smallr)*scale_nH
 !          T_poly=T2_star*(nH/nISM)**(g_star-1.0)
 !          T2=T2-T_poly
            if(T2>4e4) then
@@ -627,7 +628,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         do i=1,ngrid
            if(ok(i))then !Compute number of SNII if temperature is low enough for star formation
 #ifndef SN_INJECT
-              d=uold(ind_cell(i),imetal+1) !SF gas density (gas initially within r_SFR)
+              d=unew(ind_cell(i),imetal+1) !SF gas density (gas initially within r_SFR)
               d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
               if (d > 0d0) then
                 rho_sfr = vsfr_fac*d**vsfr_pow ! 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
@@ -638,7 +639,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                 endif
 #endif
                 ! Poisson mean
-                PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(clevel) ! Get expected number of SNe formed taking units into account
+                PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel) ! Get expected number of SNe formed taking units into account
 #if NDIM==2
                 PoissMean = PoissMean*4.0*Rad_cloud/3.0
 #endif
@@ -695,9 +696,9 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                       z = 0.0
 #endif
 #ifdef SN_INJECT
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, clevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
 #else
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, clevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
 #endif
                       close(ilun)
                    !endif
@@ -716,17 +717,6 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         enddo
      end do
   end do
-  sfr_tot_level = 0.0
-#ifndef WITHOUTMPI
-  if (calc_sfr) then
-    call MPI_ALLREDUCE(sfr,sfr_tot_level,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD,info)
-    if(myid==1)write(*,*)'reduce sfr: sfr on cpu 1=',sfr,' sfr_tot=',sfr_tot_level,' level=',clevel
-
-!     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:clevel))) !weight by number of subcycles on level such that the SFR on finer levels are correctly averaged when finding the total SFR during next coarse time step
-     sfr_tot(clevel-levelmin+1) = sfr_tot(clevel-levelmin+1) + sfr_tot_level
-  endif
-#endif
-enddo
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0) then
@@ -772,7 +762,12 @@ enddo
   Tfail_all = 0
   maxPoissMean_all = 0.0
 
-!!!
+  sfr_tot_level = 0.0
+#ifndef WITHOUTMPI
+  if (calc_sfr) then
+    call MPI_ALLREDUCE(sfr,sfr_tot_level,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD,info)
+    if(myid==1)write(*,*)'reduce sfr: sfr on cpu 1=',sfr,' sfr_tot=',sfr_tot_level,' level=',ilevel
+  endif
 
   ! Give an array of number of SN on each cpu available to all cpus
   call MPI_ALLREDUCE(nSN_icpu,nSN_icpu_all,ncpu,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
@@ -784,14 +779,14 @@ enddo
     call MPI_REDUCE(maxPoissMean,maxPoissMean_all,1,MPI_DOUBLE,MPI_MAX,0,MPI_COMM_WORLD,info)
     if (myid==1)write(*,*)'Tpass:',Tpass_all,' Tfail:', Tfail_all,' maxPoissMean:',maxPoissMean_all
   endif
-!#else
-!  sfr_tot_level = sfr
-!#endif
+#else
+  sfr_tot_level = sfr
+#endif
 
-!  if (calc_sfr) then
-!     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:ilevel))) !weight by number of subcycles on level such that the SFR on finer levels are correctly averaged when finding the total SFR during next coarse time step
-!     sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
-!  endif
+  if (calc_sfr) then
+     weight = nsubcycle(levelmin)/(1d0*product(nsubcycle(levelmin:ilevel))) !weight by number of subcycles on level such that the SFR on finer levels are correctly averaged when finding the total SFR during next coarse time step
+     sfr_tot(ilevel-levelmin+1) = sfr_tot(ilevel-levelmin+1) + weight*sfr_tot_level
+  endif
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
 
@@ -928,10 +923,10 @@ enddo
 
 
   ! Update hydro quantities for split cells
-  do clevel=nlevelmax,levelmin,-1
-     call upload_fine(clevel)
+  do ilevel=nlevelmax,levelmin,-1
+     call upload_fine(ilevel)
      do ivar=1,nvar
-        call make_virtual_fine_dp(uold(1,ivar),clevel)
+        call make_virtual_fine_dp(unew(1,ivar),ilevel)
      enddo
   enddo
 
@@ -1268,7 +1263,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
 #if NVAR>NDIM+2+NENER
                        ! passive scalars
                        do ivar=ndim+3+nener,nvar
-                          uold(ind_cell(i),ivar)=uold(ind_cell(i),ivar)*uold(ind_cell(i),1)/dprev
+                          uold(ind_cell(i),ivar)=unew(ind_cell(i),ivar)*unew(ind_cell(i),1)/dprev
                        end do
 #endif
 !                       write(*,*)"redist on level ",ilevel,' rad ',sqrt(dr_SN),' coords ',x,' ',y,' ',z
@@ -1289,7 +1284,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
     do ilevel=nlevelmax,levelmin,-1
        call upload_fine(ilevel)
        do ivar=1,nvar
-          call make_virtual_fine_dp(uold(1,ivar),ilevel)
+          call make_virtual_fine_dp(unew(1,ivar),ilevel)
        enddo
     enddo
   endif

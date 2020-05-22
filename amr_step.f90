@@ -189,10 +189,7 @@ recursive subroutine amr_step(ilevel,icount)
                                call timer('feedback','start')
      if(hydro.and.star.and.eta_sn>0.and.f_w>0)call kinetic_feedback
 
-
-     if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
   endif
-
 
   !--------------------
   ! Poisson source term
@@ -338,6 +335,7 @@ recursive subroutine amr_step(ilevel,icount)
 #if NDIM==3
                                call timer('feedback','start')
   if(hydro.and.star.and.eta_sn>0)call thermal_feedback(ilevel)
+  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
 #endif
 
 
@@ -444,13 +442,7 @@ recursive subroutine amr_step(ilevel,icount)
   if(hydro.and.star.and.(.not.static_gas))call star_formation(ilevel)
 #endif
 
-  !----------------------------------
-  ! Star formation in leaf cells only
-  !----------------------------------
-!#if NDIM==3
-!                               call timer('feedback','start')
-!  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
-!#endif
+
 
   !---------------------------------------
   ! Update physical and virtual boundaries
