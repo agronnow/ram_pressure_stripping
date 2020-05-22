@@ -191,6 +191,9 @@ recursive subroutine amr_step(ilevel,icount)
 
   endif
 
+                               call timer('feedback','start')
+  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
+
   !--------------------
   ! Poisson source term
   !--------------------
@@ -337,8 +340,6 @@ recursive subroutine amr_step(ilevel,icount)
   if(hydro.and.star.and.eta_sn>0)call thermal_feedback(ilevel)
 #endif
 
-                               call timer('feedback','start')
-  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
 
   ! Density threshold or Bondi accretion onto sink particle
 #if NDIM==3
