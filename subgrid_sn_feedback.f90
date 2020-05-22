@@ -545,7 +545,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 ! get values of uold for density and velocities in virtual boundaries
 !#ifndef WITHOUTMPI
 !  do ivar=1,nvar
-!     call make_virtual_fine_dp(unew(1,ivar),ilevel)
+!     call make_virtual_fine_dp(uold(1,ivar),ilevel)
 !  end do
 !#endif
 
@@ -568,26 +568,26 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         end do
 	    ! Temperature criterion
         do i=1,ngrid
-           d=max(unew(ind_cell(i),1),smallr)
-           u=unew(ind_cell(i),2)/d
-           v=unew(ind_cell(i),3)/d
+           d=max(uold(ind_cell(i),1),smallr)
+           u=uold(ind_cell(i),2)/d
+           v=uold(ind_cell(i),3)/d
 #if NDIM==3
-           w=unew(ind_cell(i),4)/d
+           w=uold(ind_cell(i),4)/d
 #else
            w=0.0
 #endif
-           e=unew(ind_cell(i),ndim+2)
+           e=uold(ind_cell(i),ndim+2)
            prs=e
 #ifdef SOLVERmhd
-           bx1=unew(ind_cell(i),6)
-           by1=unew(ind_cell(i),7)
+           bx1=uold(ind_cell(i),6)
+           by1=uold(ind_cell(i),7)
 #if NDIM==3
-           bz1=unew(ind_cell(i),8)
+           bz1=uold(ind_cell(i),8)
 #endif
-           bx2=unew(ind_cell(i),nvar+1)
-           by2=unew(ind_cell(i),nvar+2)
+           bx2=uold(ind_cell(i),nvar+1)
+           by2=uold(ind_cell(i),nvar+2)
 #if NDIM==3
-           bz2=unew(ind_cell(i),nvar+3)
+           bz2=uold(ind_cell(i),nvar+3)
            prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2+(bz1+bz2)**2)
 #else
            prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2)
@@ -596,12 +596,12 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
            prs=prs-0.5d0*d*(u**2+v**2+w**2)
 #if NENER>0
            do irad=0,nener-1
-              prs=prs-unew(ind_cell(i),inener+irad)
+              prs=prs-uold(ind_cell(i),inener+irad)
            end do
 #endif
            prs = prs*(gamma-1.0)
            T2=prs*scale_T2*0.6/d
-           nH=max(unew(ind_cell(i),1),smallr)*scale_nH
+           nH=max(uold(ind_cell(i),1),smallr)*scale_nH
 !          T_poly=T2_star*(nH/nISM)**(g_star-1.0)
 !          T2=T2-T_poly
            if(T2>4e4) then
@@ -628,7 +628,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         do i=1,ngrid
            if(ok(i))then !Compute number of SNII if temperature is low enough for star formation
 #ifndef SN_INJECT
-              d=unew(ind_cell(i),imetal+1) !SF gas density (gas initially within r_SFR)
+              d=uold(ind_cell(i),imetal+1) !SF gas density (gas initially within r_SFR)
               d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
               if (d > 0d0) then
                 rho_sfr = vsfr_fac*d**vsfr_pow ! 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
@@ -923,12 +923,12 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 
 
   ! Update hydro quantities for split cells
-  do ilevel=nlevelmax,levelmin,-1
-     call upload_fine(ilevel)
-     do ivar=1,nvar
-        call make_virtual_fine_dp(unew(1,ivar),ilevel)
-     enddo
-  enddo
+!  do ilevel=nlevelmax,levelmin,-1
+!     call upload_fine(ilevel)
+!     do ivar=1,nvar
+!        call make_virtual_fine_dp(uold(1,ivar),ilevel)
+!     enddo
+!  enddo
 
   if(verbose)write(*,*)'Exiting subgrid_sn_feedback'
 
@@ -1263,7 +1263,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
 #if NVAR>NDIM+2+NENER
                        ! passive scalars
                        do ivar=ndim+3+nener,nvar
-                          uold(ind_cell(i),ivar)=unew(ind_cell(i),ivar)*unew(ind_cell(i),1)/dprev
+                          uold(ind_cell(i),ivar)=uold(ind_cell(i),ivar)*uold(ind_cell(i),1)/dprev
                        end do
 #endif
 !                       write(*,*)"redist on level ",ilevel,' rad ',sqrt(dr_SN),' coords ',x,' ',y,' ',z
@@ -1279,15 +1279,15 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
 
   vol_gas=vol_gas_all
 
-  if (update_boundary)then
-    ! Update hydro quantities for split cells
-    do ilevel=nlevelmax,levelmin,-1
-       call upload_fine(ilevel)
-       do ivar=1,nvar
-          call make_virtual_fine_dp(unew(1,ivar),ilevel)
-       enddo
-    enddo
-  endif
+!  if (update_boundary)then
+!    ! Update hydro quantities for split cells
+!    do ilevel=nlevelmax,levelmin,-1
+!       call upload_fine(ilevel)
+!       do ivar=1,nvar
+!          call make_virtual_fine_dp(uold(1,ivar),ilevel)
+!       enddo
+!    enddo
+!  endif
 
   if(verbose)write(*,*)'Exiting average_SN'
 
