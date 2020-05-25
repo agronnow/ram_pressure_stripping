@@ -96,8 +96,9 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  integer,dimension(:),allocatable::ind_grid
 !  logical,dimension(:),allocatable::ok_free
   integer,dimension(:),allocatable::indSN,SNlevel
-  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN,SNcooling
+  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas
+  logical,dimension(:),allocatable::SNcooling
 
   logical,save::firstcall = .true.
   logical,save::calc_sfr = .false.
@@ -968,7 +969,8 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
 #ifndef DELAYED_SN
   integer ,dimension(1:nSN)::SNmaxrad
 #endif
-  real(dp),dimension(1:nSN)::ekBlast,rSN,volSN,SNcooling
+  real(dp),dimension(1:nSN)::ekBlast,rSN,volSN
+  logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:RADCELL_MAX)::vol_gas,vol_gas_all,mtot,mtot_all
   integer,dimension(1:nSN,1:RADCELL_MAX)::snmaxlevel,snmaxlevel_all
   real(dp),dimension(1:nSN,1:ndim)::xSN
@@ -1331,7 +1333,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
-  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN,SNcooling
+  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
+  logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:ndim)::xSN
   integer ,dimension(1:nSN)::indSN,SNlevel
   logical ,dimension(1:nvector),save::ok
