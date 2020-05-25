@@ -628,7 +628,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
         do i=1,ngrid
            if(ok(i))then !Compute number of SNII if temperature is low enough for star formation
 #ifndef SN_INJECT
-              d=uold(ind_cell(i),imetal+1) !SF gas density (gas initially within r_SFR)
+              d=uold(ind_cell(i),imetal+2) !SF gas density (gas initially within r_SFR)
               d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
               if (d > 0d0) then
                 rho_sfr = vsfr_fac*d**vsfr_pow ! 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
@@ -698,7 +698,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 #ifdef SN_INJECT
                       write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
 #else
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+2), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
 #endif
                       close(ilun)
                    !endif
@@ -852,27 +852,27 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   if(nSN_prev > 0)then
      call MPI_ALLREDUCE(sn_isrefined,sn_isrefined_all,nSN_prev  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
      sn_isrefined = sn_isrefined_all
-     allocate(vol_gas(1:nSN_prev,1:RADCELL_MAX),rSN(1:nSN_prev),SNlevel(1:nSN_prev),volSN(1:nSN_prev))
+     allocate(vol_gas(1:nSN_prev,1:RADCELL_MAX),rSN(1:nSN_prev),SNlevel(1:nSN_prev),volSN(1:nSN_prev),SNcooling(1:nSN_prev))
      allocate(indSN(1:nSN_prev))
      ! Add SN from previous time step
      if(myid==1)write(*,*)nSN_prev,'delayed SNe at ',sn_coords(1,1),' ',sn_coords(1,2),' ',sn_coords(1,3)
      ! Compute blast radius
-     call subgrid_average_SN(sn_coords(1:nSN_prev,1:ndim),rSN,vol_gas,volSN,indSN,nSN_prev,SNlevel,.true.)
+     call subgrid_average_SN(sn_coords(1:nSN_prev,1:ndim),rSN,vol_gas,volSN,indSN,nSN_prev,SNlevel,SNcooling,.true.)
 
      ! Modify hydro quantities to account for a Sedov blast wave
-     call subgrid_Sedov_blast(sn_coords(1:nSN_prev,1:ndim),mSN,rSN,indSN,volSN,nSN_prev,SNlevel,.true.)
-     deallocate(vol_gas,rSN,indSN,SNlevel,volSN)
+     call subgrid_Sedov_blast(sn_coords(1:nSN_prev,1:ndim),mSN,rSN,indSN,volSN,nSN_prev,SNlevel,SNcooling,.true.)
+     deallocate(vol_gas,rSN,indSN,SNlevel,volSN,SNcooling)
   endif
 #endif
 
-  allocate(vol_gas(1:nSN,1:RADCELL_MAX),rSN(1:nSN),SNlevel(1:nSN),volSN(1:nSN))
+  allocate(vol_gas(1:nSN,1:RADCELL_MAX),rSN(1:nSN),SNlevel(1:nSN),volSN(1:nSN),SNcooling(1:nSN))
   allocate(indSN(1:nSN))
 
   ! Compute blast radius
-  call subgrid_average_SN(xSN,rSN,vol_gas,volSN,indSN,nSN,SNlevel,.false.)
+  call subgrid_average_SN(xSN,rSN,vol_gas,volSN,indSN,nSN,SNlevel,SNcooling,.false.)
 
   ! Modify hydro quantities to account for a Sedov blast wave
-  call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,volSN,nSN,SNlevel,.false.)
+  call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,volSN,nSN,SNlevel,SNcooling,.false.)
 
 #ifdef DELAYED_SN
   inew=0
@@ -915,7 +915,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   enddo
 #endif
 
-  deallocate(xSN,mSN,indSN,vol_gas,rSN,volSN)
+  deallocate(xSN,mSN,indSN,vol_gas,rSN,volSN,,SNcooling)
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0)deallocate(xpdf,xSNIa,min_r2,min_r2_all)
@@ -939,7 +939,7 @@ end subroutine subgrid_sn_feedback
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delayed)
+subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -968,7 +968,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
 #ifndef DELAYED_SN
   integer ,dimension(1:nSN)::SNmaxrad
 #endif
-  real(dp),dimension(1:nSN)::ekBlast,rSN,volSN
+  real(dp),dimension(1:nSN)::ekBlast,rSN,volSN,SNcooling
   real(dp),dimension(1:nSN,1:RADCELL_MAX)::vol_gas,vol_gas_all,mtot,mtot_all
   integer,dimension(1:nSN,1:RADCELL_MAX)::snmaxlevel,snmaxlevel_all
   real(dp),dimension(1:nSN,1:ndim)::xSN
@@ -979,8 +979,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
   logical ,dimension(1:nvector),save::ok
 
   logical::delayed ! Don't flag SN for refinement and delayed blast multiple times
-  character(len=5)::delayedstr1
-  character(len=5)::delayedstr
+  character(len=5)::delayedstr1,delayedstr,coolstr
 
   if(nSN==0)return
   if(verbose)write(*,*)'Entering average_SN'
@@ -1148,13 +1147,26 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
        cycle
     endif
 
+    if ((rSN(iSN) < 2d0*dx_min).and.(delayed_cooling))then
+       SNcooling(iSN) = .false.
+       rSN(iSN) = 2d0*dx_min
+       SNmenc(iSN) = mtot_all(iSN,2)
+       SNvol(iSN) = vol_gas_all(iSN,2)
+    else
+       SNcooling(iSN) = .true.
+    endif
+
      if(myid==1) then
        fileloc=trim(output_dir)//'snblast.dat'
        ilun=140
        inquire(file=fileloc,exist=file_exist)
        if(.not.file_exist) then
           open(ilun, file=fileloc, form='formatted')
+#ifdef DELAYED_SN
           write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast mass (Msun)          Blast temperature (K)   Delayed  To be delayed"
+#else
+          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast mass (Msun)          Blast temperature (K)   Cooling"
+#endif
        else
           open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
        endif
@@ -1163,6 +1175,11 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
 #else
        z = 0.0
 #endif
+       if (SNcooling(iSN))then
+          coolstr = 'Y'
+       else
+          coolstr = 'N'
+       endif
 #ifdef DELAYED_SN
        if (delayed)then
           delayedstr1 = 'Y'
@@ -1174,9 +1191,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,delaye
        else
           delayedstr = 'Y'
        endif
-       write(ilun,'(5E26.16,I5,2E26.16,A7,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), delayedstr1,delayedstr
+       write(ilun,'(5E26.16,I5,2E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
-       write(ilun,'(5E26.16,I5,2E26.16,I5)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN)
+       write(ilun,'(5E26.16,I5,2E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
 #endif
        close(ilun)
      endif
@@ -1296,7 +1313,7 @@ end subroutine subgrid_average_SN
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
+subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -1314,7 +1331,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
-  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
+  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN,SNcooling
   real(dp),dimension(1:nSN,1:ndim)::xSN
   integer ,dimension(1:nSN)::indSN,SNlevel
   logical ,dimension(1:nvector),save::ok
@@ -1440,6 +1457,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,delayed)
                        if(dr_SN.lt.(1.001*rSN(iSN))**2)then
                           ! Update the total energy of the gas
                           uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+p_gas(iSN)
+                          if (.not.SNcooling(iSN))uold(ind_cell(i),idelay) = uold(ind_cell(i),idelay) + d_gas(iSN)
                           !write(*,*)"SN d: ", d_gas(iSN), " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !                          write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
                        endif

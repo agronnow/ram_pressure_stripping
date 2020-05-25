@@ -113,8 +113,9 @@ subroutine condinit(x,u,dx,nn)
       q(i,4) = 0.0      !z-velocity
 #endif
       q(i,imetal) = Z_wind*0.02
-      q(i,imetal+1) = 0.0	!tracer
-      q(i,imetal+2) = 0.0     !sf gas tracer
+      q(i,imetal+1) = 0.0	!delayed cooling
+      q(i,imetal+2) = 0.0	!tracer
+!      q(i,imetal+3) = 0.0     !sf gas tracer
     else
       q(i,1) = rho_cloud
       q(i,ndim+2) = P_cloud
@@ -125,11 +126,11 @@ subroutine condinit(x,u,dx,nn)
 #endif
       q(i,imetal) = Z_cloud*0.02 !metallicity converted from relative to solar to absolute assuming Z_sol=0.02 as hardcoded in other parts of RAMSES
       q(i,imetal+1) = 1.0 !tracer
-      if (currad < Rad_cloud) then
-        q(i,imetal+2) = 1.0     !sf gas tracer
-      else
-        q(i,imetal+2) = 0.0     !sf gas tracer
-      endif
+!      if (currad < Rad_cloud) then
+!        q(i,imetal+3) = 1.0     !sf gas tracer
+!      else
+!        q(i,imetal+3) = 0.0     !sf gas tracer
+!      endif
 !      if (currad > r_max)r_max=currad
     endif
 !    write(*,*) "i ", i, " r ", currad, " rho: ", q(i,1), " P:",q(i,ndim+2), "Phi:",PhiR,"gammainc2n:",gammainc2n((currad/R_s)**(1d0/ein_n)),"gammainc3n",gammainc3n((currad/R_s)**(1d0/ein_n))!" vy: ", q(i,3), " P: ", q(i,ndim+2), " T ", (q(i,ndim+2)*mu/q(i,1))*scale_t2, " x1: ", x1_c

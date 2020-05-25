@@ -175,7 +175,7 @@ module amr_parameters
   logical ::isothermal=.false.
   logical ::metal=.false.
   logical ::haardt_madau=.false.
-  logical ::delayed_cooling=.false.
+  logical ::delayed_cooling=.true.
   logical ::smbh=.false.
   logical ::agn=.false.
   logical ::use_proper_time=.false.
