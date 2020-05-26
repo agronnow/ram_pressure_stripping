@@ -649,7 +649,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                 call poissdev(localseedsn,PoissMean,nSN)
                 if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
 !               if (nosn) then
-#elsethat
+#else
 !SN injection test sim
                 if (nSN_alltime==0)then
                    x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
