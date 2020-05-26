@@ -649,14 +649,14 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                 call poissdev(localseedsn,PoissMean,nSN)
                 if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
 !               if (nosn) then
-#else
+#elsethat
 !SN injection test sim
-                if ((nSN_alltime==0).and.(t>SN_inject_t))then
+                if (nSN_alltime==0)then
                    x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
                    y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
                    z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
 !                   write(*,*)abs(x - 0.51*boxlen), abs(y - 0.5*boxlen), abs(z - 0.5*boxlen), dx_loc
-                   if ((abs(x - SN_inject_x) < 0.9*dx_min) .and. (abs(y - SN_inject_y) < 0.9*dx_min) .and. (abs(z - SN_inject_z) < 0.9*dx_min))then
+                   if ((abs(x - SN_inject_x) < 0.5*dx_min) .and. (abs(y - SN_inject_y) < 0.5*dx_min) .and. (abs(z - SN_inject_z) < 0.5*dx_min))then
 !if ((abs(x - 0.5*boxlen < 0.51*dx_min) .and. (x > 0.5*boxlen) .and. (y - 0.5*boxlen < 0.51*dx_min) .and. (z - 0.5*boxlen < 0.51*dx_min) .and. (y > 0.5*boxlen) .and. (z > 0.5*boxlen))then
                       nSN = 1
                       nSN_alltime = 1
