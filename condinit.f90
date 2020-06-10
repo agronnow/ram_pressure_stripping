@@ -43,8 +43,12 @@ subroutine condinit(x,u,dx,nn)
   real(dp),save::gamma3n,ein_M
 #endif
 
-!  call region_condinit(x,q,dx,nn)
-!if (1==0)then
+#ifdef SIMPLE_IC
+  call region_condinit(x,q,dx,nn)
+  q(1:nn,imetal) = Z_cloud*0.02
+  q(1:nn,imetal+1) = 0.0	!delayed cooling
+  q(1:nn,imetal+2) = 1.0	!tracer
+#else
   ! User-defined initial conditions
 
   call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
@@ -138,6 +142,7 @@ subroutine condinit(x,u,dx,nn)
   enddo
 !write(*,*)'r_max:',r_max, 'mu_wind:',mu_wind,'mu_cloud:',mu_cloud
 !endif
+#endif
   ! Convert primitive to conservative variables
   ! density -> density
   u(1:nn,1)=q(1:nn,1)
