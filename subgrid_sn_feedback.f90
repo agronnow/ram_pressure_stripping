@@ -602,7 +602,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 #endif
            prs = prs*(gamma-1.0)
            T2=prs*scale_T2*0.6/d
-           nH=max(uold(ind_cell(i),1),smallr)*scale_nH
+!           nH=max(uold(ind_cell(i),1),smallr)*scale_nH
 !          T_poly=T2_star*(nH/nISM)**(g_star-1.0)
 !          T2=T2-T_poly
            if(T2>4e4) then

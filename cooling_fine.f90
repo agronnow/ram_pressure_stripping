@@ -539,7 +539,6 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
      if(cooling.or.neq_chem)then
         do i=1,nleaf
            T2(i) = T2(i) + delta_T2(i)
-           if (T2(i) < Tmufloor) T2(i) = Tmufloor
         end do
      endif
 
