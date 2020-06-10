@@ -125,7 +125,8 @@ subroutine condinit(x,u,dx,nn)
       q(i,4) = 0.0      !z-velocity
 #endif
       q(i,imetal) = Z_cloud*0.02 !metallicity converted from relative to solar to absolute assuming Z_sol=0.02 as hardcoded in other parts of RAMSES
-      q(i,imetal+1) = 1.0 !tracer
+      q(i,imetal+1) = 0.0	!delayed cooling
+      q(i,imetal+2) = 1.0 !tracer
 !      if (currad < Rad_cloud) then
 !        q(i,imetal+3) = 1.0     !sf gas tracer
 !      else
