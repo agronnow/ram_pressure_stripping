@@ -673,7 +673,7 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool)
         tau_negative=.true.
         !write(*,*)"WARNING: Negative temp: tau=",tau(i)," tau_ini=",tau_ini(i)," rho=",nH(i)," Z=",zzz(i)," t_max=",time_max(i)," t_old=",time_old(i)," t=",time(i)," ok_cool=",ok_cool(i)
         tau(i) = Tmufloor
-     else if (tau(i)<Tmufloor)tau(i)=Tmufloor
+     elseif (tau(i)<Tmufloor)tau(i)=Tmufloor
      endif
   end do
   if (tau_negative) then
