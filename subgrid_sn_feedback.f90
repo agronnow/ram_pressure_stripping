@@ -330,7 +330,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
        do i=1,NPDFBINS
           currad = (i-1)*binwidth
 #ifdef SNIA_PLUMMER
-          PDF_SNIa(i) = (3.0/(2.0*twopi*r_plummer**3))*(1.0+currad/r_plummer**2)**(-2.5)
+          PDF_SNIa(i) = (3.0/(2.0*twopi*r_plummer**3))*(1.0+currad**2/r_plummer**2)**(-2.5)
 #else
           if (currad > 0.0) then
             PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
