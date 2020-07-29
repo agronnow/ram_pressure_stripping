@@ -323,6 +323,8 @@ module amr_parameters
   real(dp)::vsfr_fac = 0.0              ! Factor "A" in volumetric SF law (Bacchini et al.) A*rho^alpha        [yr^-1]
   real(dp)::vsfr_pow = 0.0              ! Exponent "alpha" in volumetric SF law A*rho^alpha                    []
   real(dp)::tinit_sim = 0.0             ! Initial cosmic time of simulation for use in SNIa rate calculation   [Gyr]
+  real(dp)::tbeg_wind = 0.0             ! Time elapsed before the wind is added                                [Gyr]
+  real(dp)::sfr_boost = 1.0             ! Factor to multiply SFH by for SNIa rates before the wind is added    []
   real(dp)::dt_sfhist = 0.0             ! Time interval between SF history updates in SNIa rate calculation    [Gyr]
   real(dp)::dt_sfrlog = 0.0             ! Time interval between SF history log output                          [Gyr]
   real(dp)::r_plummer = 0.0             ! Plummer radius used in SNIa location probability calculation         [kpc]

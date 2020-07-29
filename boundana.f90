@@ -4,7 +4,7 @@
 !############################################################
 subroutine boundana(x,u,dx,ibound,ncell)
   use amr_commons, ONLY: t
-  use amr_parameters, ONLY: dp,ndim,nvector,ndens_wind,T_wind,vel_wind,Z_wind,output_dir,orbitfile
+  use amr_parameters, ONLY: dp,ndim,nvector,ndens_wind,T_wind,vel_wind,Z_wind,output_dir,orbitfile,tbeg_wind
   use hydro_parameters, ONLY: nvar,nener,boundary_var,gamma,imetal
   use cooling_module, ONLY: kb
   implicit none
@@ -83,8 +83,8 @@ subroutine boundana(x,u,dx,ibound,ncell)
   Pwind = ndens_wind*T_wind/scale_T2
 
   if (vel_wind > 0.0)then
-     itab = idint(t/dt)+1 !Assume table starts at t=0 and is evenly spaced in t
-     vel = (tab_vel(itab)*(tab_t(itab+1) - t) + tab_vel(itab+1)*(t - tab_t(itab)))/dt
+     itab = idint((t-tbeg_wind)/dt)+1 !Assume table starts at t=0 and is evenly spaced in t
+     vel = (tab_vel(itab)*(tab_t(itab+1) - (t-tbeg_wind)) + tab_vel(itab+1)*(t-tbeg_wind - tab_t(itab)))/dt
   else !Static run
      vel = 0.0
   endif

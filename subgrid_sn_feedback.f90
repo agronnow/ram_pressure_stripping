@@ -298,6 +298,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      fileloc=trim(output_dir)//'snIa_sfr.log'
      inquire(file=fileloc,exist=file_exist)
      if(file_exist) then
+        if (vel_wind > 0.0)sfr_boost = 1.0
         open(ilun, file=fileloc)
         read(ilun,*)dummyline
         do
@@ -306,7 +307,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
            if ((stat /= 0) .or. (ctime > tinit_sim + t*scale_t/3.154e16))exit
            t_sfhist(nhist+1) = ctime
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
-           sfhist(nhist+1) = csfh
+           sfhist(nhist+1) = csfh*sfr_boost
            nhist=nhist+1
            write(*,*)myid,nhist,t_sfhist(nhist),sfhist(nhist)
         end do
