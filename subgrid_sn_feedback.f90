@@ -217,7 +217,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
     calc_sfr = .false.
     if (sfhist_update) then
        nhist = nhist + 1
-       t_sfhist(nhist) = t*scale_t/3.154e16 + tinit_sim
+       t_sfhist(nhist) = (t-tbeg_wind)*scale_t/3.154e16 + tinit_sim
        sfhist(nhist) = sum(sfr_tot)
 #if NDIM==2
        sfhist(nhist) = sfhist(nhist)*4.0*Rad_cloud/3.0
@@ -304,7 +304,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
         do
            read(ilun,*, iostat=stat)ctime,csfh
            ctime = ctime*scale_t/3.154e16 + tinit_sim
-           if ((stat /= 0) .or. (ctime > tinit_sim + t*scale_t/3.154e16))exit
+           if ((stat /= 0) .or. (ctime > tinit_sim + (t-tbeg_wind)*scale_t/3.154e16))exit
            t_sfhist(nhist+1) = ctime
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
            sfhist(nhist+1) = csfh*sfr_boost
@@ -369,11 +369,11 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   endif
 
   if ((ilevel == levelmin) .and. .not.(firstcall)) then
-    if (t*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist) > dt_sfhist) then
-       if (myid==1)write(*,*)'Update sfh',t*scale_t/3.154e16,tinit_sim,t_sfhist(nhist),dt_sfhist
+    if ((t-tbeg_wind)*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist) > dt_sfhist) then
+       if (myid==1)write(*,*)'Update sfh',(t-tbeg_wind)*scale_t/3.154e16,tinit_sim,t_sfhist(nhist),dt_sfhist
        sfhist_update = .true.
        calc_sfr = .true.
-    else if (t*scale_t/3.154e16 + tinit_sim - t_sfrlog > dt_sfrlog) then
+    else if ((t-tbeg_wind)*scale_t/3.154e16 + tinit_sim - t_sfrlog > dt_sfrlog) then
        if(myid==1)write(*,*)'Calculate sfr'
        calc_sfr = .true.
     endif
@@ -390,7 +390,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
          if (nt < nhist) then
             dt = t_sfhist(nt+1) - t_sfhist(nt)
          else
-            dt = t*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist)
+            dt = (t-tbeg_wind)*scale_t/3.154e16 + tinit_sim - t_sfhist(nhist)
          endif
          rho_SNIa = rho_SNIa + sfhist(nhist-nt+1)*DTD_A*(t_sfhist(nt))**DTD_s*dt*1d9 ! SNIa per year
          !write(*,*)nt,nhist-nt+1,rho_SNIa,t_sfhist(nt),sfhist(nhist-nt+1),dt,DTD_A,DTD_s
@@ -409,7 +409,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
       else
          open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
       endif
-      write(ilun,'(3E26.16)') t, rho_SNIa, PoissMeanIa
+      write(ilun,'(3E26.16)') (t-tbeg_wind), rho_SNIa, PoissMeanIa
       close(ilun)
 #endif
       ! Compute Poisson realisation

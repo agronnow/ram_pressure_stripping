@@ -148,7 +148,7 @@ subroutine init_hydro
                        end do
                     else if(ivar>=2.and.ivar<=ndim+1)then
                        do i=1,ncache
-                          uold(ind_grid(i)+iskip,ivar)=xx(i)*max(uold(ind_grid(i)+iskip,1),smallr)
+                          uold(ind_grid(i)+iskip,ivar)=(xx(i)+vel_wind)*max(uold(ind_grid(i)+iskip,1),smallr)
                        end do
                     endif
                  end do
