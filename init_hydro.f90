@@ -1,6 +1,7 @@
 subroutine init_hydro
   use amr_commons
   use hydro_commons
+  use amr_parameters
 #ifdef RT
   use rt_parameters,only: convert_birth_times
 #endif
@@ -21,6 +22,9 @@ subroutine init_hydro
 #if NENER>0
   integer::irad
 #endif
+  real(dp),dimension(1:twotondim,1:3)::xc
+  real(dp)::rad,vel,x1c,x2c,x3c,dx
+  integer::ix,iy,iz
 
   if(verbose)write(*,*)'Entering init_hydro'
 
@@ -110,7 +114,12 @@ subroutine init_hydro
         call clean_stop
      end if
 #endif
+     x1c = x1_c*boxlen
+     x2c = x2_c*boxlen
+     x3c = x3_c*boxlen
      do ilevel=1,nlevelmax2
+        ! Mesh size at level ilevel
+        dx=0.5D0**ilevel
         do ibound=1,nboundary+ncpu
            if(ibound<=ncpu)then
               ncache=numbl(ibound,ilevel)
@@ -138,6 +147,13 @@ subroutine init_hydro
               ! Loop over cells
               do ind=1,twotondim
                  iskip=ncoarse+(ind-1)*ngridmax
+                 ! Set position of cell centers relative to grid center
+                 iz=(ind-1)/4
+                 iy=(ind-1-4*iz)/2
+                 ix=(ind-1-2*iy-4*iz)
+                 if(ndim2>0)xc(ind,1)=(dble(ix)-0.5D0)*dx
+                 if(ndim2>1)xc(ind,2)=(dble(iy)-0.5D0)*dx
+                 if(ndim2>2)xc(ind,3)=(dble(iz)-0.5D0)*dx
 
                  ! Read density and velocities --> density and momenta
                  do ivar=1,ndim+1
@@ -149,6 +165,7 @@ subroutine init_hydro
                     else if(ivar>=2.and.ivar<=ndim+1)then
                        do i=1,ncache
                           vel = 0
+                          rad = sqrt((xg(ind_grid(i),1)+xc(ind,1) - x1c)**2 + (xg(ind_grid(i),2)+xc(ind,2) - x2c)**2 + (xg(ind_grid(i),3)+xc(ind,3) - x3c)**2)
                           if ((rad > rad_wind) .and. (uold(ind_grid(i)+iskip,1) < rhomax_wind)) vel=vel_wind
                           uold(ind_grid(i)+iskip,ivar)=(xx(i)+vel)*max(uold(ind_grid(i)+iskip,1),smallr)
                        end do
