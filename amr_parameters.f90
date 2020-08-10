@@ -305,6 +305,8 @@ module amr_parameters
   real(dp)::x2_c = 0.0                  ! Center y coordinate of dSph                                          [kpc]
   real(dp)::x3_c = 0.0                  ! Center z coordinate of dSph                                          [kpc]
   real(dp)::vel_wind = 0.0              ! Set to zero for static sim, otherwise vel. from file will be used    []
+  real(dp)::rad_wind = 0.0              ! Radius outside of xwhich the wind is added
+  real(dp)::rhomax_wind = 0.0           ! Maximum density for adding the wind
   real(dp)::T_wind = 0.0                ! Temperature of corona gas                                            [K]
   real(dp)::ndens_wind = 0.0            ! Corona gas particle number density                                   [amu cm^-3]
   real(dp)::T_cloud = 0.0               ! Temperature of dSph gas                                              [K]
