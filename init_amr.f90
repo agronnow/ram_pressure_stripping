@@ -30,6 +30,7 @@ subroutine init_amr
 #ifdef QUADHILBERT
   real(kind=8),allocatable,dimension(:)::bound_key_restart
 #endif
+  real(dp)::tend,delta_tout
 
   if(verbose.and.myid==1)write(*,*)'Entering init_amr'
 
@@ -318,9 +319,18 @@ subroutine init_amr
         if(myid==1)write(*,*)'Restart failed'
         call clean_stop
      end if
+     delta_tout = tout(1)
+     tend = tout(2)
      ! Old output times
-     tout(1:noutput2)=tout2(1:noutput2)
-     aout(1:noutput2)=aout2(1:noutput2)
+     tout(1:nrestart-1)=tout2(1:nrestart-1)
+     aout(1:nrestart-1)=aout2(1:nrestart-1)
+     noutput=MIN(nrestart+int((tend-tout(nrestart-1))/delta_tout),MAXOUT)
+     do i=nrestart,noutput
+        tout(i)=tout(nrestart-1)+dble(i-nrestart+1)*delta_tout
+     end do
+     write(*,*)nrestart, noutput, tend, delta_tout, tout(nrestart-1), tout(nrestart), tout(noutput)
+!     call clean_stop
+
      iout=iout2
      ifout=ifout2
      if(ifout.gt.nrestart+1) ifout=nrestart+1

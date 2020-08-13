@@ -224,6 +224,12 @@ subroutine read_params
      end do
   endif
   noutput=MIN(noutput,MAXOUT)
+  ! Modified by AG: If restarting a run save delta_tout and tend in the tout array
+  ! tout is then set when reading the restart files such that delta_tout can be changed during runs
+  if (nrestart > 0) then
+     tout(1) = delta_tout
+     tout(2) = tend
+  endif
   if(imovout>0) then
      allocate(tmovout(0:imovout))
      allocate(amovout(0:imovout))

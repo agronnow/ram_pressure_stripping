@@ -166,7 +166,7 @@ subroutine init_hydro
                        do i=1,ncache
                           vel = 0
                           rad = sqrt((xg(ind_grid(i),1)+xc(ind,1) - x1c)**2 + (xg(ind_grid(i),2)+xc(ind,2) - x2c)**2 + (xg(ind_grid(i),3)+xc(ind,3) - x3c)**2)
-                          if ((rad > rad_wind) .and. (uold(ind_grid(i)+iskip,1) < rhomax_wind)) vel=vel_wind
+                          if ((ivar==3) .and. (rad > rad_wind) .and. (uold(ind_grid(i)+iskip,1) < rhomax_wind)) vel=vel_wind
                           uold(ind_grid(i)+iskip,ivar)=(xx(i)+vel)*max(uold(ind_grid(i)+iskip,1),smallr)
                        end do
                     endif
