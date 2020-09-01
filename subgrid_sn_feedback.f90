@@ -982,6 +982,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
   logical ,dimension(1:nvector),save::ok
 
   logical::delayed ! Don't flag SN for refinement and delayed blast multiple times
+  logical::skip
   character(len=5)::delayedstr1,delayedstr,coolstr
 
   if(nSN==0)return
@@ -1113,6 +1114,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
 #endif
 
   do iSN=1,nSN
+     skip=.false.
 #ifdef DELAYED_SN
      if (delayed)then
         if(sn_isrefined(iSN)==0)cycle
@@ -1136,6 +1138,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
            SNvol(iSN) = vol_gas_all(iSN,radcells)
         endif
      enddo
+     if (rSN(iSN) >= RADCELL_MAX*dx_min)then
+        if (myid==1)write(*,*)"WARNING: Skipping SN with radius greater than the maximum number of cells allowed:", RADCELL_MAX
+        skip=.true.
+     endif
      if (delayed)SNlevel(iSN) = 0
 #ifndef DELAYED_SN
      if (SNmaxrad(iSN)*dx_min < rSN(iSN)) then
@@ -1147,7 +1153,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
 #endif
     if (rSN(iSN) == 0)then
        if (myid==1)write(*,*)"WARNING: Skipping SN with radius 0"
-       cycle
+       skip=.true.
     endif
 
     if ((rSN(iSN) < 3d0*dx_min).and.(delayed_cooling))then
@@ -1194,12 +1200,14 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
        else
           delayedstr = 'Y'
        endif
+       if (skip)delayedstr = 'SKIP'
        write(ilun,'(5E26.16,I5,2E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
        write(ilun,'(5E26.16,I5,2E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
 #endif
        close(ilun)
      endif
+     if (skip)cycle
 
 #ifdef DELAYED_SN
      if (SNlevel(iSN) > 0)cycle

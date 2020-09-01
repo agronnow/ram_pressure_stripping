@@ -309,7 +309,7 @@ subroutine init_amr
      ! Check compatibility with current parameters
      if((ndim2.ne.ndim).or.(nx2.ne.nx).or.(ny2.ne.ny).or.(nz2.ne.nz).or.&
           & (nboundary2.ne.nboundary).or.(nlevelmax2>nlevelmax).or.&
-          & (ngrid_current>ngridmax).or.(noutput2>noutput) )then
+          & (ngrid_current>ngridmax))then !.or.(noutput2>noutput) )then
         write(*,*)'File amr.tmp is not compatible with namelist'
         write(*,*)'         ndim   nx   ny   nz nlevelmax noutput   ngridmax nboundary'
         write(*,'("amr.tmp  =",4(I4,1x),5x,I4,4x,I4,3x,I8)')&
@@ -328,7 +328,7 @@ subroutine init_amr
      do i=nrestart,noutput
         tout(i)=tout(nrestart-1)+dble(i-nrestart+1)*delta_tout
      end do
-     write(*,*)nrestart, noutput, tend, delta_tout, tout(nrestart-1), tout(nrestart), tout(noutput)
+     if(myid==1)write(*,*)nrestart, noutput, tend, delta_tout, tout(nrestart-1), tout(nrestart), tout(noutput), tout(iout2)
 !     call clean_stop
 
      iout=iout2

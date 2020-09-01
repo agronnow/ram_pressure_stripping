@@ -23,8 +23,9 @@ subroutine init_hydro
   integer::irad
 #endif
   real(dp),dimension(1:twotondim,1:3)::xc
-  real(dp)::rad,vel,x1c,x2c,x3c,dx
-  integer::ix,iy,iz
+  real(dp),dimension(1:3)::skip_loc
+  real(dp)::rad,vel,x1c,x2c,x3c,dx,scale
+  integer::ix,iy,iz,nx_loc
 
   if(verbose)write(*,*)'Entering init_hydro'
 
@@ -117,6 +118,15 @@ subroutine init_hydro
      x1c = x1_c*boxlen
      x2c = x2_c*boxlen
      x3c = x3_c*boxlen
+!     open(120,file=trim(output_dir)//'coords.dat'//TRIM(nchar),status="new")
+
+     nx_loc=(icoarse_max-icoarse_min+1)
+     skip_loc=(/0.0d0,0.0d0,0.0d0/)
+     if(ndim>0)skip_loc(1)=dble(icoarse_min)
+     if(ndim>1)skip_loc(2)=dble(jcoarse_min)
+     if(ndim>2)skip_loc(3)=dble(kcoarse_min)
+     scale=boxlen/dble(nx_loc)
+
      do ilevel=1,nlevelmax2
         ! Mesh size at level ilevel
         dx=0.5D0**ilevel
@@ -151,9 +161,9 @@ subroutine init_hydro
                  iz=(ind-1)/4
                  iy=(ind-1-4*iz)/2
                  ix=(ind-1-2*iy-4*iz)
-                 if(ndim2>0)xc(ind,1)=(dble(ix)-0.5D0)*dx
-                 if(ndim2>1)xc(ind,2)=(dble(iy)-0.5D0)*dx
-                 if(ndim2>2)xc(ind,3)=(dble(iz)-0.5D0)*dx
+                 if(ndim>0)xc(ind,1)=(dble(ix)-0.5D0)*dx
+                 if(ndim>1)xc(ind,2)=(dble(iy)-0.5D0)*dx
+                 if(ndim>2)xc(ind,3)=(dble(iz)-0.5D0)*dx
 
                  ! Read density and velocities --> density and momenta
                  do ivar=1,ndim+1
@@ -165,7 +175,8 @@ subroutine init_hydro
                     else if(ivar>=2.and.ivar<=ndim+1)then
                        do i=1,ncache
                           vel = 0
-                          rad = sqrt((xg(ind_grid(i),1)+xc(ind,1) - x1c)**2 + (xg(ind_grid(i),2)+xc(ind,2) - x2c)**2 + (xg(ind_grid(i),3)+xc(ind,3) - x3c)**2)
+                          rad = sqrt(((xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale - x1c)**2 + ((xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale - x2c)**2 + ((xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale - x3c)**2)
+!                          if (ivar==3)write(120,*)rad,xg(ind_grid(i),1),xc(ind,1),x1c,xg(ind_grid(i),2),xc(ind,2),x2c,xg(ind_grid(i),3),xc(ind,3),x3c
                           if ((ivar==3) .and. (rad > rad_wind) .and. (uold(ind_grid(i)+iskip,1) < rhomax_wind)) vel=vel_wind
                           uold(ind_grid(i)+iskip,ivar)=(xx(i)+vel)*max(uold(ind_grid(i)+iskip,1),smallr)
                        end do
@@ -229,6 +240,8 @@ subroutine init_hydro
         end do
      end do
      close(ilun)
+!     close(120)
+!     call clean_stop
 
      ! Send the token
 #ifndef WITHOUTMPI

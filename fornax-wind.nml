@@ -50,8 +50,8 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.0001
-tend=1.201
+delta_tout=0.1
+tend=10.0
 output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/'
 /
 
@@ -94,7 +94,7 @@ x1_c=0.5
 x2_c=0.25
 x3_c=0.5
 vel_wind=1.642125251830218957e+01
-rad_wind = 3.0
+rad_wind = 0.0
 rhomax_wind = 1.e-3
 T_wind=1.8d6
 ndens_wind=1.d-4
