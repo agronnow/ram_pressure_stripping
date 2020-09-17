@@ -106,7 +106,15 @@ subroutine condinit(x,u,dx,nn)
     ! NFW
     PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
 #endif
-    rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
+    if (inner_dens > 0.0) then
+       if (currad < r_inner) then
+          rho_cloud = inner_dens*dexp(-inner_slope*currad)
+       else
+          rho_cloud = outer_dens*dexp(-outer_slope*currad)
+       endif
+    else
+       rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
+    endif
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
     if (P_cloud < P_wind) then
       q(i,1) = ndens_wind*mu_wind

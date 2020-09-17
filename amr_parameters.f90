@@ -334,5 +334,10 @@ module amr_parameters
   real(dp)::SN_inject_x = 0.0           ! Center x coordinate of injection SN for runs with SN_INJECT defined  [kpc]
   real(dp)::SN_inject_y = 0.0           ! Center y coordinate of injection SN for runs with SN_INJECT defined  [kpc]
   real(dp)::SN_inject_z = 0.0           ! Center z coordinate of injection SN for runs with SN_INJECT defined  [kpc]
+  real(dp)::inner_dens = 0.0            ! If >0 two exponentials a*exp(-bx) will be used for rho, this is 'a'  [amu cm^-3]
+  real(dp)::outer_dens = 0.0            ! Factor 'a' for the outer exponential                                 [amu cm^-3]
+  real(dp)::inner_slope = 0.0           ! Slope 'b' for inner exponential                                      []
+  real(dp)::outer_slope = 0.0           ! Slope 'b' for outer exponential                                      []
+  real(dp)::r_inner = 0.0               ! Radius to switch from inner to outer exponential density             [kpc]
 
 end module amr_parameters

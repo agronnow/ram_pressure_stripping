@@ -50,14 +50,15 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.1
-tend=10.0
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/'
+delta_tout=0.013
+tend=1.4
+output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/lowtempfloor/'
 /
 
 &HYDRO_PARAMS
 gamma=1.667
 courant_factor=0.6
+smallr=1d-8
 slope_type=3
 scheme='muscl'
 riemann='hllc'
