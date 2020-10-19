@@ -50,9 +50,9 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.013
-tend=1.4
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/lowtempfloor/'
+delta_tout=0.1
+tend=10.0 !1.6005
+output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/nofb/'
 /
 
 &HYDRO_PARAMS
@@ -86,7 +86,7 @@ mass_sph = 4.1d-8 ! 24393036.0 ! Set refinement mass to be in units of solar mas
 
 &FEEDBACK_PARAMS
 f_ek = 0.0
-delayed_cooling = .true.
+delayed_cooling = .false.
 t_diss = 0.06
 /
 
@@ -95,7 +95,7 @@ x1_c=0.5
 x2_c=0.25
 x3_c=0.5
 vel_wind=1.642125251830218957e+01
-rad_wind = 0.0
+rad_wind = 1.05897835
 rhomax_wind = 1.e-3
 T_wind=1.8d6
 ndens_wind=1.d-4
@@ -106,16 +106,16 @@ n0g=7.50001 !3.495746 !3.65468 !8.2449355
 r_cut=1.0589783458371023 !0.9402318 !0.875877 !1.5575 !1.03377 !0.80125748034242250
 Z_wind = 0.1
 Z_cloud = 0.02
-orbitfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
+orbitfile = 'orbitvelocity-fornax.dat'
 sfhistfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
-subgrid_feedback=.true.
+subgrid_feedback=.false.
 SN_blast_mass = 60.0
 rho_SN = 0.0118
 vsfr_fac = 7.94
 vsfr_pow = 1.91
 tinit_sim = 12.0
-tbeg_wind = 0.120001783312052E+01
+tbeg_wind = 0.0 !0.120001783312052E+01
 sfr_boost = 1.0
 dt_sfhist = 0.01
 dt_sfrlog = 0.001

@@ -51,8 +51,8 @@ nregion=1
 
 &OUTPUT_PARAMS
 delta_tout=0.1
-tend=1.3
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/static/highrefthresh/hisfr/'
+tend=0.105
+output_dir='/gpfs/work/IscrC_RAMPRESS/sims/static/highrefthresh/hisfr/576cpu/'
 /
 
 &HYDRO_PARAMS

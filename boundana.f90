@@ -4,7 +4,7 @@
 !############################################################
 subroutine boundana(x,u,dx,ibound,ncell)
   use amr_commons, ONLY: t
-  use amr_parameters, ONLY: dp,ndim,nvector,ndens_wind,T_wind,vel_wind,Z_wind,output_dir,orbitfile,tbeg_wind
+  use amr_parameters
   use hydro_parameters, ONLY: nvar,nener,boundary_var,gamma,imetal
   use cooling_module, ONLY: kb
   implicit none
@@ -59,7 +59,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
      call GetMuFromTemperature(T_wind,nH,mu_wind)
 
      if (vel_wind > 0.0)then
-        fileloc=trim(orbitfile)
+        fileloc=trim(output_dir)//trim(orbitfile)
         inquire(file=fileloc,exist=file_exists)
         ntab = 0
         if(file_exists) then

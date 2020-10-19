@@ -133,6 +133,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   integer::nrem,inew
 #endif
   integer,save::nSN_alltime = 0
+  integer::pdevsn2
 
   ! TODO: when f2008 is obligatory - remove this and replace erfc_pre_f08 below by
   ! the f2008 intrinsic erfc() function:
@@ -175,6 +176,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      xc(ind,3)=(dble(iz)-0.5D0)*dx
   end do
 
+  if (myid==200)write(*,*)'seed fb:',localseedsn
   ! If necessary, initialize random number generator
   if(localseedsn(1)==-1)then
      call rans(ncpu,iseed,allseed)
@@ -544,6 +546,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   sfr = 0.0
 #endif
 
+  pdevsn2=0
 ! get values of uold for density and velocities in virtual boundaries
 !#ifndef WITHOUTMPI
 !  do ivar=1,nvar
@@ -648,6 +651,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
                 ! Compute Poisson realisation
 !                oldseed = localseedsn
                 call poissdev(localseedsn,PoissMean,nSN)
+                if (myid==200)pdevsn2=pdevsn2+1
                 if (PoissMean > maxPoissMean) maxPoissMean = PoissMean
 !               if (nosn) then
 #else
@@ -791,6 +795,8 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   endif
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
+
+  if(myid==200)write(*,*)'calls to poissdev: ',pdevsn2
 
 #ifdef DELAYED_SN
   if ((nSN_tot .eq. 0).and.(nSN_prev .eq. 0)) return
@@ -1575,6 +1581,9 @@ subroutine init_subgrid_feedback
       endif
 
       call MPI_SCATTER(allseeds,IRandNumSize,MPI_INTEGER,localseedsn,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
+  endif
+  if (myid==200) then
+     write(*,*)'seeds(200): ',localseedsn
   endif
   if(verbose)write(*,*)'Exiting init_subgrid_feedback'
 end subroutine init_subgrid_feedback

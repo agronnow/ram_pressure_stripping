@@ -140,7 +140,7 @@ recursive subroutine amr_step(ilevel,icount)
      call MPI_BARRIER(MPI_COMM_WORLD,mpi_err)
      call MPI_ALLREDUCE(output_now,output_now_all,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,mpi_err)
 #endif
-     if(mod(nstep_coarse,foutput)==0.or.aexp>=aout(iout).or.t>=tout(iout).or.output_now_all.EQV..true. .or. dtold(ilevel) < 1d-10 .or. isnan(ekin_tot+epot_tot))then
+     if(mod(nstep_coarse,foutput)==0.or.aexp>=aout(iout).or.t>=tout(iout).or.output_now_all.EQV..true. .or. (dtold(ilevel) < 1d-10 .and. t>0.1) .or. isnan(ekin_tot+epot_tot))then
                                call timer('io','start')
         if(.not.ok_defrag)then
            call defrag
@@ -162,7 +162,7 @@ recursive subroutine amr_step(ilevel,icount)
         if (output_now_all.EQV..true.) then
           output_now=.false.
         endif
-        if (dtold(ilevel) < 1d-10)then
+        if ((dtold(ilevel) < 1d-10) .and. t > 0.1)then
            call MPI_BARRIER(MPI_COMM_WORLD,mpi_err)
            if(myid==1)write(*,*)'WARNING: dt too small, stopping!'
            call clean_stop
