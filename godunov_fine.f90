@@ -480,6 +480,10 @@ subroutine godfine1(ind_grid,ncache,ilevel)
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:3)::xc
   integer ::ix,iy,iz,ind
+  real(dp)::flux_in,flux_out,flux_excess,prs,eth_flow,vel_riem
+#if NVAR > NDIM + 2
+  integer::n
+#endif
 #else
   real(dp),dimension(1:nvector,if1:if2,jf1:jf2,kf1:kf2,1:2,1:ndim),save::tmp
 #endif

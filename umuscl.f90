@@ -27,7 +27,6 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
 
   integer ::ngrid
   real(dp)::dx,dy,dz,dt
-  real(dp)::flux_in,flux_out,flux_excess,prs,eth_flow,vel_riem
 
   ! Input states
   real(dp),dimension(1:nvector,iu1:iu2,ju1:ju2,ku1:ku2)::pin
@@ -69,9 +68,6 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
   integer::i,j,k,l,ivar,idim,jdim
   integer::ilo,ihi,jlo,jhi,klo,khi
   integer::i0,j0,k0
-#if NVAR > NDIM + 2
-  integer::n
-#endif
 
   ilo=MIN(1,iu1+2); ihi=MAX(1,iu2-2)
   jlo=MIN(1,ju1+2); jhi=MAX(1,ju2-2)
