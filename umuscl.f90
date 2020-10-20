@@ -202,6 +202,9 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
   do j=jlo,jhi
   do k=klo,khi
      do l=1,ngrid
+        if (uin(l,i,j,k,1) < 0d0)then
+           write(*,*)'WARNING: Negative density ', uin(l,i,j,k,1)
+        endif
         do idim=1,ndim
            flux_in = 0d0
            flux_out = 0d0
@@ -224,7 +227,7 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
            endif
         enddo
         if (flux_out > flux_in + uin(l,i,j,k,1))then
-           flux_excess = abs((flux_in + uin(l,i,j,k,1))/flux_out)
+           flux_excess = flux_out/abs(flux_in + uin(l,i,j,k,1))
            do idim=1,ndim
               i0=0; j0=0; k0=0
               if(idim==1)i0=1

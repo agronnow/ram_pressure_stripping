@@ -52,7 +52,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.1
 tend=10.0 !1.6005
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/nofb/'
+output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/fluxlim/'
 /
 
 &HYDRO_PARAMS
@@ -109,7 +109,7 @@ Z_cloud = 0.02
 orbitfile = 'orbitvelocity-fornax.dat'
 sfhistfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
-subgrid_feedback=.false.
+subgrid_feedback=.true.
 SN_blast_mass = 60.0
 rho_SN = 0.0118
 vsfr_fac = 7.94

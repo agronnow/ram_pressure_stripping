@@ -51,8 +51,8 @@ nregion=1
 
 &OUTPUT_PARAMS
 delta_tout=0.1
-tend=0.105
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/static/highrefthresh/hisfr/576cpu/'
+tend=10.0
+output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/fluxlim/'
 /
 
 &HYDRO_PARAMS
@@ -107,7 +107,7 @@ orbitfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pres
 sfhistfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
-SN_blast_mass = 0.0001 !60.0
+SN_blast_mass = 60.0
 rho_SN = 0.0118
 vsfr_fac = 7.94
 vsfr_pow = 1.91
