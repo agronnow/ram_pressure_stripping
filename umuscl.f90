@@ -65,9 +65,8 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
   real(dp),dimension(1:nvector,if1:if2,jf1:jf2,kf1:kf2)::divu
 
   ! Local scalar variables
-  integer::i,j,k,l,ivar,idim,jdim
+  integer::i,j,k,l,ivar
   integer::ilo,ihi,jlo,jhi,klo,khi
-  integer::i0,j0,k0
 
   ilo=MIN(1,iu1+2); ihi=MAX(1,iu2-2)
   jlo=MIN(1,ju1+2); jhi=MAX(1,ju2-2)
