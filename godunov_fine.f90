@@ -477,6 +477,9 @@ subroutine godfine1(ind_grid,ncache,ilevel)
   real(dp),dimension(1:nvector,if1:if2,jf1:jf2,kf1:kf2,1:nvar,1:ndim),save::flux
 #ifdef LIMIT_FLUX_OUT
   real(dp),dimension(1:nvector,if1:if2,jf1:jf2,kf1:kf2,1:3,1:ndim),save::tmp
+  real(dp),dimension(1:3)::skip_loc
+  real(dp),dimension(1:twotondim,1:3)::xc
+  integer ::ix,iy,iz,ind
 #else
   real(dp),dimension(1:nvector,if1:if2,jf1:jf2,kf1:kf2,1:2,1:ndim),save::tmp
 #endif
@@ -497,6 +500,13 @@ subroutine godfine1(ind_grid,ncache,ilevel)
   nx_loc=icoarse_max-icoarse_min+1
   scale=boxlen/dble(nx_loc)
   dx=0.5D0**ilevel*scale
+  
+#ifdef LIMIT_FLUX_OUT
+  skip_loc=(/0.0d0,0.0d0,0.0d0/)
+  if(ndim>0)skip_loc(1)=dble(icoarse_min)
+  if(ndim>1)skip_loc(2)=dble(jcoarse_min)
+  if(ndim>2)skip_loc(3)=dble(kcoarse_min)
+#endif
 
   ! Integer constants
   i1min=0; i1max=0; i2min=0; i2max=0; i3min=1; i3max=1
@@ -665,105 +675,104 @@ subroutine godfine1(ind_grid,ncache,ilevel)
   !----------------------------------------------------
   ! Limit mass outflow to not exceed total mass in cell
   !----------------------------------------------------
-  do idim=1,ndim
-     i0=0; j0=0; k0=0
-     if(idim==1)i0=1
-     if(idim==2)j0=1
-     if(idim==3)k0=1
-     do k2=k2min,k2max
-     do j2=j2min,j2max
-     do i2=i2min,i2max
-        ind_son=1+i2+2*j2+4*k2
-        iskip=ncoarse+(ind_son-1)*ngridmax
-        do i=1,ncache
-           ind_cell(i)=iskip+ind_grid(i)
-        end do
-        i3=1+i2
-        j3=1+j2
-        k3=1+k2
-        do i=1,ncache
-          if (unew(ind_cell(i),1) < 0d0)then
-            ! Mesh spacing in that level
-            dx=0.5D0**ilevel
-            nx_loc=(icoarse_max-icoarse_min+1)
-            skip_loc=(/0.0d0,0.0d0,0.0d0/)
-            if(ndim>0)skip_loc(1)=dble(icoarse_min)
-            if(ndim>1)skip_loc(2)=dble(jcoarse_min)
-            if(ndim>2)skip_loc(3)=dble(kcoarse_min)
 
-             ! Cells center position relative to grid center position
-             do ind=1,twotondim
-               iz=(ind-1)/4
-               iy=(ind-1-4*iz)/2
-               ix=(ind-1-2*iy-4*iz)
-               xc(ind,1)=(dble(ix)-0.5D0)*dx
-               xc(ind,2)=(dble(iy)-0.5D0)*dx
-               xc(ind,3)=(dble(iz)-0.5D0)*dx
-             end do
-             !ind=(ind_cell(i)-ncoarse-1)/ngridmax+1
-             write(*,*)'WARNING: Negative density ', unew(ind_cell(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind_son,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind_son,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind_son,3)-skip_loc(3))*scale
-          endif
-          do idim=1,ndim
-             flux_in = 0d0
-             flux_out = 0d0
+  do k2=k2min,k2max
+  do j2=j2min,j2max
+  do i2=i2min,i2max
+     ind_son=1+i2+2*j2+4*k2
+     iskip=ncoarse+(ind_son-1)*ngridmax
+     do i=1,ncache
+        ind_cell(i)=iskip+ind_grid(i)
+     end do
+     i3=1+i2
+     j3=1+j2
+     k3=1+k2
+     do i=1,ncache
+       if (unew(ind_cell(i),1) < 0d0)then
+         !Find coordinates of cell with negative density and issue a warning
+
+          ! Cells center position relative to grid center position
+          do ind=1,twotondim
+            iz=(ind-1)/4
+            iy=(ind-1-4*iz)/2
+            ix=(ind-1-2*iy-4*iz)
+            xc(ind,1)=(dble(ix)-0.5D0)*dx
+            xc(ind,2)=(dble(iy)-0.5D0)*dx
+            xc(ind,3)=(dble(iz)-0.5D0)*dx
+          end do
+          !ind=(ind_cell(i)-ncoarse-1)/ngridmax+1
+          write(*,*)'WARNING: Negative density ', unew(ind_cell(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind_son,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind_son,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind_son,3)-skip_loc(3))*scale
+       endif
+
+       do idim=1,ndim
+         i0=0; j0=0; k0=0
+         if(idim==1)i0=1
+         if(idim==2)j0=1
+         if(idim==3)k0=1
+
+          flux_in = 0d0
+          flux_out = 0d0
 !            flux_tot = flux_tot + flux(i,i3,j3,k3,1,idim) - flux(l,i+i0,j+j0,k+k0,1,idim)
-             if (flux(i,i3,j3,k3,1,idim) >= 0d0)then
-                !inflow
-                flux_in = flux_in + flux(i,i3,j3,k3,1,idim)
-             else
-                !outflow
-                flux_out = flux_out - flux(i,i3,j3,k3,1,idim)
+          if (flux(i,i3,j3,k3,1,idim) >= 0d0)then
+             !inflow
+             flux_in = flux_in + flux(i,i3,j3,k3,1,idim)
+          else
+             !outflow
+             flux_out = flux_out - flux(i,i3,j3,k3,1,idim)
+          endif
+          if (flux(i,i3+i0,j3+j0,k3+k0,1,idim) <= 0d0)then
+             flux_in = flux_in - flux(i,i3+i0,j3+j0,k3+k0,1,idim)
+          else
+             flux_out = flux_out + flux(i,i3+i0,j3+j0,k3+k0,1,idim)
+          endif
+       enddo
+       if (flux_out > flux_in + unew(ind_cell(i),1))then
+          flux_excess = flux_out/abs(flux_in + unew(ind_cell(i),1))
+          do idim=1,ndim
+             i0=0; j0=0; k0=0
+             if(idim==1)i0=1
+             if(idim==2)j0=1
+             if(idim==3)k0=1
+             if(flux(i,i3,j3,k3,1,idim) < 0d0)then
+                eth_flow = tmp(i,i3,j3,k3,2,idim)
+                vel_riem = tmp(i,i3,j3,k3,3,idim)
+                flux(i,i3,j3,k3,1,idim) = flux(i,i3,j3,k3,1,idim)/(1.01*flux_excess) !rescale mass density flux
+                prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
+                do jdim=1,ndim
+                   flux(i,i3,j3,k3,1+jdim,idim) = (flux(i,i3,j3,k3,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
+                enddo
+                flux(i,i3,j3,k3,ndim+2,idim) = (flux(i,i3,j3,k3,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
+#if NVAR > NDIM + 2
+                !rescale other advected quantities
+                do n = ndim+3, nvar
+                   flux(i,i3,j3,k3,n,idim) = flux(i,i3,j3,k3,n,idim)/(1.01*flux_excess)
+                end do
+#endif
              endif
-             if (flux(i,i3+i0,j3+j0,k3+k0,1,idim) <= 0d0)then
-                flux_in = flux_in - flux(i,i3+i0,j3+j0,k3+k0,1,idim)
-             else
-                flux_out = flux_out + flux(i,i3+i0,j3+j0,k3+k0,1,idim)
+             if(flux(i,i3+i0,j3+j0,k3+k0,1,idim) > 0d0)then
+                eth_flow = tmp(i,i3+i0,j3+j0,k3+k0,2,idim)
+                vel_riem = tmp(i,i3+i0,j3+j0,k3+k0,3,idim)
+                flux(i,i3+i0,j3+j0,k3+k0,1,idim) = flux(i,i3+i0,j3+j0,k3+k0,1,idim)/(1.01*flux_excess) !rescale mass density flux
+                prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
+                do jdim=1,ndim
+                   flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim) = (flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
+                enddo
+                flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim) = (flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
+#if NVAR > NDIM + 2
+                !rescale other advected quantities
+                do n = ndim+3, nvar
+                   flux(i,i3+i0,j3+j0,k3+k0,n,idim) = flux(i,i3+i0,j3+j0,k3+k0,n,idim)/(1.01*flux_excess)
+                end do
+#endif
              endif
           enddo
-          if (flux_out > flux_in + unew(ind_cell(i),1))then
-             flux_excess = flux_out/abs(flux_in + unew(ind_cell(i),1))
-             do idim=1,ndim
-                i0=0; j0=0; k0=0
-                if(idim==1)i0=1
-                if(idim==2)j0=1
-                if(idim==3)k0=1
-                if(flux(i,i3,j3,k3,1,idim) < 0d0)then
-                   eth_flow = tmp(i,i3,j3,k3,2,idim)
-                   vel_riem = tmp(i,i3,j3,k3,3,idim)
-                   flux(i,i3,j3,k3,1,idim) = flux(i,i3,j3,k3,1,idim)/(1.01*flux_excess) !rescale mass density flux
-                   prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
-                   do jdim=1,ndim
-                      flux(i,i3,j3,k3,1+jdim,idim) = (flux(i,i3,j3,k3,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
-                   enddo
-                   flux(i,i3,j3,k3,ndim+2,idim) = (flux(i,i3,j3,k3,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
-#if NVAR > NDIM + 2
-                   !rescale other advected quantities
-                   do n = ndim+3, nvar
-                      flux(i,i3,j3,k3,n,idim) = flux(i,i3,j3,k3,n,idim)/(1.01*flux_excess)
-                   end do
-#endif
-                endif
-                if(flux(i,i3+i0,j3+j0,k3+k0,1,idim) > 0d0)then
-                   eth_flow = tmp(i,i3+i0,j3+j0,k3+k0,2,idim)
-                   vel_riem = tmp(i,i3+i0,j3+j0,k3+k0,3,idim)
-                   flux(i,i3+i0,j3+j0,k3+k0,1,idim) = flux(i,i3+i0,j3+j0,k3+k0,1,idim)/(1.01*flux_excess) !rescale mass density flux
-                   prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
-                   do jdim=1,ndim
-                      flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim) = (flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
-                   enddo
-                   flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim) = (flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
-#if NVAR > NDIM + 2
-                   !rescale other advected quantities
-                   do n = ndim+3, nvar
-                      flux(i,i3+i0,j3+j0,k3+k0,n,idim) = flux(i,i3+i0,j3+j0,k3+k0,n,idim)/(1.01*flux_excess)
-                   end do
-#endif
-                endif
-             enddo
-             write(*,*)'WARNING: Outflow ',flux_out,' too high compared to density ', unew(ind_cell(i),1), ' and inflow ',flux_in,'! Outflow has been divided by a factor of ',1.01*flux_excess
-          endif
-       end do
+          write(*,*)'WARNING: Outflow ',flux_out,' too high compared to density ', unew(ind_cell(i),1), ' and inflow ',flux_in,'! Outflow has been divided by a factor of ',1.01*flux_excess
+       endif
+    end do
   enddo
+  enddo
+  enddo
+#endif
   
   !--------------------------------------
   ! Conservative update at level ilevel
