@@ -706,78 +706,105 @@ subroutine godfine1(ind_grid,ncache,ilevel)
           end do
           !ind=(ind_cell(i)-ncoarse-1)/ngridmax+1
           write(*,*)'WARNING: Negative density ', unew(ind_cell(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind_son,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind_son,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind_son,3)-skip_loc(3))*scale
-       endif
-
-       do idim=1,ndim
-         i0=0; j0=0; k0=0
-         if(idim==1)i0=1
-         if(idim==2)j0=1
-         if(idim==3)k0=1
-
-          flux_in = 0d0
-          flux_out = 0d0
-!            flux_tot = flux_tot + flux(i,i3,j3,k3,1,idim) - flux(l,i+i0,j+j0,k+k0,1,idim)
-          if (flux(i,i3,j3,k3,1,idim) >= 0d0)then
-             !inflow
-             flux_in = flux_in + flux(i,i3,j3,k3,1,idim)
-          else
-             !outflow
-             flux_out = flux_out - flux(i,i3,j3,k3,1,idim)
-          endif
-          if (flux(i,i3+i0,j3+j0,k3+k0,1,idim) <= 0d0)then
-             flux_in = flux_in - flux(i,i3+i0,j3+j0,k3+k0,1,idim)
-          else
-             flux_out = flux_out + flux(i,i3+i0,j3+j0,k3+k0,1,idim)
-          endif
-       enddo
-       if (flux_out > flux_in + unew(ind_cell(i),1))then
-          flux_excess = flux_out/abs(flux_in + unew(ind_cell(i),1))
+       else
           do idim=1,ndim
-             i0=0; j0=0; k0=0
-             if(idim==1)i0=1
-             if(idim==2)j0=1
-             if(idim==3)k0=1
-             if(flux(i,i3,j3,k3,1,idim) < 0d0)then
-                eth_flow = tmp(i,i3,j3,k3,2,idim)
-                vel_riem = tmp(i,i3,j3,k3,3,idim)
-                flux(i,i3,j3,k3,1,idim) = flux(i,i3,j3,k3,1,idim)/(1.01*flux_excess) !rescale mass density flux
-                prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
-                do jdim=1,ndim
-                   flux(i,i3,j3,k3,1+jdim,idim) = (flux(i,i3,j3,k3,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
-                enddo
-                flux(i,i3,j3,k3,ndim+2,idim) = (flux(i,i3,j3,k3,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
-#if NVAR > NDIM + 2
-                !rescale other advected quantities
-                do n = ndim+3, nvar
-                   flux(i,i3,j3,k3,n,idim) = flux(i,i3,j3,k3,n,idim)/(1.01*flux_excess)
-                end do
-#endif
+            i0=0; j0=0; k0=0
+            if(idim==1)i0=1
+            if(idim==2)j0=1
+            if(idim==3)k0=1
+
+             flux_in = 0d0
+             flux_out = 0d0
+   !            flux_tot = flux_tot + flux(i,i3,j3,k3,1,idim) - flux(l,i+i0,j+j0,k+k0,1,idim)
+             if (flux(i,i3,j3,k3,1,idim) >= 0d0)then
+                !inflow
+                flux_in = flux_in + flux(i,i3,j3,k3,1,idim)
+             else
+                !outflow
+                flux_out = flux_out - flux(i,i3,j3,k3,1,idim)
              endif
-             if(flux(i,i3+i0,j3+j0,k3+k0,1,idim) > 0d0)then
-                eth_flow = tmp(i,i3+i0,j3+j0,k3+k0,2,idim)
-                vel_riem = tmp(i,i3+i0,j3+j0,k3+k0,3,idim)
-                flux(i,i3+i0,j3+j0,k3+k0,1,idim) = flux(i,i3+i0,j3+j0,k3+k0,1,idim)/(1.01*flux_excess) !rescale mass density flux
-                prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
-                do jdim=1,ndim
-                   flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim) = (flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
-                enddo
-                flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim) = (flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
-#if NVAR > NDIM + 2
-                !rescale other advected quantities
-                do n = ndim+3, nvar
-                   flux(i,i3+i0,j3+j0,k3+k0,n,idim) = flux(i,i3+i0,j3+j0,k3+k0,n,idim)/(1.01*flux_excess)
-                end do
-#endif
+             if (flux(i,i3+i0,j3+j0,k3+k0,1,idim) <= 0d0)then
+                flux_in = flux_in - flux(i,i3+i0,j3+j0,k3+k0,1,idim)
+             else
+                flux_out = flux_out + flux(i,i3+i0,j3+j0,k3+k0,1,idim)
              endif
           enddo
-          write(*,*)'WARNING: Outflow ',flux_out,' too high compared to density ', unew(ind_cell(i),1), ' and inflow ',flux_in,'! Outflow has been divided by a factor of ',1.01*flux_excess
+          if (flux_out > flux_in + unew(ind_cell(i),1))then
+             flux_excess = flux_out/abs(flux_in + unew(ind_cell(i),1))
+             do idim=1,ndim
+                i0=0; j0=0; k0=0
+                if(idim==1)i0=1
+                if(idim==2)j0=1
+                if(idim==3)k0=1
+                if(flux(i,i3,j3,k3,1,idim) < 0d0)then
+                   eth_flow = tmp(i,i3,j3,k3,2,idim)
+                   vel_riem = tmp(i,i3,j3,k3,3,idim)
+                   flux(i,i3,j3,k3,1,idim) = flux(i,i3,j3,k3,1,idim)/(1.01*flux_excess) !rescale mass density flux
+                   prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
+                   do jdim=1,ndim
+                      flux(i,i3,j3,k3,1+jdim,idim) = (flux(i,i3,j3,k3,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
+                   enddo
+                   flux(i,i3,j3,k3,ndim+2,idim) = (flux(i,i3,j3,k3,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
+#if NVAR > NDIM + 2
+                   !rescale other advected quantities
+                   do n = ndim+3, nvar
+                      flux(i,i3,j3,k3,n,idim) = flux(i,i3,j3,k3,n,idim)/(1.01*flux_excess)
+                   end do
+#endif
+                endif
+                if(flux(i,i3+i0,j3+j0,k3+k0,1,idim) > 0d0)then
+                   eth_flow = tmp(i,i3+i0,j3+j0,k3+k0,2,idim)
+                   vel_riem = tmp(i,i3+i0,j3+j0,k3+k0,3,idim)
+                   flux(i,i3+i0,j3+j0,k3+k0,1,idim) = flux(i,i3+i0,j3+j0,k3+k0,1,idim)/(1.01*flux_excess) !rescale mass density flux
+                   prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
+                   do jdim=1,ndim
+                      flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim) = (flux(i,i3+i0,j3+j0,k3+k0,1+jdim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
+                   enddo
+                   flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim) = (flux(i,i3+i0,j3+j0,k3+k0,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
+#if NVAR > NDIM + 2
+                   !rescale other advected quantities
+                   do n = ndim+3, nvar
+                      flux(i,i3+i0,j3+j0,k3+k0,n,idim) = flux(i,i3+i0,j3+j0,k3+k0,n,idim)/(1.01*flux_excess)
+                   end do
+#endif
+                endif
+             enddo
+             write(*,*)'WARNING: Outflow ',flux_out,' too high compared to density ', unew(ind_cell(i),1), ' and inflow ',flux_in,'! Outflow has been divided by a factor of ',1.01*flux_excess
+          endif
        endif
+       do idim=1,ndim
+          i0=0; j0=0; k0=0
+          if(idim==1)i0=1
+          if(idim==2)j0=1
+          if(idim==3)k0=1
+          ! Update conservative variables new state vector
+          do ivar=1,nvar
+             do i=1,ncache
+                unew(ind_cell(i),ivar)=unew(ind_cell(i),ivar)+ &
+                     & (flux(i,i3   ,j3   ,k3   ,ivar,idim) &
+                     & -flux(i,i3+i0,j3+j0,k3+k0,ivar,idim))
+             end do
+          end do
+          if(pressure_fix)then
+             ! Update velocity divergence
+             do i=1,ncache
+                divu(ind_cell(i))=divu(ind_cell(i))+ &
+                     & (tmp(i,i3   ,j3   ,k3   ,1,idim) &
+                     & -tmp(i,i3+i0,j3+j0,k3+k0,1,idim))
+             end do
+             ! Update internal energy
+             do i=1,ncache
+                enew(ind_cell(i))=enew(ind_cell(i))+ &
+                     & (tmp(i,i3   ,j3   ,k3   ,2,idim) &
+                     & -tmp(i,i3+i0,j3+j0,k3+k0,2,idim))
+             end do
+          end if
+       enddo
     end do
   enddo
   enddo
   enddo
-#endif
-  
+#else  
   !--------------------------------------
   ! Conservative update at level ilevel
   !--------------------------------------
@@ -823,7 +850,194 @@ subroutine godfine1(ind_grid,ncache,ilevel)
      end do
      end do
   end do
+#endif
 
+  
+#ifdef LIMIT_FLUX_OUT
+  !----------------------------------------------------
+  ! Limit mass outflow to not exceed total mass in cell
+  !----------------------------------------------------
+  !--------------------------------------
+  ! Conservative update at level ilevel-1
+  !--------------------------------------
+  ! Loop over dimensions
+  do idim=1,ndim
+     i0=0; j0=0; k0=0
+     if(idim==1)i0=1
+     if(idim==2)j0=1
+     if(idim==3)k0=1
+
+     !----------------------
+     ! Left flux at boundary
+     !----------------------
+     ! Check if grids sits near left boundary
+     ! and gather neighbor father cells index
+     nb_noneigh=0
+     do i=1,ncache
+        if (son(nbor(ind_grid(i),2*idim-1))==0) then
+           nb_noneigh = nb_noneigh + 1
+           ind_buffer(nb_noneigh) = nbor(ind_grid(i),2*idim-1)
+           ind_cell(nb_noneigh) = i
+        end if
+     end do
+     ! Conservative update of new state variables
+     do ivar=1,nvar
+        ! Loop over boundary cells
+        do k3=k3min,k3max-k0
+        do j3=j3min,j3max-j0
+        do i3=i3min,i3max-i0
+           do i=1,nb_noneigh
+             if (ivar == 1)then
+               if (unew(ind_buffer(i),1) < 0d0)then
+                  !Find coordinates of cell with negative density and issue a warning
+
+                  ! Cells center position relative to grid center position
+                  do ind=1,twotondim
+                    iz=(ind-1)/4
+                    iy=(ind-1-4*iz)/2
+                    ix=(ind-1-2*iy-4*iz)
+                    xc(ind,1)=(dble(ix)-0.5D0)*dx
+                    xc(ind,2)=(dble(iy)-0.5D0)*dx
+                    xc(ind,3)=(dble(iz)-0.5D0)*dx
+                  end do
+                  ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
+                  write(*,*)'WARNING: Negative density at left boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
+               else if (flux(ind_cell(i),i3,j3,k3,1,idim)*oneontwotondim > unew(ind_buffer(i),1))then
+                  flux_excess = flux(ind_cell(i),i3,j3,k3,1,idim)*oneontwotondim/unew(ind_buffer(i),1)
+                  write(*,*)'WARNING: Outflow at left boundary cell ',flux(ind_cell(i),i3,j3,k3,1,idim)*oneontwotondim,' too high compared to density ', unew(ind_buffer(i),1), '! Outflow has been divided by a factor of ',1.01*flux_excess
+                  eth_flow = tmp(ind_cell(i),i3,j3,k3,2,idim)
+                  vel_riem = tmp(ind_cell(i),i3,j3,k3,3,idim)
+                  flux(ind_cell(i),i3,j3,k3,1,idim) = flux(ind_cell(i),i3,j3,k3,1,idim)/(1.01*flux_excess) !rescale mass density flux
+                  prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
+                  flux(ind_cell(i),i3,j3,k3,1+idim,idim) = (flux(ind_cell(i),i3,j3,k3,1+idim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
+                  flux(ind_cell(i),i3,j3,k3,ndim+2,idim) = (flux(ind_cell(i),i3,j3,k3,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
+#if NVAR > NDIM + 2
+                  !rescale other advected quantities
+                  do n = ndim+3, nvar
+                     flux(ind_cell(i),i3,j3,k3,n,idim) = flux(ind_cell(i),i3,j3,k3,n,idim)/(1.01*flux_excess)
+                  end do
+#endif
+               endif
+             endif
+             unew(ind_buffer(i),ivar)=unew(ind_buffer(i),ivar) &
+                 & -flux(ind_cell(i),i3,j3,k3,ivar,idim)*oneontwotondim
+           end do
+        end do
+        end do
+        end do
+     end do
+     if(pressure_fix)then
+        ! Update velocity divergence
+        do k3=k3min,k3max-k0
+        do j3=j3min,j3max-j0
+        do i3=i3min,i3max-i0
+           do i=1,nb_noneigh
+              divu(ind_buffer(i))=divu(ind_buffer(i)) &
+                   & -tmp(ind_cell(i),i3,j3,k3,1,idim)*oneontwotondim
+           end do
+        end do
+        end do
+        end do
+        ! Update internal energy
+        do k3=k3min,k3max-k0
+        do j3=j3min,j3max-j0
+        do i3=i3min,i3max-i0
+           do i=1,nb_noneigh
+              enew(ind_buffer(i))=enew(ind_buffer(i)) &
+                   & -tmp(ind_cell(i),i3,j3,k3,2,idim)*oneontwotondim
+           end do
+        end do
+        end do
+        end do
+     end if
+        
+     !-----------------------
+     ! Right flux at boundary
+     !-----------------------
+     ! Check if grids sits near right boundary
+     ! and gather neighbor father cells index
+     nb_noneigh=0
+     do i=1,ncache
+        if (son(nbor(ind_grid(i),2*idim))==0) then
+           nb_noneigh = nb_noneigh + 1
+           ind_buffer(nb_noneigh) = nbor(ind_grid(i),2*idim)
+           ind_cell(nb_noneigh) = i
+        end if
+     end do
+     ! Conservative update of new state variables
+     do ivar=1,nvar
+        ! Loop over boundary cells
+        do k3=k3min+k0,k3max
+        do j3=j3min+j0,j3max
+        do i3=i3min+i0,i3max
+           do i=1,nb_noneigh
+             if (ivar == 1)then
+               if (unew(ind_buffer(i),1) < 0d0)then
+                  !Find coordinates of cell with negative density and issue a warning
+
+                  ! Cells center position relative to grid center position
+                  do ind=1,twotondim
+                    iz=(ind-1)/4
+                    iy=(ind-1-4*iz)/2
+                    ix=(ind-1-2*iy-4*iz)
+                    xc(ind,1)=(dble(ix)-0.5D0)*dx
+                    xc(ind,2)=(dble(iy)-0.5D0)*dx
+                    xc(ind,3)=(dble(iz)-0.5D0)*dx
+                  end do
+                  ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
+                  write(*,*)'WARNING: Negative density at right boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
+               else if (flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim > unew(ind_buffer(i),1))then
+                  flux_excess = flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim/unew(ind_buffer(i),1)
+                  write(*,*)'WARNING: Outflow at left boundary cell ',flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim,' too high compared to density ', unew(ind_buffer(i),1), '! Outflow has been divided by a factor of ',1.01*flux_excess
+                  eth_flow = tmp(ind_cell(i),i3+i0,j3+j0,k3+k0,2,idim)
+                  vel_riem = tmp(ind_cell(i),i3+i0,j3+j0,k3+k0,3,idim)
+                  flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim) = flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)/(1.01*flux_excess) !rescale mass density flux
+                  prs = eth_flow*(gamma-1d0)/vel_riem !prs*dt/dx = (e_thermal*(gamma-1)*v*dt/dx)/v
+                  flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1+idim,idim) = (flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1+idim,idim)-prs)/(1.01*flux_excess)+prs !rescale momentum density flux
+                  flux(ind_cell(i),i3+i0,j3+j0,k3+k0,ndim+2,idim) = (flux(ind_cell(i),i3+i0,j3+j0,k3+k0,ndim+2,idim)-(eth_flow+prs)*vel_riem)/(1.01*flux_excess) + (eth_flow+prs)*vel_riem !rescale energy density flux
+#if NVAR > NDIM + 2
+                  !rescale other advected quantities
+                  do n = ndim+3, nvar
+                     flux(ind_cell(i),i3+i0,j3+j0,k3+k0,n,idim) = flux(ind_cell(i),i3+i0,j3+j0,k3+k0,n,idim)/(1.01*flux_excess)
+                  end do
+#endif
+               endif
+             endif
+             unew(ind_buffer(i),ivar)=unew(ind_buffer(i),ivar) &
+                 & +flux(ind_cell(i),i3+i0,j3+j0,k3+k0,ivar,idim)*oneontwotondim
+           end do
+        end do
+        end do
+        end do
+     end do
+     if(pressure_fix)then
+        ! Update velocity divergence
+        do k3=k3min+k0,k3max
+        do j3=j3min+j0,j3max
+        do i3=i3min+i0,i3max
+           do i=1,nb_noneigh
+              divu(ind_buffer(i))=divu(ind_buffer(i)) &
+                   & +tmp(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim
+           end do
+        end do
+        end do
+        end do
+        ! Update internal energy
+        do k3=k3min+k0,k3max
+        do j3=j3min+j0,j3max
+        do i3=i3min+i0,i3max
+           do i=1,nb_noneigh
+              enew(ind_buffer(i))=enew(ind_buffer(i)) &
+                   & +tmp(ind_cell(i),i3+i0,j3+j0,k3+k0,2,idim)*oneontwotondim
+           end do
+        end do
+        end do
+        end do
+     end if
+
+  end do
+  ! End loop over dimensions
+#else
   !--------------------------------------
   ! Conservative update at level ilevel-1
   !--------------------------------------
@@ -940,5 +1154,6 @@ subroutine godfine1(ind_grid,ncache,ilevel)
 
   end do
   ! End loop over dimensions
+#endif
 
 end subroutine godfine1
