@@ -779,25 +779,19 @@ subroutine godfine1(ind_grid,ncache,ilevel)
           if(idim==3)k0=1
           ! Update conservative variables new state vector
           do ivar=1,nvar
-             do i=1,ncache
-                unew(ind_cell(i),ivar)=unew(ind_cell(i),ivar)+ &
-                     & (flux(i,i3   ,j3   ,k3   ,ivar,idim) &
-                     & -flux(i,i3+i0,j3+j0,k3+k0,ivar,idim))
-             end do
+             unew(ind_cell(i),ivar)=unew(ind_cell(i),ivar)+ &
+                  & (flux(i,i3   ,j3   ,k3   ,ivar,idim) &
+                  & -flux(i,i3+i0,j3+j0,k3+k0,ivar,idim))
           end do
           if(pressure_fix)then
              ! Update velocity divergence
-             do i=1,ncache
-                divu(ind_cell(i))=divu(ind_cell(i))+ &
-                     & (tmp(i,i3   ,j3   ,k3   ,1,idim) &
-                     & -tmp(i,i3+i0,j3+j0,k3+k0,1,idim))
-             end do
+             divu(ind_cell(i))=divu(ind_cell(i))+ &
+                  & (tmp(i,i3   ,j3   ,k3   ,1,idim) &
+                  & -tmp(i,i3+i0,j3+j0,k3+k0,1,idim))
              ! Update internal energy
-             do i=1,ncache
-                enew(ind_cell(i))=enew(ind_cell(i))+ &
-                     & (tmp(i,i3   ,j3   ,k3   ,2,idim) &
-                     & -tmp(i,i3+i0,j3+j0,k3+k0,2,idim))
-             end do
+             enew(ind_cell(i))=enew(ind_cell(i))+ &
+                  & (tmp(i,i3   ,j3   ,k3   ,2,idim) &
+                  & -tmp(i,i3+i0,j3+j0,k3+k0,2,idim))
           end if
        enddo
     end do
