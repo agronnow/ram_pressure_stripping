@@ -881,7 +881,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
         do j3=j3min,j3max-j0
         do i3=i3min,i3max-i0
            do i=1,nb_noneigh
-             if (ivar == 1)then
+             if (ivar == 100)then
                if (unew(ind_buffer(i),1) < 0d0)then
                   !Find coordinates of cell with negative density and issue a warning
 
@@ -1031,6 +1031,52 @@ subroutine godfine1(ind_grid,ncache,ilevel)
 
   end do
   ! End loop over dimensions
+  
+  do idim=1,ndim
+     i0=0; j0=0; k0=0
+     if(idim==1)i0=1
+     if(idim==2)j0=1
+     if(idim==3)k0=1
+
+     !----------------------
+     ! Left flux at boundary
+     !----------------------
+     ! Check if grids sits near left boundary
+     ! and gather neighbor father cells index
+     nb_noneigh=0
+     do i=1,ncache
+        if (son(nbor(ind_grid(i),2*idim-1))==0) then
+           nb_noneigh = nb_noneigh + 1
+           ind_buffer(nb_noneigh) = nbor(ind_grid(i),2*idim-1)
+           ind_cell(nb_noneigh) = i
+        end if
+     end do
+        ! Loop over boundary cells
+        do k3=k3min,k3max-k0
+        do j3=j3min,j3max-j0
+        do i3=i3min,i3max-i0
+           do i=1,nb_noneigh
+               if (unew(ind_buffer(i),1) < 0d0)then
+                  !Find coordinates of cell with negative density and issue a warning
+
+                  ! Cells center position relative to grid center position
+                  do ind=1,twotondim
+                    iz=(ind-1)/4
+                    iy=(ind-1-4*iz)/2
+                    ix=(ind-1-2*iy-4*iz)
+                    xc(ind,1)=(dble(ix)-0.5D0)*dx
+                    xc(ind,2)=(dble(iy)-0.5D0)*dx
+                    xc(ind,3)=(dble(iz)-0.5D0)*dx
+                  end do
+                  ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
+                  write(*,*)'WARNING: Negative density at left boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
+              endif
+           enddo
+        enddo
+        enddo
+        enddo
+  enddo
+  
 #else
   !--------------------------------------
   ! Conservative update at level ilevel-1
