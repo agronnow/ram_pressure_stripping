@@ -1088,14 +1088,12 @@ subroutine godfine1(ind_grid,ncache,ilevel)
               ind_cell(nb_noneigh) = i
            end if
         end do
-        ! Conservative update of new state variables
-        do ivar=1,nvar
-           ! Loop over boundary cells
-           do k3=k3min+k0,k3max
-           do j3=j3min+j0,j3max
-           do i3=i3min+i0,i3max
-              do i=1,nb_noneigh
-                if (unew(ind_buffer(i),1) < 0d0)then
+        ! Loop over boundary cells
+        do k3=k3min+k0,k3max
+        do j3=j3min+j0,j3max
+        do i3=i3min+i0,i3max
+           do i=1,nb_noneigh
+              if (unew(ind_buffer(i),1) < 0d0)then
                   !Find coordinates of cell with negative density and issue a warning
 
                   ! Cells center position relative to grid center position
