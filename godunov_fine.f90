@@ -980,7 +980,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
                   end do
                   ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
                   write(*,*)'WARNING: Negative density at right boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
-               else if (flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim > unew(ind_buffer(i),1))then
+               else if (flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim < -unew(ind_buffer(i),1))then
                   flux_excess = flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim/unew(ind_buffer(i),1)
                   write(*,*)'WARNING: Outflow at left boundary cell ',flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim,' too high compared to density ', unew(ind_buffer(i),1), '! Outflow has been divided by a factor of ',1.01*flux_excess
                   eth_flow = tmp(ind_cell(i),i3+i0,j3+j0,k3+k0,2,idim)
