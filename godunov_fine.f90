@@ -965,7 +965,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
         do j3=j3min+j0,j3max
         do i3=i3min+i0,i3max
            do i=1,nb_noneigh
-             if (ivar == 1)then
+             if (ivar == 100)then
                if (unew(ind_buffer(i),1) < 0d0)then
                   !Find coordinates of cell with negative density and issue a warning
 
@@ -982,7 +982,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
                   write(*,*)'WARNING: Negative density at right boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
                else if (flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim < -unew(ind_buffer(i),1))then
                   flux_excess = flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim/unew(ind_buffer(i),1)
-                  write(*,*)'WARNING: Outflow at left boundary cell ',flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim,' too high compared to density ', unew(ind_buffer(i),1), '! Outflow has been divided by a factor of ',1.01*flux_excess
+                  write(*,*)'WARNING: Outflow at right boundary cell ',flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)*oneontwotondim,' too high compared to density ', unew(ind_buffer(i),1), '! Outflow has been divided by a factor of ',1.01*flux_excess
                   eth_flow = tmp(ind_cell(i),i3+i0,j3+j0,k3+k0,2,idim)
                   vel_riem = tmp(ind_cell(i),i3+i0,j3+j0,k3+k0,3,idim)
                   flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim) = flux(ind_cell(i),i3+i0,j3+j0,k3+k0,1,idim)/(1.01*flux_excess) !rescale mass density flux
@@ -1070,6 +1070,45 @@ subroutine godfine1(ind_grid,ncache,ilevel)
                   end do
                   ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
                   write(*,*)'WARNING: Negative density at left boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
+              endif
+           enddo
+        enddo
+        enddo
+        enddo
+        !-----------------------
+        ! Right flux at boundary
+        !-----------------------
+        ! Check if grids sits near right boundary
+        ! and gather neighbor father cells index
+        nb_noneigh=0
+        do i=1,ncache
+           if (son(nbor(ind_grid(i),2*idim))==0) then
+              nb_noneigh = nb_noneigh + 1
+              ind_buffer(nb_noneigh) = nbor(ind_grid(i),2*idim)
+              ind_cell(nb_noneigh) = i
+           end if
+        end do
+        ! Conservative update of new state variables
+        do ivar=1,nvar
+           ! Loop over boundary cells
+           do k3=k3min+k0,k3max
+           do j3=j3min+j0,j3max
+           do i3=i3min+i0,i3max
+              do i=1,nb_noneigh
+                if (unew(ind_buffer(i),1) < 0d0)then
+                  !Find coordinates of cell with negative density and issue a warning
+
+                  ! Cells center position relative to grid center position
+                  do ind=1,twotondim
+                    iz=(ind-1)/4
+                    iy=(ind-1-4*iz)/2
+                    ix=(ind-1-2*iy-4*iz)
+                    xc(ind,1)=(dble(ix)-0.5D0)*dx
+                    xc(ind,2)=(dble(iy)-0.5D0)*dx
+                    xc(ind,3)=(dble(iz)-0.5D0)*dx
+                  end do
+                  ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
+                  write(*,*)'WARNING: Negative density at right boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
               endif
            enddo
         enddo
