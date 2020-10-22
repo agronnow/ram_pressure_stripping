@@ -705,7 +705,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
             xc(ind,3)=(dble(iz)-0.5D0)*dx
           end do
           !ind=(ind_cell(i)-ncoarse-1)/ngridmax+1
-          write(*,*)'WARNING: Negative density ', unew(ind_cell(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind_son,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind_son,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind_son,3)-skip_loc(3))*scale
+          write(*,*)'WARNING: Negative density ', unew(ind_cell(i),1),' on level ', ilevel, ' at x1=', (xg(ind_grid(i),1) + xc(ind_son,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind_son,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind_son,3)-skip_loc(3))*scale
        else
           do idim=1,ndim
             i0=0; j0=0; k0=0
@@ -769,7 +769,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
 #endif
                 endif
              enddo
-             write(*,*)'WARNING: Outflow ',flux_out,' too high compared to density ', unew(ind_cell(i),1), ' and inflow ',flux_in,'! Outflow has been divided by a factor of ',1.01*flux_excess
+             write(*,*)'WARNING: Outflow ',flux_out,' on level ', ilevel, ' too high compared to density ', unew(ind_cell(i),1), ' and inflow ',flux_in,'! Outflow has been divided by a factor of ',1.01*flux_excess
           endif
        endif
        do idim=1,ndim
@@ -1069,7 +1069,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
                     xc(ind,3)=(dble(iz)-0.5D0)*dx
                   end do
                   ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
-                  write(*,*)'WARNING: Negative density at left boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
+                  write(*,*)'WARNING: Negative density at left boundary cell ', unew(ind_buffer(i),1),' on level ', ilevel, ' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
               endif
            enddo
         enddo
@@ -1106,7 +1106,7 @@ subroutine godfine1(ind_grid,ncache,ilevel)
                     xc(ind,3)=(dble(iz)-0.5D0)*dx
                   end do
                   ind=(ind_buffer(i)-ncoarse-1)/ngridmax+1
-                  write(*,*)'WARNING: Negative density at right boundary cell ', unew(ind_buffer(i),1),' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
+                  write(*,*)'WARNING: Negative density at right boundary cell ', unew(ind_buffer(i),1),' on level ', ilevel, ' at x1=', (xg(ind_grid(i),1) + xc(ind,1)-skip_loc(1))*scale,' x2=',(xg(ind_grid(i),2) + xc(ind,2)-skip_loc(2))*scale,' x3=',(xg(ind_grid(i),3) + xc(ind,3)-skip_loc(3))*scale
               endif
            enddo
         enddo
