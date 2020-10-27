@@ -846,8 +846,8 @@ subroutine godfine1(ind_grid,ncache,ilevel)
   end do
 #endif
 
-  
-#ifdef LIMIT_FLUX_OUT
+#ifdef LIMIT_BOUNDARY_FLUX  
+!#ifdef LIMIT_FLUX_OUT
   !----------------------------------------------------
   ! Limit mass outflow to not exceed total mass in cell
   !----------------------------------------------------
