@@ -22,8 +22,9 @@ recursive subroutine amr_step(ilevel,icount)
   ! unless you check all consequences first.                          !
   !-------------------------------------------------------------------!
   integer::i,idim,ivar
-  logical::ok_defrag,output_now_all
+  logical::ok_defrag,output_now_all,output_file_exists
   logical,save::first_step=.true.
+  character(len=256)::fileloc
 
   if(numbtot(1,ilevel)==0)return
 
@@ -140,7 +141,9 @@ recursive subroutine amr_step(ilevel,icount)
      call MPI_BARRIER(MPI_COMM_WORLD,mpi_err)
      call MPI_ALLREDUCE(output_now,output_now_all,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,mpi_err)
 #endif
-     if(mod(nstep_coarse,foutput)==0.or.aexp>=aout(iout).or.t>=tout(iout).or.output_now_all.EQV..true. .or. (dtold(ilevel) < 1d-10 .and. t>0.1) .or. isnan(ekin_tot+epot_tot))then
+     fileloc=trim(output_dir)//trim("output_now")
+     inquire(file=fileloc,exist=output_file_exists)
+     if(mod(nstep_coarse,foutput)==0.or.aexp>=aout(iout).or.t>=tout(iout).or.output_now_all.EQV..true. .or. (dtold(ilevel) < 1d-11 .and. t>0.1) .or. isnan(ekin_tot+epot_tot) .or. output_file_exists)then
                                call timer('io','start')
         if(.not.ok_defrag)then
            call defrag
@@ -162,7 +165,7 @@ recursive subroutine amr_step(ilevel,icount)
         if (output_now_all.EQV..true.) then
           output_now=.false.
         endif
-        if ((dtold(ilevel) < 1d-10) .and. t > 0.1)then
+        if ((dtold(ilevel) < 1d-11) .and. t > 0.1)then
            call MPI_BARRIER(MPI_COMM_WORLD,mpi_err)
            if(myid==1)write(*,*)'WARNING: dt too small, stopping!'
            call clean_stop
@@ -175,6 +178,11 @@ recursive subroutine amr_step(ilevel,icount)
         if (isnan(epot_tot))then
            call MPI_BARRIER(MPI_COMM_WORLD,mpi_err)
            if(myid==1)write(*,*)'WARNING: NaN in epot_tot, stopping!'
+           call clean_stop
+        endif
+        if (output_file_exists)then
+           call MPI_BARRIER(MPI_COMM_WORLD,mpi_err)
+           if(myid==1)write(*,*)'output_now exists, stopping!'
            call clean_stop
         endif
      endif

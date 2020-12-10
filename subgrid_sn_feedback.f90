@@ -176,7 +176,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      xc(ind,3)=(dble(iz)-0.5D0)*dx
   end do
 
-  if (myid==200)write(*,*)'seed fb:',localseedsn
+!  if (myid==200)write(*,*)'seed fb:',localseedsn
   ! If necessary, initialize random number generator
   if(localseedsn(1)==-1)then
      call rans(ncpu,iseed,allseed)
@@ -281,6 +281,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      inquire(file=fileloc,exist=file_exist)
      nhist = 0
      if(file_exist) then
+        if (vel_wind > 0.0)sfr_boost = 1.0
         open(ilun, file=fileloc)
         read(ilun,*)dummyline
         do
@@ -288,7 +289,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
            if ((stat /= 0) .or. (ctime > tinit_sim))exit
            t_sfhist(nhist+1) = ctime
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
-           sfhist(nhist+1) = csfh
+           sfhist(nhist+1) = csfh*sfr_boost
            nhist=nhist+1
            if (myid==1)write(*,*)nhist,t_sfhist(nhist),sfhist(nhist)
         end do
@@ -300,7 +301,6 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      fileloc=trim(output_dir)//'snIa_sfr.log'
      inquire(file=fileloc,exist=file_exist)
      if(file_exist) then
-        if (vel_wind > 0.0)sfr_boost = 1.0
         open(ilun, file=fileloc)
         read(ilun,*)dummyline
         do
@@ -309,7 +309,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
            if ((stat /= 0) .or. (ctime > tinit_sim + (t-tbeg_wind)*scale_t/3.154e16))exit
            t_sfhist(nhist+1) = ctime
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
-           sfhist(nhist+1) = csfh*sfr_boost
+           sfhist(nhist+1) = csfh
            nhist=nhist+1
            write(*,*)myid,nhist,t_sfhist(nhist),sfhist(nhist)
         end do
@@ -796,7 +796,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 
   nSN_tot=sum(nSN_icpu(1:ncpu))
 
-  if(myid==200)write(*,*)'calls to poissdev: ',pdevsn2
+  !if(myid==200)write(*,*)'calls to poissdev: ',pdevsn2
 
 #ifdef DELAYED_SN
   if ((nSN_tot .eq. 0).and.(nSN_prev .eq. 0)) return
@@ -1282,7 +1282,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                        update_boundary = .true.
                        write(*,*)'SN blast on cpu ',myid
                        ! redistribute the mass within the SN blast uniformly and update other quantities accordingly
-                       dprev=uold(ind_cell(i),1)
+                       dprev=max(uold(ind_cell(i),1),smallr)
                        uold(ind_cell(i),1) = max(SNmenc(iSN)/SNvol(iSN),smallr)
 !                       momprev = uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2
 !                       uold(ind_cell(i),2) = uold(ind_cell(i),2)*uold(ind_cell(i),1)/dprev
@@ -1475,8 +1475,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                        if(dr_SN.lt.(1.001*rSN(iSN))**2)then
                           ! Update the total energy of the gas
                           uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+p_gas(iSN)
-                          if (.not.SNcooling(iSN))uold(ind_cell(i),idelay) = uold(ind_cell(i),idelay) + d_gas(iSN)
-                          !write(*,*)"SN d: ", d_gas(iSN), " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
+                          if (.not.SNcooling(iSN))uold(ind_cell(i),idelay) = uold(ind_cell(i),idelay) + max(uold(ind_cell(i),1),smallr) ! + d_gas(iSN)
+!                          write(*,*)"SN d: ", d_gas(iSN), " delay: ", uold(ind_cell(i),idelay)!, " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !                          write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
                        endif
 #ifdef DELAYED_SN

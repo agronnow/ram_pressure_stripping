@@ -289,6 +289,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
            ok_cool(i) = .true.
         else
            ok_cool(i) = .false.
+           if (T2(i) < Tmufloor)T2(i) = Tmufloor
         endif
      end do
 
@@ -372,7 +373,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
         if(cooling .and. delayed_cooling) then
            cooling_on(1:nleaf)=.true.
            do i=1,nleaf
-              if(uold(ind_leaf(i),idelay)/uold(ind_leaf(i),1) .gt. 1d-3) &
+              if(uold(ind_leaf(i),idelay)/max(uold(ind_leaf(i),1),smallr) .gt. 1d-1) &
                    cooling_on(i)=.false.
            end do
         end if
@@ -523,7 +524,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
         if(delayed_cooling)then
            do i=1,nleaf
               cooling_switch = uold(ind_leaf(i),idelay)/max(uold(ind_leaf(i),1),smallr)
-              if(cooling_switch > 1d-3)then
+              if(cooling_switch > 1d-1)then
                  delta_T2(i) = MAX(delta_T2(i),real(0,kind=dp))
               endif
            end do
@@ -559,6 +560,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
         damp_factor=exp(-dtcool/t_blast)
         do i=1,nleaf
            uold(ind_leaf(i),idelay)=max(uold(ind_leaf(i),idelay)*damp_factor,0d0)
+!           if (uold(ind_leaf(i),idelay) > 1d-5)write(*,*)"delay dampened: ", damp_factor, uold(ind_leaf(i),idelay)
         end do
      endif
 

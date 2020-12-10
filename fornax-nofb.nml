@@ -13,9 +13,9 @@ cost_weighting=.true.
 
 &AMR_PARAMS 
 levelmin=5
-levelmax=10
+levelmax=11
 ngridmax=1500000
-boxlen=12.0
+boxlen=24.0
 /
 
 &COOLING_PARAMS
@@ -50,16 +50,16 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.02298
-tend=1.424 !10.0 !1.6005
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/fluxlim/'
+delta_tout=0.2
+tend=10.0 !1.6005
+output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/nofb/bigvol/'
 /
 
 &HYDRO_PARAMS
 gamma=1.667
 courant_factor=0.6
 smallr=1d-8
-slope_type=2
+slope_type=3
 scheme='muscl'
 riemann='hllc'
 pressure_fix = .true.
@@ -109,13 +109,19 @@ Z_cloud = 0.02
 orbitfile = 'orbitvelocity-fornax.dat'
 sfhistfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
-subgrid_feedback=.true.
+subgrid_feedback=.false.
 SN_blast_mass = 60.0
 rho_SN = 0.0118
 vsfr_fac = 7.94
 vsfr_pow = 1.91
 tinit_sim = 12.0
 tbeg_wind = 0.0 !0.120001783312052E+01
+sfr_boost = 1.0
+dt_sfhist = 0.01
+dt_sfrlog = 0.001
+r_plummer = 0.578
+ein_n = 2.5
+/
 sfr_boost = 1.0
 dt_sfhist = 0.01
 dt_sfrlog = 0.001

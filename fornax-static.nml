@@ -13,9 +13,9 @@ cost_weighting=.true.
 
 &AMR_PARAMS 
 levelmin=5
-levelmax=10
+levelmax=12
 ngridmax=1500000
-boxlen=12.0
+boxlen=22.0
 /
 
 &COOLING_PARAMS
@@ -50,14 +50,14 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.1
-tend=10.0
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/dens1e-4/fluxlim/'
+delta_tout=0.02
+tend=0.1
+output_dir='/gpfs/work/IscrC_RAMPRESS/sims/static/hires/'
 /
 
 &HYDRO_PARAMS
 gamma=1.667
-courant_factor=0.6
+courant_factor=0.5
 slope_type=3
 scheme='muscl'
 riemann='hllc'
@@ -113,7 +113,7 @@ vsfr_fac = 7.94
 vsfr_pow = 1.91
 tinit_sim = 12.0
 tbeg_wind = 0.0
-sfr_boost = 4.3
+sfr_boost = 4.5
 dt_sfhist = 0.01
 dt_sfrlog = 0.001
 r_plummer = 0.578
