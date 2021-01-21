@@ -1167,6 +1167,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
          SNcooling(iSN) = .false.
        else
          SNcooling(iSN) = .true.
+       endif
        rSN(iSN) = 3d0*dx_min
        SNmenc(iSN) = mtot_all(iSN,3)
        SNvol(iSN) = vol_gas_all(iSN,3)
