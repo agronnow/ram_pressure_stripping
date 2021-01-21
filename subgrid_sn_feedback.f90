@@ -1163,7 +1163,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
     endif
 
     if ((rSN(iSN) < 3d0*dx_min).and.((delayed_cooling).or.(momentum_fb)))then
-       SNcooling(iSN) = .false.
+       if (delayed_cooling)then
+         SNcooling(iSN) = .false.
+       else
+         SNcooling(iSN) = .true.
        rSN(iSN) = 3d0*dx_min
        SNmenc(iSN) = mtot_all(iSN,3)
        SNvol(iSN) = vol_gas_all(iSN,3)
