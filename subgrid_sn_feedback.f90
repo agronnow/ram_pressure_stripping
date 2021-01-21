@@ -967,7 +967,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
   integer::ilevel,ncache,nSN,iSN,ind,ix,iy,iz,ngrid,iskip,radcells
   integer::i,nx_loc,igrid,ivar
   integer,dimension(1:nvector),save::ind_grid,ind_cell
-  real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew
+  real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew,fZ
   real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
@@ -1178,9 +1178,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
        if(.not.file_exist) then
           open(ilun, file=fileloc, form='formatted')
 #ifdef DELAYED_SN
-          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast mass (Msun)          Blast temperature (K)   Delayed  To be delayed"
+          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Cooling length (kpc)       Blast mass (Msun)          Blast temperature (K)   Delayed  To be delayed"
 #else
-          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast mass (Msun)          Blast temperature (K)   Cooling"
+          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Cooling length (kpc)       Blast mass (Msun)          Blast temperature (K)   Cooling"
 #endif
        else
           open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
@@ -1195,6 +1195,8 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
        else
           coolstr = 'N'
        endif
+       fZ = 2d0
+       if (Z_cloud < 0.01)fZ=Z_cloud**(-0.14)
 #ifdef DELAYED_SN
        if (delayed)then
           delayedstr1 = 'Y'
@@ -1207,9 +1209,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
           delayedstr = 'Y'
        endif
        if (skip)delayedstr = 'SKIP'
-       write(ilun,'(5E26.16,I5,2E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
+       write(ilun,'(5E26.16,I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
-       write(ilun,'(5E26.16,I5,2E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
+       write(ilun,'(5E26.16,I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
 #endif
        close(ilun)
      endif
@@ -1481,8 +1483,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                               mom_ejecta = sqrt(2d0*mSN(iSN)*1d51/scale_eng)
                               fZ = 2d0
                               if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) < 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
-                              mom_term = 9.6e43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
-                              mom_inj = mom_ejecta*min(1, mom_term/mom_ejecta)/vol_gas(iSN)
+                              mom_term = 9.6d43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
+                              mom_inj = mom_ejecta*min(1d0, mom_term/mom_ejecta)/vol_gas(iSN)
                               uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/rSN(iSN)
                               uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/rSN(iSN)
 #if NDIM==3
