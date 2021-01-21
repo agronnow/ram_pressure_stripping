@@ -1162,7 +1162,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
        skip=.true.
     endif
 
-    if ((rSN(iSN) < 3d0*dx_min).and.(delayed_cooling))then
+    if ((rSN(iSN) < 3d0*dx_min).and.((delayed_cooling).or.(momentum_fb)))then
        SNcooling(iSN) = .false.
        rSN(iSN) = 3d0*dx_min
        SNmenc(iSN) = mtot_all(iSN,3)
