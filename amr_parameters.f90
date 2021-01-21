@@ -320,6 +320,7 @@ module amr_parameters
   character(len=256)::sfhistfile        ! Path to file containing star formation history
   logical::prob_debug = .false.         ! Turn some extra debug logging on/off
   logical::subgrid_feedback = .true.    ! Turn SN feedback on/off
+  logical::momentum_fb = .true.         ! Turn kinetic feedback on/off (alleviates SN overcooling at low res.)
   real(dp)::SN_blast_mass = 0.0         ! Mass to enclose within SN explosion region                           [Msun]
   real(dp)::rho_SN = 0.0                ! SN rate defined as SNe per solar mass of formed stars                [Msun^-1]
   real(dp)::vsfr_fac = 0.0              ! Factor "A" in volumetric SF law (Bacchini et al.) A*rho^alpha        [yr^-1]

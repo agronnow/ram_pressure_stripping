@@ -1345,7 +1345,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
-  real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
+  real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
+  real(dp)::mom_ejecta,mom_inj,mom_term,fZ
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
   real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
@@ -1371,6 +1372,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 
   ! Conversion factor from user units to cgs units
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
+  scale_eng = scale_d*scale_l**3*scale_v**2
 
   ! Supernova specific energy from cgs to code units
   ESN=(1d51/(10d0*2d33))/scale_v**2
@@ -1473,9 +1475,26 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                        dr_SN=dxx**2+dyy**2
 #endif
                        if(dr_SN.lt.(1.001*rSN(iSN))**2)then
-                          ! Update the total energy of the gas
-                          uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+p_gas(iSN)
-                          if (.not.SNcooling(iSN))uold(ind_cell(i),idelay) = uold(ind_cell(i),idelay) + max(uold(ind_cell(i),1),smallr) ! + d_gas(iSN)
+                          if (momentum_fb)then
+                              ! Kinetic feedback: Inject SN as momentum and adjust energy accordingly to alleviate overcooling
+                              ! This largely follows Gentry, Madau & Krumholz (2020) but without star particles, no mass is injected
+                              mom_ejecta = sqrt(2d0*mSN(iSN)*1d51/scale_eng)
+                              fZ = 2d0
+                              if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) < 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
+                              mom_term = 9.6e43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
+                              mom_inj = mom_ejecta*min(1, mom_term/mom_ejecta)/vol_gas(iSN)
+                              uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/rSN(iSN)
+                              uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/rSN(iSN)
+#if NDIM==3
+                              uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/rSN(iSN)
+#endif
+                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + mom_inj**2/uold(ind_cell(i),1)
+                          else
+                              ! Thermal dump
+                              ! Update the total energy of the gas
+                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+p_gas(iSN)
+                              if (.not.SNcooling(iSN))uold(ind_cell(i),idelay) = uold(ind_cell(i),idelay) + max(uold(ind_cell(i),1),smallr) ! + d_gas(iSN)
+                           endif
 !                          write(*,*)"SN d: ", d_gas(iSN), " delay: ", uold(ind_cell(i),idelay)!, " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !                          write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
                        endif
