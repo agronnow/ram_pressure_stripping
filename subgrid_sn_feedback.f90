@@ -1525,7 +1525,7 @@ ektot=0
   end do
   ! End loop over levels
   
-  write(*,*)"Ekin: ",ektot/(scale_d*scale_v**2)
+  write(*,*)"Ekin: ",ektot*scale_eng
 
   !call MPI_ALLREDUCE(vol,vol_all,1  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   !write(*,*)"blast vol",vol_all
