@@ -1481,19 +1481,23 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                        dr_SN=dxx**2+dyy**2
 #endif
                        if(dr_SN.lt.(1.001*rSN(iSN))**2)then
-                          if ((momentum_fb).and.(dr_SN > 0d0))then
+                          if (momentum_fb)then
                               ! Kinetic feedback: Inject SN as momentum and adjust energy accordingly to alleviate overcooling
                               ! This largely follows Gentry, Madau & Krumholz (2020) but without star particles, no mass is injected
                               mom_ejecta = sqrt(2d0*mSN(iSN)*1d51/scale_eng)
-                              fZ = 2d0
-                              if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
-                              mom_term = 9.6d43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
-                              mom_inj = mom_ejecta*min(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN), mom_term/mom_ejecta)/vol_gas(iSN)
-                              uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/dr_SN
-                              uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/dr_SN
+                              if (dr_SN > 0d0)then
+                                 fZ = 2d0
+                                 if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
+                                 mom_term = 9.6d43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
+                                 mom_inj = mom_ejecta*min(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN), mom_term/mom_ejecta)/vol_gas(iSN)
+                                 uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/sqrt(dr_SN)
+                                 uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/sqrt(dr_SN)
 #if NDIM==3
-                              uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/dr_SN
+                                 uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/sqrt(dr_SN)
 #endif
+                              else
+                                 mom_inj = mom_ejecta/vol_gas(iSN)
+                              endif
                               uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + 0.5*mom_inj**2/uold(ind_cell(i),1)
                           else
                               ! Thermal dump
