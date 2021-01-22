@@ -1498,7 +1498,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                               else
                                  mom_inj = mom_ejecta/vol_gas(iSN)
                               endif
-                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + 0.5*mom_inj**2/uold(ind_cell(i),1)
+                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + p_gas(iSN)!0.5*mom_inj**2/uold(ind_cell(i),1)
                           else
                               ! Thermal dump
                               ! Update the total energy of the gas
