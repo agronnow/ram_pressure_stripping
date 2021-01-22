@@ -95,7 +95,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  integer::nx_loc
 !  integer,dimension(:),allocatable::ind_grid
 !  logical,dimension(:),allocatable::ok_free
-  integer,dimension(:),allocatable::indSN,SNlevel
+  integer,dimension(:),allocatable::indSN,SNlevel,ncellsSN
   real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas
   logical,dimension(:),allocatable::SNcooling
@@ -1113,7 +1113,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
 #ifndef WITHOUTMPI
   call MPI_ALLREDUCE(vol_gas,vol_gas_all,nSN*RADCELL_MAX  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(mtot,mtot_all,nSN*RADCELL_MAX  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
-  call MPI_ALLREDUCE(sncells,sncells_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
+  call MPI_ALLREDUCE(snncells,snncells_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
   if (.not. delayed)then
      call MPI_ALLREDUCE(snmaxlevel,snmaxlevel_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
      call MPI_ALLREDUCE(flagrefine,flagrefine_all,nSN  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
@@ -1158,7 +1158,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
         rSN(iSN) = SNmaxrad(iSN)*dx_min
         SNmenc(iSN) = mtot_all(iSN,SNmaxrad(iSN))
         SNvol(iSN) = vol_gas_all(iSN,SNmaxrad(iSN))
-        ncellsSN(iSN) = snncells_all(iSN,radcells,SNmaxrad(iSN))
+        ncellsSN(iSN) = snncells_all(iSN,SNmaxrad(iSN))
      endif
 #endif
     if (rSN(iSN) == 0)then
