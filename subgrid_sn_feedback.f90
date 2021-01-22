@@ -95,7 +95,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  integer::nx_loc
 !  integer,dimension(:),allocatable::ind_grid
 !  logical,dimension(:),allocatable::ok_free
-  integer,dimension(:),allocatable::indSN,SNlevel,ncellsSN
+  integer,dimension(:),allocatable::indSN,SNlevel
   real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas
   logical,dimension(:),allocatable::SNcooling
@@ -860,27 +860,27 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   if(nSN_prev > 0)then
      call MPI_ALLREDUCE(sn_isrefined,sn_isrefined_all,nSN_prev  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
      sn_isrefined = sn_isrefined_all
-     allocate(vol_gas(1:nSN_prev,1:RADCELL_MAX),rSN(1:nSN_prev),ncellsSN(1:nSN_prev),SNlevel(1:nSN_prev),volSN(1:nSN_prev),SNcooling(1:nSN_prev))
+     allocate(vol_gas(1:nSN_prev,1:RADCELL_MAX),rSN(1:nSN_prev),SNlevel(1:nSN_prev),volSN(1:nSN_prev),SNcooling(1:nSN_prev))
      allocate(indSN(1:nSN_prev))
      ! Add SN from previous time step
      if(myid==1)write(*,*)nSN_prev,'delayed SNe at ',sn_coords(1,1),' ',sn_coords(1,2),' ',sn_coords(1,3)
      ! Compute blast radius
-     call subgrid_average_SN(sn_coords(1:nSN_prev,1:ndim),rSN,vol_gas,volSN,ncellsSN,indSN,nSN_prev,SNlevel,SNcooling,.true.)
+     call subgrid_average_SN(sn_coords(1:nSN_prev,1:ndim),rSN,vol_gas,volSN,indSN,nSN_prev,SNlevel,SNcooling,.true.)
 
      ! Modify hydro quantities to account for a Sedov blast wave
-     call subgrid_Sedov_blast(sn_coords(1:nSN_prev,1:ndim),mSN,rSN,indSN,volSN,ncellsSN,nSN_prev,SNlevel,SNcooling,.true.)
+     call subgrid_Sedov_blast(sn_coords(1:nSN_prev,1:ndim),mSN,rSN,indSN,volSN,nSN_prev,SNlevel,SNcooling,.true.)
      deallocate(vol_gas,rSN,indSN,SNlevel,volSN,SNcooling)
   endif
 #endif
 
-  allocate(vol_gas(1:nSN,1:RADCELL_MAX),rSN(1:nSN),ncellsSN(1:nSN),SNlevel(1:nSN),volSN(1:nSN),SNcooling(1:nSN))
+  allocate(vol_gas(1:nSN,1:RADCELL_MAX),rSN(1:nSN),SNlevel(1:nSN),volSN(1:nSN),SNcooling(1:nSN))
   allocate(indSN(1:nSN))
 
   ! Compute blast radius
-  call subgrid_average_SN(xSN,rSN,vol_gas,volSN,ncellsSN,indSN,nSN,SNlevel,SNcooling,.false.)
+  call subgrid_average_SN(xSN,rSN,vol_gas,volSN,indSN,nSN,SNlevel,SNcooling,.false.)
 
   ! Modify hydro quantities to account for a Sedov blast wave
-  call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,volSN,ncellsSN,nSN,SNlevel,SNcooling,.false.)
+  call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,volSN,nSN,SNlevel,SNcooling,.false.)
 
 #ifdef DELAYED_SN
   inew=0
@@ -923,7 +923,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   enddo
 #endif
 
-  deallocate(xSN,mSN,indSN,vol_gas,rSN,volSN,ncellsSN,SNcooling)
+  deallocate(xSN,mSN,indSN,vol_gas,rSN,volSN,SNcooling)
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0)deallocate(xpdf,xSNIa,min_r2,min_r2_all)
@@ -947,7 +947,7 @@ end subroutine subgrid_sn_feedback
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlevel,SNcooling,delayed)
+subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -967,12 +967,12 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
   integer::ilevel,ncache,nSN,iSN,ind,ix,iy,iz,ngrid,iskip,radcells
   integer::i,nx_loc,igrid,ivar
   integer,dimension(1:nvector),save::ind_grid,ind_cell
-  real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew,fZ
+  real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew,fZ,ncellsSN
   real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
-  integer ,dimension(1:nSN)::ind_blast,SNlevel,flagrefine,flagrefine_all,ncellsSN
+  integer ,dimension(1:nSN)::ind_blast,SNlevel,flagrefine,flagrefine_all
 #ifndef DELAYED_SN
   integer ,dimension(1:nSN)::SNmaxrad
 #endif
@@ -1144,7 +1144,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
            endif
            SNmenc(iSN) = mtot_all(iSN,radcells)
            SNvol(iSN) = vol_gas_all(iSN,radcells)
-           ncellsSN(iSN) = snncells_all(iSN,radcells)
+           ncellsSN = snncells_all(iSN,radcells)
         endif
      enddo
      if (rSN(iSN) >= RADCELL_MAX*dx_min)then
@@ -1158,7 +1158,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
         rSN(iSN) = SNmaxrad(iSN)*dx_min
         SNmenc(iSN) = mtot_all(iSN,SNmaxrad(iSN))
         SNvol(iSN) = vol_gas_all(iSN,SNmaxrad(iSN))
-        ncellsSN(iSN) = snncells_all(iSN,SNmaxrad(iSN))
+        ncellsSN = snncells_all(iSN,SNmaxrad(iSN))
      endif
 #endif
     if (rSN(iSN) == 0)then
@@ -1175,7 +1175,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
        rSN(iSN) = 3d0*dx_min
        SNmenc(iSN) = mtot_all(iSN,3)
        SNvol(iSN) = vol_gas_all(iSN,3)
-       ncellsSN(iSN) = snncells_all(iSN,3)
+       ncellsSN = snncells_all(iSN,3)
     else
        SNcooling(iSN) = .true.
     endif
@@ -1218,9 +1218,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
           delayedstr = 'Y'
        endif
        if (skip)delayedstr = 'SKIP'
-       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), ncellsSN(iSN), 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
+       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
-       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), ncellsSN(iSN), 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
+       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
 #endif
        close(ilun)
      endif
@@ -1340,7 +1340,7 @@ end subroutine subgrid_average_SN
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,ncellsSN,nSN,SNlevel,SNcooling,delayed)
+subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -1362,7 +1362,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,ncellsSN,nSN,SNlevel,SN
   real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
   logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:ndim)::xSN
-  integer ,dimension(1:nSN)::indSN,SNlevel,ncellsSN
+  integer ,dimension(1:nSN)::indSN,SNlevel
   logical ,dimension(1:nvector),save::ok
   logical::delayed
   integer::info
@@ -1493,16 +1493,15 @@ ektot=0
                               if (dr_SN > 0d0)then
                                  fZ = 2d0
                                  if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
-                                 write(*,*)"fZ: ",fZ
                                  mom_term = 9.6d43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
-                                 mom_inj = (mom_ejecta/ncellsSN(iSN))*min(1d0 + max(uold(ind_cell(i),1),smallr)*vol_loc/(mSN(iSN)/ncellsSN(iSN)), mom_term/mom_ejecta)/vol_loc
+                                 mom_inj = mom_ejecta*min(sqrt(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)), mom_term/mom_ejecta)/vol_gas(iSN)
                                  uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/sqrt(dr_SN)
                                  uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/sqrt(dr_SN)
 #if NDIM==3
                                  uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/sqrt(dr_SN)
 #endif
                               else
-                                 mom_inj = mom_ejecta/(ncellsSN(iSN)*vol_loc)
+                                 mom_inj = mom_ejecta/vol_gas(iSN)
                               endif
                               uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + p_gas(iSN)!0.5*mom_inj**2/uold(ind_cell(i),1)
                           else
