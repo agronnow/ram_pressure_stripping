@@ -1416,6 +1416,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 !write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " ekBlast: ", ekBlast(iSN), " vol_gas: ", vol_gas(iSN)
   end do
 
+ektot=0
 !  vol=0.0
 !  vol_all=0.0
   ! Loop over levels
@@ -1507,6 +1508,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                            endif
 !                          write(*,*)"SN d: ", d_gas(iSN), " delay: ", uold(ind_cell(i),idelay)!, " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !                          write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
+                           etherm = uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1)
+                           ektot = ektot + uold(ind_cell(i),ndim+2) - etherm
                        endif
 #ifdef DELAYED_SN
                    endif
@@ -1521,6 +1524,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
      ! End loop over grids
   end do
   ! End loop over levels
+  
+  write(*,*)"Ekin: ",ektot/(scale_d*scale_v**2)
 
   !call MPI_ALLREDUCE(vol,vol_all,1  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   !write(*,*)"blast vol",vol_all
