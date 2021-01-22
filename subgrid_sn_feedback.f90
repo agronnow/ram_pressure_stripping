@@ -1509,7 +1509,7 @@ ektot=0
 !                          write(*,*)"SN d: ", d_gas(iSN), " delay: ", uold(ind_cell(i),idelay)!, " vx: ", u, " vy: ", v, " deltaE: ", 0.5*d_gas(iSN)*(u*u+v*v+w*w)+p_gas(iSN)
 !                          write(*,*)"SN rho: ", uold(ind_cell(i),1)," temp: ", (uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
                            etherm = uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1)
-                           ektot = ektot + uold(ind_cell(i),ndim+2) - etherm
+                           ektot = ektot + (uold(ind_cell(i),ndim+2) - etherm)*vol_loc
                        endif
 #ifdef DELAYED_SN
                    endif
