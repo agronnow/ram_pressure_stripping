@@ -1493,6 +1493,7 @@ ektot=0
                               if (dr_SN > 0d0)then
                                  fZ = 2d0
                                  if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
+                                 write(*,*)"fZ: ",fZ
                                  mom_term = 9.6d43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
                                  mom_inj = (mom_ejecta/ncellsSN(iSN))*min(1d0 + max(uold(ind_cell(i),1),smallr)*vol_loc/(mSN(iSN)/ncellsSN(iSN)), mom_term/mom_ejecta)/vol_loc
                                  uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/sqrt(dr_SN)
