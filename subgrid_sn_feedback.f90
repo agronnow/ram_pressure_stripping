@@ -1322,7 +1322,6 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ncellsSN,ind_blast,nSN,SNlev
   end do  ! End loop over SNe
 
   vol_gas=vol_gas_all
-  SNcells=SNcells_all
 
 !  if (update_boundary)then
 !    ! Update hydro quantities for split cells
