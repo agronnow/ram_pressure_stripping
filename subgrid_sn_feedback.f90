@@ -656,7 +656,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 !               if (nosn) then
 #else
 !SN injection test sim
-                if (nSN_alltime==0)then
+                if ((nSN_alltime==0).and.(t<1d-3))then
                    x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
                    y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
                    z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
