@@ -1420,6 +1420,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 !write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " ekBlast: ", ekBlast(iSN), " vol_gas: ", vol_gas(iSN)
   end do
 
+  ektot=0
+  ektot_all=0
 !  vol=0.0
 !  vol_all=0.0
   ! Loop over levels
@@ -1470,8 +1472,6 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #endif
                  do iSN=1,nSN
 #ifdef DELAYED_SN
-                    ektot=0
-                    ektot_all=0
                     if (delayed)then
                        if (sn_isrefined(iSN)==0)cycle
                     endif
@@ -1510,7 +1510,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #endif
                                  R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
                                  if (dr_SN > R_cool)engfac = (dr_SN/R_cool)**(-6.5d0)
-                                 write(*,*)"T, mu, numdens, Rcool, engfac: ",T2, mu, numdens, R_cool, engfac
+                                 write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac: ",Tovermu, T2, mu, numdens, R_cool, engfac
                               else
                                  mom_inj = mom_ejecta/vol_gas(iSN)
                               endif
@@ -1529,10 +1529,6 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #ifdef DELAYED_SN
                    endif
 #endif
-#ifndef WITHOUTMPI
-                  call MPI_ALLREDUCE(ektot,ektot_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
-                  write(*,*)"Ekin: ",ektot_all*scale_eng
-#endif
                  end do
               endif
            end do
@@ -1543,6 +1539,11 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
      ! End loop over grids
   end do
   ! End loop over levels
+  
+#ifndef WITHOUTMPI
+  call MPI_ALLREDUCE(ektot,ektot_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
+  if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng
+#endif
 
   !call MPI_ALLREDUCE(vol,vol_all,1  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   !write(*,*)"blast vol",vol_all
