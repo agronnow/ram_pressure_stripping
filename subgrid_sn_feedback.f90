@@ -1356,7 +1356,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
-  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T,nH,mu,numdens,engfac,ektot,etherm,ektot_all,prs
+  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens,engfac,ektot,etherm,ektot_all,prs
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
   real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
@@ -1497,7 +1497,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                                  prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*(gamma-1.0)
                                  Tovermu = prs/max(uold(ind_cell(i),1),smallr)
                                  nH = max(uold(ind_cell(i),1),smallr)*scale_nH
-                                 GetMuAndTemperature(Tovermu,nH,mu,T)
+                                 GetMuAndTemperature(Tovermu,nH,mu,T2)
                                  fZ = 2d0
                                  numdens = max(uold(ind_cell(i),1),smallr)/mu
                                  if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
@@ -1510,7 +1510,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #endif
                                  R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
                                  if (dr_SN > R_cool)engfac = (dr_SN/R_cool)**(-6.5d0)
-                                 write(*,*)"T, mu, numdens, Rcool, engfac: ",T, mu, numdens, R_cool, engfac
+                                 write(*,*)"T, mu, numdens, Rcool, engfac: ",T2, mu, numdens, R_cool, engfac
                               else
                                  mom_inj = mom_ejecta/vol_gas(iSN)
                               endif
