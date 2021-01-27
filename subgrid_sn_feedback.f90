@@ -1676,7 +1676,7 @@ subroutine GetMuAndTemperature(T2,nH,mu,T)
        write(*,*) 'ERROR in calculation of mu : too many iterations.'
        STOP
     endif
-end subroutine GetMuFromTemperature
+end subroutine GetMuAndTemperature
 
 !###########################################################
 !###########################################################
