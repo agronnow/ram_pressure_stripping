@@ -1356,7 +1356,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
-  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,ektot,etherm
+  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T,nH,mu,numdens,engfac,ektot,etherm,ektot_all,prs
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
   real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
@@ -1420,7 +1420,6 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 !write(*,*)"SN d: ", d_gas(iSN), " p: ", p_gas(iSN), " uSedov: ", uSedov(iSN), " ekBlast: ", ekBlast(iSN), " vol_gas: ", vol_gas(iSN)
   end do
 
-ektot=0
 !  vol=0.0
 !  vol_all=0.0
   ! Loop over levels
@@ -1471,6 +1470,8 @@ ektot=0
 #endif
                  do iSN=1,nSN
 #ifdef DELAYED_SN
+                    ektot=0
+                    ektot_all=0
                     if (delayed)then
                        if (sn_isrefined(iSN)==0)cycle
                     endif
@@ -1644,7 +1645,7 @@ subroutine GetMuAndTemperature(T2,nH,mu,T)
   use amr_parameters, ONLY: dp, aexp
   use cooling_module, ONLY: set_rates, cmp_chem_eq
   implicit none
-  real(dp)::T,nH,mu
+  real(dp)::T2,T,nH,mu
   real(dp)::mu_old,err_mu,mu_left,mu_right,n_TOT
   real(dp),dimension(1:3) :: t_rad_spec,h_rad_spec
   real(dp),dimension(1:6) :: n_spec
