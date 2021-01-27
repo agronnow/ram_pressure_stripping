@@ -1495,7 +1495,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                               if (dr_SN > 0d0)then
                                  dr_SN = sqrt(dr_SN)
                                  prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*(gamma-1.0)
-                                 Tovermu = prs/max(uold(ind_cell(i),1),smallr)
+                                 Tovermu = prs/max(uold(ind_cell(i),1),smallr)*scale_T2
                                  nH = max(uold(ind_cell(i),1),smallr)*scale_nH
                                  call GetMuAndTemperature(Tovermu,nH,mu,T2)
                                  fZ = 2d0
