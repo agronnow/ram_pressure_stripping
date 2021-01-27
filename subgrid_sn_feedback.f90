@@ -1490,20 +1490,30 @@ ektot=0
                               ! Kinetic feedback: Inject SN as momentum and adjust energy accordingly to alleviate overcooling
                               ! This largely follows Gentry, Madau & Krumholz (2020) but without star particles, no mass is injected
                               mom_ejecta = sqrt(2d0*mSN(iSN)*1d51/scale_eng)
+                              engfac = 1d0
                               if (dr_SN > 0d0)then
+                                 dr_SN = sqrt(dr_SN)
+                                 prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*(gamma-1.0)
+                                 Tovermu = prs/max(uold(ind_cell(i),1),smallr)
+                                 nH = max(uold(ind_cell(i),1),smallr)*scale_nH
+                                 GetMuAndTemperature(Tovermu,nH,mu,T)
                                  fZ = 2d0
+                                 numdens = max(uold(ind_cell(i),1),smallr)/mu
                                  if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
-                                 mom_term = 9.6d43 * max(uold(ind_cell(i),1),smallr)**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
+                                 mom_term = 9.6d43 * numdens**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
                                  mom_inj = mom_ejecta*min(sqrt(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)), mom_term/mom_ejecta)/vol_gas(iSN)
-                                 uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/sqrt(dr_SN)
-                                 uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/sqrt(dr_SN)
+                                 uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/dr_SN
+                                 uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/dr_SN
 #if NDIM==3
-                                 uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/sqrt(dr_SN)
+                                 uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/dr_SN
 #endif
+                                 R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
+                                 if (dr_SN > R_cool)engfac = (dr_SN/R_cool)**(-6.5d0)
+                                 write(*,*)"T, mu, numdens, Rcool, engfac: ",T, mu, numdens, R_cool, engfac
                               else
                                  mom_inj = mom_ejecta/vol_gas(iSN)
                               endif
-                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + p_gas(iSN)!0.5*mom_inj**2/uold(ind_cell(i),1)
+                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + p_gas(iSN)/engfac !0.5*mom_inj**2/uold(ind_cell(i),1)
                           else
                               ! Thermal dump
                               ! Update the total energy of the gas
@@ -1518,6 +1528,10 @@ ektot=0
 #ifdef DELAYED_SN
                    endif
 #endif
+#ifndef WITHOUTMPI
+                  call MPI_ALLREDUCE(ektot,ektot_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
+                  write(*,*)"Ekin: ",ektot_all*scale_eng
+#endif
                  end do
               endif
            end do
@@ -1528,8 +1542,6 @@ ektot=0
      ! End loop over grids
   end do
   ! End loop over levels
-  
-  write(*,*)"Ekin: ",ektot*scale_eng
 
   !call MPI_ALLREDUCE(vol,vol_all,1  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   !write(*,*)"blast vol",vol_all
@@ -1625,6 +1637,46 @@ subroutine init_subgrid_feedback
   endif
   if(verbose)write(*,*)'Exiting init_subgrid_feedback'
 end subroutine init_subgrid_feedback
+
+
+subroutine GetMuAndTemperature(T2,nH,mu,T)
+!Note: T2 is T/mu
+  use amr_parameters, ONLY: dp, aexp
+  use cooling_module, ONLY: set_rates, cmp_chem_eq
+  implicit none
+  real(dp)::T,nH,mu
+  real(dp)::mu_old,err_mu,mu_left,mu_right,n_TOT
+  real(dp),dimension(1:3) :: t_rad_spec,h_rad_spec
+  real(dp),dimension(1:6) :: n_spec
+  integer::niter
+
+    call set_rates(t_rad_spec,h_rad_spec,aexp)
+
+    ! Iteration to find mu
+    err_mu=1.
+    mu_left=0.5
+    mu_right=1.3
+    niter=0
+    do while (err_mu > 1.d-4 .and. niter <= 50)
+       mu_old=0.5*(mu_left+mu_right)
+       T = T2*mu_old
+       call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu)
+       err_mu = (mu-mu_old)/mu_old
+       if(err_mu>0.)then
+          mu_left =0.5*(mu_left+mu_right)
+          mu_right=mu_right
+       else
+          mu_left =mu_left
+          mu_right=0.5*(mu_left+mu_right)
+       end if
+       err_mu=ABS(err_mu)
+       niter=niter+1
+    end do
+    if (niter > 50) then
+       write(*,*) 'ERROR in calculation of mu : too many iterations.'
+       STOP
+    endif
+end subroutine GetMuFromTemperature
 
 !###########################################################
 !###########################################################
