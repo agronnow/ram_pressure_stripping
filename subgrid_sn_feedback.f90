@@ -1502,7 +1502,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                                  numdens = max(uold(ind_cell(i),1),smallr)/mu
                                  if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
                                  mom_term = 9.6d43 * numdens**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
-                                 mom_inj = mom_ejecta*min(sqrt(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)), mom_term/mom_ejecta)/vol_gas(iSN)
+                                 mom_inj = mom_ejecta*min(sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)), mom_term/mom_ejecta)/vol_gas(iSN)
                                  uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/dr_SN
                                  uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/dr_SN
 #if NDIM==3
