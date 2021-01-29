@@ -1510,7 +1510,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #endif
                                  R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
                                  if (dr_SN > R_cool)engfac = (dr_SN/R_cool)**(-6.5d0)
-                                 write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac: ",Tovermu, T2, mu, numdens, R_cool, engfac
+                                 write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term
                               else
                                  mom_inj = mom_ejecta/vol_gas(iSN)
                               endif
