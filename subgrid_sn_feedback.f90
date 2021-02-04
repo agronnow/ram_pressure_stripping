@@ -219,7 +219,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
     calc_sfr = .false.
     if (sfhist_update) then
        nhist = nhist + 1
-       t_sfhist(nhist) = (t-tbeg_wind)*scale_t/3.154e16 + tinit_sim
+       t_sfhist(nhist) = (t-tbeg_wind)*scale_t/3.154e16 + tinit_sim ! Cosmic time in Gyr
        sfhist(nhist) = sum(sfr_tot)
 #if NDIM==2
        sfhist(nhist) = sfhist(nhist)*4.0*Rad_cloud/3.0
@@ -276,6 +276,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
   if (firstcall) then
      ! Construct initial Star Formation History
+     ! SFH table is assumed to use cosmic age (t=0 is current time, t=13.6 Gyr is big bang) and is reordered to use cosmic time (t=0 is big bang, t=tinit_sim is t_sim=0)
      fileloc=trim(sfhistfile)
      ilun=150
      inquire(file=fileloc,exist=file_exist)
@@ -286,15 +287,23 @@ subroutine subgrid_sn_feedback(ilevel, icount)
         read(ilun,*)dummyline
         do
            read(ilun,*, iostat=stat)ctime,csfh
-           if ((stat /= 0) .or. (ctime > tinit_sim))exit
-           t_sfhist(nhist+1) = ctime
+           if (stat /= 0)exit
+           if (ctime < 13.6-tinit_sim)cycle
+           t_sfhist(nhist+1) = 13.6 - ctime
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
            sfhist(nhist+1) = csfh*sfr_boost
-           nhist=nhist+1
-           if (myid==1)write(*,*)nhist,t_sfhist(nhist),sfhist(nhist)
+           nhist=nhist+1 
         end do
 !        t_sfhfile = t_sfhist(nhist)
         close(ilun)
+        !Reverse arrays to order according to cosmic time (t=0 is big bang) rather than age (t=0 is current time)
+        t_sfhist = t_sfhist(nhist:1:-1)
+        sfhist = sfhist(nhist:1:-1)
+        if (myid==1)then
+          do i=1,nhist
+            write(*,*)"SFH: ",i,t_sfhist(i),sfhist(i)
+          enddo
+        endif
      endif
 
      ! Append the SFH computed during previous runs, relevant if restarting an earlier run
@@ -311,7 +320,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
            sfhist(nhist+1) = csfh
            nhist=nhist+1
-           write(*,*)myid,nhist,t_sfhist(nhist),sfhist(nhist)
+           if(myid==1)write(*,*)"restart SFH: ",nhist,t_sfhist(nhist),sfhist(nhist)
         end do
 !        t_sfhfile = t_sfhist(nhist)
         close(ilun)
