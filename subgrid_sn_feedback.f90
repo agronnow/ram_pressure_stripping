@@ -997,7 +997,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
   logical ,dimension(1:nvector),save::ok
 
   logical::delayed ! Don't flag SN for refinement and delayed blast multiple times
-  logical::skip
+  logical::skip,kinetic_inj
   character(len=5)::delayedstr1,delayedstr,coolstr
 
   if(nSN==0)return
@@ -1179,11 +1179,12 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
        if (delayed_cooling)then
          SNcooling(iSN) = .false.
          kinetic_inj = .false.
+         rSN(iSN) = 3d0*dx_min
        else
          SNcooling(iSN) = .true.
          kinetic_inj = .true.
+         rSN(iSN) = mominj_rad*dx_min
        endif
-       rSN(iSN) = 3d0*dx_min
        SNmenc(iSN) = mtot_all(iSN,3)
        SNvol(iSN) = vol_gas_all(iSN,3)
        ncellsSN = snncells_all(iSN,3)
@@ -1370,7 +1371,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
   real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
-  real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar
+  real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar,massratio
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
   real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
