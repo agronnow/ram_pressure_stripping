@@ -1237,7 +1237,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
 #endif
        close(ilun)
      endif
-     if ((skip).or.(kinetic_inj))=cycle
+     if ((skip).or.(kinetic_inj))cycle
 
 #ifdef DELAYED_SN
      if (SNlevel(iSN) > 0)cycle
