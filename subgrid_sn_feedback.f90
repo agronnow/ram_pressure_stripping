@@ -1535,7 +1535,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                                        fkin = 3.97d-6 * max(uold(ind_cell(i),1),smallr)*R_pds**7*t_pds**(-2)*(1d3*dx_loc)**(-2)
                                        if (fkin > 1d0)fkin = 1d0
                                     endif
-                                    mom_inj = (1d0 - fkin)*mom_ejecta*massratio/vol_gas(iSN)
+                                    mom_inj = fkin*mom_ejecta*massratio/vol_gas(iSN)
                                     write(*,*)"fkin: ",fkin," t_pds (kyr): ",t_pds," R_pds (kpc): ",1d-3*R_pds
                                  else
                                     ! Use scheme of Gentry, Madau & Krumholz (2020) to inject either terminal momentum or 100% kinetic energy
