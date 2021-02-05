@@ -321,6 +321,7 @@ module amr_parameters
   logical::prob_debug = .false.         ! Turn some extra debug logging on/off
   logical::subgrid_feedback = .true.    ! Turn SN feedback on/off
   logical::momentum_fb = .true.         ! Turn kinetic feedback on/off (alleviates SN overcooling at low res.)
+  logical::simpson_fb = .false.         ! Use kinetic FB scheme of Simpson+ 2015 instead of def. Gentry+ 2020
   real(dp)::mom_fac = 1.0               ! Factor to multiply terminal momentum by                              []
   real(dp)::SN_blast_mass = 0.0         ! Mass to enclose within SN explosion region                           [Msun]
   real(dp)::rho_SN = 0.0                ! SN rate defined as SNe per solar mass of formed stars                [Msun^-1]

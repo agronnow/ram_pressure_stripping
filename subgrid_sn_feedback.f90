@@ -1178,8 +1178,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
     if ((rSN(iSN) < 3d0*dx_min).and.((delayed_cooling).or.(momentum_fb)))then
        if (delayed_cooling)then
          SNcooling(iSN) = .false.
+         kinetic_inj = .false.
        else
          SNcooling(iSN) = .true.
+         kinetic_inj = .true.
        endif
        rSN(iSN) = 3d0*dx_min
        SNmenc(iSN) = mtot_all(iSN,3)
@@ -1187,6 +1189,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
        ncellsSN = snncells_all(iSN,3)
     else
        SNcooling(iSN) = .true.
+       kinetic_inj = .false.
     endif
 
      if(myid==1) then
@@ -1233,11 +1236,12 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
 #endif
        close(ilun)
      endif
-     if (skip)cycle
+     if ((skip).or.(kinetic_inj))=cycle
 
 #ifdef DELAYED_SN
      if (SNlevel(iSN) > 0)cycle
 #endif
+     ! Evenly redistribute mass within SN injection region for fully thermal injection
      ! Loop over levels
      do ilevel=levelmin,nlevelmax
         ! Computing local volume (important for averaging hydro quantities)
@@ -1365,7 +1369,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
-  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens,engfac,ektot,etherm,ektot_all,prs
+  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
+  real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
   real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
@@ -1497,26 +1502,49 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #endif
                        if(dr_SN.lt.(1.001*rSN(iSN))**2)then
                           if (momentum_fb)then
-                              ! Kinetic feedback: Inject SN as momentum and adjust energy accordingly to alleviate overcooling
-                              ! This largely follows Gentry, Madau & Krumholz (2020) but without star particles, no mass is injected
+                              ! Kinetic feedback: Inject some fraction of SN energy as kinetic energy to alleviate overcooling
+                              ! This largely follows either Gentry, Madau & Krumholz (2020) or Simpson et al. (2015)
+                              ! but without star particles and no mass or metals is injected
                               mom_ejecta = sqrt(2d0*mSN(iSN)*1d51/scale_eng)
                               engfac = 1d0
                               if (dr_SN > 0d0)then
                                  dr_SN = sqrt(dr_SN)
+                                 massratio = sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN))
                                  prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*(gamma-1.0)
                                  Tovermu = prs/max(uold(ind_cell(i),1),smallr)*scale_T2
                                  nH = max(uold(ind_cell(i),1),smallr)*scale_nH
                                  call GetMuAndTemperature(Tovermu,nH,mu,T2)
-                                 fZ = 2d0
                                  numdens = max(uold(ind_cell(i),1),smallr)/mu
-                                 if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) > 0.01*0.02)fZ=(uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02)**(-0.14)
-                                 mom_term = mom_fac * 9.6d43 * numdens**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
-                                 !if (sqrt(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)) < mom_term/mom_ejecta)then
-                                 !   mom_inj = mom_ejecta*sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN))/vol_gas(iSN)
-                                 !else
-                                 !   mom_inj = mom_term/vol_gas(iSN)
-                                 !endif
-                                 mom_inj = mom_ejecta*min(sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)), mom_term/mom_ejecta)/vol_gas(iSN)
+                                 ZonZsolar = uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02
+                                 if (simpson_fb)then
+                                    ! Use scheme of Simpson et al. (2015) to calculate fraction of kinetic energy
+                                    if (ZonZsolar > 0.01)then
+                                       t_pds = 26.5d0 * numdens**(-4d0/7d0)*ZonZsolar**(-5d0/14d0) ! in kyr
+                                       R_pds = 18.5d0 * numdens**(-3d0/7d0)*ZonZsolar**(-1d0/7d0)  ! in pc
+                                    else
+                                       t_pds = 3.06d2 * numdens**(-3d0/4d0) ! in kyr
+                                       R_pds = 49.3d0 * numdens**(-1d0/2d0) ! in pc
+                                    endif
+                                    if (R_pds > 4.5d0*1d3*dx_loc)then
+                                       fkin = 0.0 ! Reduce to thermal dump
+                                    else
+                                       fkin = 3.97d-6 * max(uold(ind_cell(i),1),smallr)*R_pds**7*t_pds**(-2)*(1d3*dx_loc)**(-2)
+                                       if (fkin > 1d0)fkin = 1d0
+                                    endif
+                                    mom_inj = (1d0 - fkin)*mom_ejecta*massratio/vol_gas(iSN)
+                                    write(*,*)"fkin: ",fkin," t_pds (kyr): ",t_pds," R_pds (kpc): ",1d-3*R_pds
+                                 else
+                                    ! Use scheme of Gentry, Madau & Krumholz (2020) to inject either terminal momentum or 100% kinetic energy
+                                    fZ = 2d0
+                                    if (ZonZsolar > 0.01)fZ=ZonZsolar**(-0.14)
+                                    mom_term = mom_fac * 9.6d43 * numdens**(-1d0/7d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
+                                    !if (sqrt(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)) < mom_term/mom_ejecta)then
+                                    !   mom_inj = mom_ejecta*massratio/vol_gas(iSN)
+                                    !else
+                                    !   mom_inj = mom_term/vol_gas(iSN)
+                                    !endif
+                                    mom_inj = mom_ejecta*min(massratio, mom_term/mom_ejecta)/vol_gas(iSN)
+                                 endif
                                  uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/dr_SN
                                  uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/dr_SN
 #if NDIM==3
