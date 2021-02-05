@@ -1180,14 +1180,15 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
          SNcooling(iSN) = .false.
          kinetic_inj = .false.
          rSN(iSN) = 3d0*dx_min
+         ncellsSN = snncells_all(iSN,3)
        else
          SNcooling(iSN) = .true.
          kinetic_inj = .true.
          rSN(iSN) = mominj_rad*dx_min
+         ncellsSN = snncells_all(iSN,mominj_rad)
        endif
        SNmenc(iSN) = mtot_all(iSN,3)
        SNvol(iSN) = vol_gas_all(iSN,3)
-       ncellsSN = snncells_all(iSN,3)
     else
        SNcooling(iSN) = .true.
        kinetic_inj = .false.
