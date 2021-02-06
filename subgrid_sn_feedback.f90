@@ -1024,6 +1024,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
   update_boundary = .false.
 
   do iSN=1,nSN
+     plevel = -1
 #ifdef DELAYED_SN
      if (delayed)then
         if(sn_isrefined(iSN)==0)cycle
@@ -1090,13 +1091,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
                        do radcells=1,RADCELL_MAX
-                          if(dr_SN .lt. (1.001*dx_min*radcells)**2) then
-!                             if ((ilevel < nlevelmax) .and. (radcells <= SNmaxrad(iSN))) then
-!                                if (radcells == 1) then
-!                                   SNmaxrad(iSN) = 1 ! SN is centered on a coarse cell, this issue will be dealt with in subgrid_sedov_blast
-!                                else
-!                                   SNmaxrad(iSN) = radcells-1 ! SN radius must be smaller than this to avoid overlapping coarse cells
-!                                endif
+                          if((dr_SN .lt. (dx_loc*(radcells+0.5)**2)))then! .or. (dr_cell < dx_loc*1.1)) then
+!                             if ((ilevel ~= plevel) .and. (plevel >= 0) .and. (radcells <= SNmaxrad(iSN))) then
+!                                 SNmaxrad(iSN) = radcells-1 ! SN radius must be smaller than this to avoid overlapping coarse cells
 !                             endif
                              if (.not. delayed) then
                                 if (ilevel > snmaxlevel(iSN,radcells))then
@@ -1107,6 +1104,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                              mtot(iSN,radcells) = mtot(iSN,radcells) + max(uold(ind_cell(i),1),smallr)*vol_loc
                              vol_gas(iSN,radcells) = vol_gas(iSN,radcells) + vol_loc
                              snncells(iSN,radcells) = snncells(iSN,radcells) + 1
+                             plevel = ilevel
 !write(*,*)'radcells',radcells,' mtot',mtot(iSN,radcells),' vol',vol_gas(iSN,radcells)
                           endif
                        enddo
@@ -1138,12 +1136,13 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
      endif
 #endif
      mindiff = 1d10
+     dx_SN = 0.5D0**sn_maxlevel_all(iSN,1)*scale
      do radcells=1,RADCELL_MAX
         massdiff = abs(SN_blast_mass - mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33)
 !write(*,*)'radcells',radcells,' massdiff',massdiff,' mtot',mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33,' vol_gas',vol_gas_all(iSN,radcells)
         if (massdiff < mindiff) then
            mindiff = massdiff
-           rSN(iSN) = radcells*dx_min
+           rSN(iSN) = radcells*dx_SN
            if (.not. delayed) then
               SNlevel(iSN) = maxval(snmaxlevel_all(iSN,1:radcells))
               if (flagrefine_all(iSN) == 0)SNlevel(iSN) = 0 ! Disable SN based refinement if entire SN blast is on the same level
@@ -1154,17 +1153,19 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
            SNmenc(iSN) = mtot_all(iSN,radcells)
            SNvol(iSN) = vol_gas_all(iSN,radcells)
            ncellsSN = snncells_all(iSN,radcells)
+           sn_level = snmaxlevel_all(iSN,radcells)
+           write(*,*)"Ncells: ",radcells, " ", ncellsSN(iSN,radcells)
         endif
      enddo
-     if (rSN(iSN) >= RADCELL_MAX*dx_min)then
+     if (rSN(iSN) >= RADCELL_MAX*dx_SN)then
         if (myid==1)write(*,*)"WARNING: Skipping SN with radius greater than the maximum number of cells allowed:", RADCELL_MAX
         skip=.true.
      endif
      if (delayed)SNlevel(iSN) = 0
 #ifndef DELAYED_SN
-     if (SNmaxrad(iSN)*dx_min < rSN(iSN)) then
-        if (myid==1)write(*,*)"WARNING: SN should extend ",rSN(iSN), " kpc but can only extend ",SNmaxrad(iSN)*dx_min," kpc without overlapping coarser cells!!!"
-        rSN(iSN) = SNmaxrad(iSN)*dx_min
+     if (SNmaxrad(iSN)*dx_SN < rSN(iSN)) then
+        if (myid==1)write(*,*)"WARNING: SN should extend ",rSN(iSN), " kpc but can only extend ",SNmaxrad(iSN)*dx_SN," kpc without overlapping coarser cells!!!"
+        rSN(iSN) = SNmaxrad(iSN)*dx_SN
         SNmenc(iSN) = mtot_all(iSN,SNmaxrad(iSN))
         SNvol(iSN) = vol_gas_all(iSN,SNmaxrad(iSN))
         ncellsSN = snncells_all(iSN,SNmaxrad(iSN))
@@ -1175,21 +1176,28 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
        skip=.true.
     endif
 
-    if ((rSN(iSN) < 3d0*dx_min).and.((delayed_cooling).or.(momentum_fb)))then
+    if ((rSN(iSN) < 3d0*dx_SN).and.((delayed_cooling).or.(momentum_fb)))then
        if (delayed_cooling)then
          SNcooling(iSN) = .false.
          kinetic_inj = .false.
-         rSN(iSN) = 3d0*dx_min
-         SNmenc(iSN) = mtot_all(iSN,3)
-         SNvol(iSN) = vol_gas_all(iSN,3)
-         ncellsSN = snncells_all(iSN,3)
+         if (SNmaxrad(iSN) >= 3)then
+            radcells = 3
+         else
+            radcells = SNmaxrad(iSN)
+         endif
        else
          SNcooling(iSN) = .true.
          kinetic_inj = .true.
-         rSN(iSN) = mominj_rad*dx_min
-         SNmenc(iSN) = mtot_all(iSN,mominj_rad)
-         SNvol(iSN) = vol_gas_all(iSN,mominj_rad)
-         ncellsSN = snncells_all(iSN,mominj_rad)
+         if (SNmaxrad(iSN) >= mominj_rad)then
+            radcells = mominj_rad
+         else
+            radcells = SNmaxrad(iSN)
+         endif
+       endif
+         rSN(iSN) = radcells*dx_min
+         SNmenc(iSN) = mtot_all(iSN,radcells)
+         SNvol(iSN) = vol_gas_all(iSN,radcells)
+         ncellsSN = snncells_all(iSN,radcells)
        endif
     else
        SNcooling(iSN) = .true.
@@ -1306,7 +1314,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                     dr_SN=dxx**2+dyy**2
                     dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                    if(dr_SN.lt.(1.001*rSN(iSN))**2)then
+                    if(dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2)then
                        update_boundary = .true.
                        write(*,*)'SN blast on cpu ',myid
                        ! redistribute the mass within the SN blast uniformly and update other quantities accordingly
@@ -1504,7 +1512,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #else
                        dr_SN=dxx**2+dyy**2
 #endif
-                       if(dr_SN.lt.(1.001*rSN(iSN))**2)then
+                       if(dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2)then
                           if (momentum_fb)then
                               ! Kinetic feedback: Inject some fraction of SN energy as kinetic energy to alleviate overcooling
                               ! This largely follows either Gentry, Madau & Krumholz (2020) or Simpson et al. (2015)
@@ -1535,7 +1543,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
                                        fkin = 3.97d-6 * max(uold(ind_cell(i),1),smallr)*R_pds**7*t_pds**(-2)*(1d3*dx_loc)**(-2)
                                        if (fkin > 1d0)fkin = 1d0
                                     endif
-                                    mom_inj = fkin*mom_ejecta*massratio/vol_gas(iSN)
+                                    mom_inj = sqrt(fkin)*mom_ejecta*massratio/vol_gas(iSN)
                                     write(*,*)"fkin: ",fkin," t_pds (kyr): ",t_pds," R_pds (kpc): ",1d-3*R_pds
                                  else
                                     ! Use scheme of Gentry, Madau & Krumholz (2020) to inject either terminal momentum or 100% kinetic energy
