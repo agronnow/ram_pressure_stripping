@@ -977,7 +977,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
   integer::i,nx_loc,igrid,ivar
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew,fZ
-  real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax
+  real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax,dx_SN
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
@@ -1024,7 +1024,6 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
   update_boundary = .false.
 
   do iSN=1,nSN
-     plevel = -1
 #ifdef DELAYED_SN
      if (delayed)then
         if(sn_isrefined(iSN)==0)cycle
@@ -1104,7 +1103,6 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                              mtot(iSN,radcells) = mtot(iSN,radcells) + max(uold(ind_cell(i),1),smallr)*vol_loc
                              vol_gas(iSN,radcells) = vol_gas(iSN,radcells) + vol_loc
                              snncells(iSN,radcells) = snncells(iSN,radcells) + 1
-                             plevel = ilevel
 !write(*,*)'radcells',radcells,' mtot',mtot(iSN,radcells),' vol',vol_gas(iSN,radcells)
                           endif
                        enddo
@@ -1136,7 +1134,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
      endif
 #endif
      mindiff = 1d10
-     dx_SN = 0.5D0**sn_maxlevel_all(iSN,1)*scale
+     dx_SN = 0.5D0**snmaxlevel_all(iSN,1)*scale
      do radcells=1,RADCELL_MAX
         massdiff = abs(SN_blast_mass - mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33)
 !write(*,*)'radcells',radcells,' massdiff',massdiff,' mtot',mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33,' vol_gas',vol_gas_all(iSN,radcells)
@@ -1153,8 +1151,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
            SNmenc(iSN) = mtot_all(iSN,radcells)
            SNvol(iSN) = vol_gas_all(iSN,radcells)
            ncellsSN = snncells_all(iSN,radcells)
-           sn_level = snmaxlevel_all(iSN,radcells)
-           write(*,*)"Ncells: ",radcells, " ", ncellsSN(iSN,radcells)
+           write(*,*)"Ncells: ",radcells, " ", ncellsSN
         endif
      enddo
      if (rSN(iSN) >= RADCELL_MAX*dx_SN)then
@@ -1194,11 +1191,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
             radcells = SNmaxrad(iSN)
          endif
        endif
-         rSN(iSN) = radcells*dx_min
-         SNmenc(iSN) = mtot_all(iSN,radcells)
-         SNvol(iSN) = vol_gas_all(iSN,radcells)
-         ncellsSN = snncells_all(iSN,radcells)
-       endif
+       rSN(iSN) = radcells*dx_min
+       SNmenc(iSN) = mtot_all(iSN,radcells)
+       SNvol(iSN) = vol_gas_all(iSN,radcells)
+       ncellsSN = snncells_all(iSN,radcells)
     else
        SNcooling(iSN) = .true.
        kinetic_inj = .false.
