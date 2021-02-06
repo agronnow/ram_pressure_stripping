@@ -1151,8 +1151,8 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
            SNmenc(iSN) = mtot_all(iSN,radcells)
            SNvol(iSN) = vol_gas_all(iSN,radcells)
            ncellsSN = snncells_all(iSN,radcells)
-           write(*,*)"Ncells: ",radcells, " ", ncellsSN
         endif
+        write(*,*)"Ncells: ",radcells, " ", ncellsSN(iSN,radcells)
      enddo
      if (rSN(iSN) >= RADCELL_MAX*dx_SN)then
         if (myid==1)write(*,*)"WARNING: Skipping SN with radius greater than the maximum number of cells allowed:", RADCELL_MAX
