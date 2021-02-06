@@ -1090,7 +1090,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
                        do radcells=1,RADCELL_MAX
-                          if((dr_SN .lt. (dx_loc*(radcells+0.5)**2)))then! .or. (dr_cell < dx_loc*1.1)) then
+                          if((dr_SN .lt. (dx_loc*(radcells+0.5))**2))then! .or. (dr_cell < dx_loc*1.1)) then
 !                             if ((ilevel ~= plevel) .and. (plevel >= 0) .and. (radcells <= SNmaxrad(iSN))) then
 !                                 SNmaxrad(iSN) = radcells-1 ! SN radius must be smaller than this to avoid overlapping coarse cells
 !                             endif
