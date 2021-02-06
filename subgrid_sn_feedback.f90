@@ -1090,7 +1090,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
                        do radcells=1,RADCELL_MAX
-                          if((dr_SN .lt. (dx_loc*(radcells+0.5))**2))then! .or. (dr_cell < dx_loc*1.1)) then
+                          if((dr_SN .lt. (dx_loc*(radcells+0.5))**2) .or. (dr_cell < dx_loc*1.1)) then
 !                             if ((ilevel ~= plevel) .and. (plevel >= 0) .and. (radcells <= SNmaxrad(iSN))) then
 !                                 SNmaxrad(iSN) = radcells-1 ! SN radius must be smaller than this to avoid overlapping coarse cells
 !                             endif
@@ -1310,7 +1310,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
                     dr_SN=dxx**2+dyy**2
                     dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                    if(dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2)then
+                    if((dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2) .or. (dr_cell < dx_loc*1.1))then
                        update_boundary = .true.
                        write(*,*)'SN blast on cpu ',myid
                        ! redistribute the mass within the SN blast uniformly and update other quantities accordingly
@@ -1374,7 +1374,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
   integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip
   integer::i,nx_loc,igrid,ncache
   integer,dimension(1:nvector),save::ind_grid,ind_cell
-  real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all
+  real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
   real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
@@ -1505,10 +1505,12 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,nSN,SNlevel,SNcooling,d
 #if NDIM==3
                        dzz=z-xSN(iSN,3)
                        dr_SN=dxx**2+dyy**2+dzz**2
+                       dr_cell=MAX(ABS(dxx),ABS(dyy),ABS(dzz))
 #else
                        dr_SN=dxx**2+dyy**2
+                       dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                       if(dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2)then
+                       if((dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2) .or. (dr_cell < 1.1*dx_loc))then
                           if (momentum_fb)then
                               ! Kinetic feedback: Inject some fraction of SN energy as kinetic energy to alleviate overcooling
                               ! This largely follows either Gentry, Madau & Krumholz (2020) or Simpson et al. (2015)
