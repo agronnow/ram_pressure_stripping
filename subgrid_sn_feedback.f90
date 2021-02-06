@@ -1191,7 +1191,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
             radcells = SNmaxrad(iSN)
          endif
        endif
-       rSN(iSN) = radcells*dx_min
+       rSN(iSN) = radcells*dx_SN
        SNmenc(iSN) = mtot_all(iSN,radcells)
        SNvol(iSN) = vol_gas_all(iSN,radcells)
        ncellsSN = snncells_all(iSN,radcells)
@@ -1238,9 +1238,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,ind_blast,nSN,SNlevel,SNcool
           delayedstr = 'Y'
        endif
        if (skip)delayedstr = 'SKIP'
-       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
+       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
-       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_min), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
+       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
 #endif
        close(ilun)
      endif
