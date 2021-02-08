@@ -203,7 +203,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
   doSNIa = .false.
 #if defined(SNIA_FEEDBACK) && !defined(SN_INJECT)
-  if (ilevel == levelmax) then
+  if (ilevel == nlevelmax) then
      doSNIa = .true.
 ! Only generate SNIa at the last subcycle of the finest level
 !     if (icount == 2) then
