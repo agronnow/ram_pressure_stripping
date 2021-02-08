@@ -76,7 +76,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel,t2_neg_tot)
   integer,dimension(1:nvector)::ind_grid
   !-------------------------------------------------------------------
   !-------------------------------------------------------------------
-  integer::i,ind,iskip,idim,nleaf,nx_loc,t2_neg_tot
+  integer::i,ind,iskip,idim,nleaf,nx_loc,t2_neg_tot,t2_neg
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(kind=8)::dtcool,nISM,nCOM,damp_factor,cooling_switch,t_blast
   real(dp)::polytropic_constant=1.
