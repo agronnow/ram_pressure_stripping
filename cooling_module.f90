@@ -683,7 +683,7 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
 !     write(*,*)'ERROR in solve_cooling :'
 !     write(*,*)'Final temperature is negative'
 !     STOP
-  endif
+!  endif
 
   ! Compute delta T
   do i=1,ncell
