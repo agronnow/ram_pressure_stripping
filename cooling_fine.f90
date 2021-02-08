@@ -11,12 +11,14 @@ subroutine cooling_fine(ilevel)
   !-------------------------------------------------------------------
   ! Compute cooling for fine levels
   !-------------------------------------------------------------------
-  integer::ncache,i,igrid,ngrid
+  integer::ncache,i,igrid,ngrid,t2_neg_grid,t2_neg_level
   integer,dimension(1:nvector),save::ind_grid
 
   if(numbtot(1,ilevel)==0)return
   if(verbose)write(*,111)ilevel
 
+  t2_neg_grid = 0
+  t2_neg_level = 0
   ! Operator splitting step for cooling source term
   ! by vector sweeps
   ncache=active(ilevel)%ngrid
@@ -25,8 +27,10 @@ subroutine cooling_fine(ilevel)
      do i=1,ngrid
         ind_grid(i)=active(ilevel)%igrid(igrid+i-1)
      end do
-     call coolfine1(ind_grid,ngrid,ilevel)
+     call coolfine1(ind_grid,ngrid,ilevel,t2_neg_grid)
+     t2_neg_level = t2_neg_level + t2_neg_grid
   end do
+  if (t2_neg_level > 0)write(*,*)"WARNING: ",t2_neg_level," negative temperatures in solve_cooling on level ",ilevel,", replaced with cooling floor"
 
   if((cooling.and..not.neq_chem).and.ilevel==levelmin.and.cosmo)then
 #ifdef grackle
@@ -47,7 +51,7 @@ end subroutine cooling_fine
 !###########################################################
 !###########################################################
 !###########################################################
-subroutine coolfine1(ind_grid,ngrid,ilevel)
+subroutine coolfine1(ind_grid,ngrid,ilevel,t2_neg_tot)
   use amr_commons
   use hydro_commons
   use cooling_module
@@ -83,7 +87,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
   real(dp),dimension(1:3)::skip_loc
   real(kind=8)::dx,dx_loc,scale,vol_loc
 #ifdef RT
-  integer::ii,ig,iNp,il
+  integer::ii,ig,iNp,il,t2_neg_tot
   real(kind=8),dimension(1:nvector),save:: ekk_new,T2_new
   logical,dimension(1:nvector),save::cooling_on=.true.
   real(dp)::scale_Np,scale_Fp,work,Npc,Npnew, kIR, E_rad, TR
@@ -148,6 +152,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
        aexp_loc = aexp_ini
 #endif
 
+  t2_neg_tot = 0
   ! Loop over cells
   do ind=1,twotondim
      iskip=ncoarse+(ind-1)*ngridmax
@@ -289,7 +294,7 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
            ok_cool(i) = .true.
         else
            ok_cool(i) = .false.
-           if (T2(i) < Tmufloor)T2(i) = Tmufloor
+           !if (T2(i) < Tmufloor)T2(i) = Tmufloor
         endif
      end do
 
@@ -451,13 +456,15 @@ subroutine coolfine1(ind_grid,ngrid,ilevel)
      else
         ! Compute net cooling at constant nH
         if(cooling.and..not.neq_chem)then
-           call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf,ok_cool)
+           call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf,ok_cool,t2_neg)
+           t2_neg_tot = t2_neg_tot + t2_neg
         endif
      endif
 #else
      ! Compute net cooling at constant nH
      if(cooling.and..not.neq_chem)then
-        call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf,ok_cool)
+        call solve_cooling(nH,T2,Zsolar,boost,dtcool,delta_T2,nleaf,ok_cool,t2_neg)
+        t2_neg_tot = t2_neg_tot + t2_neg
      endif
 #endif
 #ifdef RT

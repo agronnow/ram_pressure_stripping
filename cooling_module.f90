@@ -490,7 +490,7 @@ subroutine compute_J0min(h,omegab,omega0,omegaL,J0min_in)
   if (verbose_cooling)  write(*,*) 'J0min found ',J0min_in
 end subroutine compute_J0min
 !=======================================================================
-subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool)
+subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
 !=======================================================================
   implicit none
   integer::ncell
@@ -507,11 +507,12 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool)
   real(kind=8),dimension(1:ncell)::time,time_old,facH,zzz,tau_ini
   real(kind=8),dimension(1:ncell)::w1H,w2H,wmax,time_max
   real(kind=8)::varmax=4d0
-  integer::i,i_T2,iter,n,n_active
+  integer::i,i_T2,iter,n,n_active,t2_neg
   integer,dimension(1:ncell)::ind,i_nH
   logical::tau_negative
 
   ! Initializations
+  t2_neg = 0
   logT2max=log10(T2_max_fix)
   dlog_nH=dble(table%n1-1)/(table%nH(table%n1)-table%nH(1))
   dlog_T2=dble(table%n2-1)/(table%T2(table%n2)-table%T2(1))
@@ -667,18 +668,18 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool)
   end do
 
   ! Check positivity
-  tau_negative=.false.
+!  tau_negative=.false.
   do i=1,ncell
      if (tau(i)<=0.)then
-        tau_negative=.true.
+        t2_neg=t2_neg+1
         !write(*,*)"WARNING: Negative temp: tau=",tau(i)," tau_ini=",tau_ini(i)," rho=",nH(i)," Z=",zzz(i)," t_max=",time_max(i)," t_old=",time_old(i)," t=",time(i)," ok_cool=",ok_cool(i)
-        tau(i) = 8.3!Tmufloor
-     elseif (tau(i)<8.3)then
+        tau(i) = Tmufloor
+     elseif (tau(i)<Tmufloor)then
         tau(i)=Tmufloor
      endif
   end do
-  if (tau_negative) then
-      write(*,*)'WARNING: Negative temperature in solve_cooling, replaced with cooling floor'
+!  if (tau_negative) then
+!      write(*,*)'WARNING: Negative temperature in solve_cooling, replaced with cooling floor'
 !     write(*,*)'ERROR in solve_cooling :'
 !     write(*,*)'Final temperature is negative'
 !     STOP
