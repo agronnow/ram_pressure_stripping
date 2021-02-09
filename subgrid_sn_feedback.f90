@@ -122,6 +122,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   real(dp)::PoissMeanIa,c_s2,nHc,ctime,csfh,diff,mindiff,signx,dt,sfr,sfr_tot_level
   integer::nSNIa,nt,imin,stat,clevel
   real(dp),dimension(:,:),allocatable::xpdf,xSNIa,min_r2,min_r2_all
+  integer,dimension(:)::levelSNIa
   logical::doSNIa
 #endif
 
