@@ -454,7 +454,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
     call MPI_BCAST(nSNIa,1,MPI_INTEGER,0,MPI_COMM_WORLD,info)
     if (nSNIa > 0) then
       if (myid/=1)allocate(xpdf(1:nSNIa,1:ndim),xSNIa(1:nSNIa,1:ndim))
-      allocate(min_r2(1:2,1:nSNIa))
+      allocate(min_r2(1:2,1:nSNIa),levelSNIa(1:nSNIa))
       call MPI_BARRIER(MPI_COMM_WORLD,info)
       call MPI_BCAST(xpdf,nSNIa*ndim,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,info)
       call MPI_BCAST(xSNIa,nSNIa*ndim,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,info)
@@ -510,6 +510,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 #if NDIM==3
                             xSNIa(iSN,3) = z
 #endif
+                            levelSNIa(iSN) = clevel
                          endif
                      enddo
                  endif
@@ -754,7 +755,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
            inquire(file=fileloc,exist=file_exist)
            if(.not.file_exist) then
               open(ilun, file=fileloc, form='formatted')
-              write(ilun,*)"Time                      x                         y                         z ProbSN                    ProcID"!  Seeds"
+              write(ilun,*)"Time                      x                         y                         z ProbSN                    Level         ProcID"!  Seeds"
            else
               open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
            endif
@@ -763,7 +764,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
 #else
           z = 0.0
 #endif
-           write(ilun,'(4E26.16,E26.16,I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+           write(ilun,'(4E26.16,E26.16,2I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, levelSNIa(iSN),myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
            close(ilun)
            !endif
         endif
@@ -983,7 +984,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
   real(dp),dimension(1:twotondim,1:ndim)::xc
   integer ,dimension(1:nSN)::ind_blast,SNlevel,flagrefine,flagrefine_all
 #ifndef DELAYED_SN
-  integer ,dimension(1:nSN)::SNmaxrad
+  integer ,dimension(1:nSN)::SNmaxrad,SNmaxrad_all,level_center,level_center_all
 #endif
   real(dp),dimension(1:nSN)::ekBlast,rSN,vol_center,vol_center_all
   logical,dimension(1:nSN)::SNcooling
@@ -1017,7 +1018,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
 
   ! Initialize the averaged variables
   vol_gas=0.0;vol_center=0.0;vol_center_all=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0
-  snmaxlevel=0;snmaxlevel_all=0;flagrefine=0;flagrefine_all=0;snncells=0;snncells_all=0
+  snmaxlevel=0;snmaxlevel_all=0;flagrefine=0;flagrefine_all=0;snncells=0;snncells_all=0;level_center=0;level_center_all=0
 #ifndef DELAYED_SN
   SNmaxrad=RADCELL_MAX
 #endif
@@ -1104,7 +1105,10 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
                              mtot(iSN,radcells) = mtot(iSN,radcells) + max(uold(ind_cell(i),1),smallr)*vol_loc
                              vol_gas(iSN,radcells) = vol_gas(iSN,radcells) + vol_loc
                              snncells(iSN,radcells) = snncells(iSN,radcells) + 1
-                             if (dr_SN < 1.e-10)vol_center(iSN) = vol_loc
+                             if (dr_SN < 1.e-10)then
+                                vol_center(iSN) = vol_loc
+                                level_center(iSN) = ilevel
+                             endif
 !write(*,*)'radcells',radcells,' mtot',mtot(iSN,radcells),' vol',vol_gas(iSN,radcells)
                           endif
                        enddo
@@ -1122,11 +1126,22 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
   call MPI_ALLREDUCE(mtot,mtot_all,nSN*RADCELL_MAX  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(snncells,snncells_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(vol_center,vol_center_all,nSN ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
+  call MPI_ALLREDUCE(level_center,level_center_all,nSN ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
   if (.not. delayed)then
      call MPI_ALLREDUCE(snmaxlevel,snmaxlevel_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
      call MPI_ALLREDUCE(flagrefine,flagrefine_all,nSN  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
   endif
-!  call MPI_ALLREDUCE(SNmaxrad,SNmaxrad_all,nSN  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
+#endif
+
+#ifndef DELAYED_SN
+  do iSN=1,nSN
+     do radcells=1,RADCELL_MAX
+        if ((snmaxlevel_all(iSN,radcells) < level_center_all(iSN)) .and. (SNmaxrad(iSN) > radcells))SNmaxrad(iSN) = radcells-1
+     enddo
+  enddo
+#ifndef WITHOUTMPI
+  call MPI_ALLREDUCE(SNmaxrad,SNmaxrad_all,nSN  ,MPI_INTEGER,MPI_MIN,MPI_COMM_WORLD,info)
+#endif
 #endif
 
   do iSN=1,nSN
@@ -1147,15 +1162,12 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
            if (.not. delayed) then
               SNlevel(iSN) = maxval(snmaxlevel_all(iSN,1:radcells))
               if (flagrefine_all(iSN) == 0)SNlevel(iSN) = 0 ! Disable SN based refinement if entire SN blast is on the same level
-#ifndef DELAYED_SN
-              if ((snmaxlevel_all(iSN,radcells) < snmaxlevel_all(iSN,1)) .and. (SNmaxrad(iSN) > radcells))SNmaxrad(iSN) = radcells-1
-#endif
            endif
            SNmenc(iSN) = mtot_all(iSN,radcells)
            SNvol(iSN) = vol_gas_all(iSN,radcells)
            ncellsSN = snncells_all(iSN,radcells)
         endif
-        write(*,*)"Ncells: ",radcells, " ", snncells_all(iSN,radcells)
+        !write(*,*)"Ncells: ",radcells, " ", snncells_all(iSN,radcells)
      enddo
      if (rSN(iSN) >= RADCELL_MAX*dx_SN)then
         if (myid==1)write(*,*)"WARNING: Skipping SN with radius greater than the maximum number of cells allowed:", RADCELL_MAX
@@ -1163,12 +1175,12 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
      endif
      if (delayed)SNlevel(iSN) = 0
 #ifndef DELAYED_SN
-     if (SNmaxrad(iSN)*dx_SN < rSN(iSN)) then
-        if (myid==1)write(*,*)"WARNING: SN should extend ",rSN(iSN), " kpc but can only extend ",SNmaxrad(iSN)*dx_SN," kpc without overlapping coarser cells!!!"
-        rSN(iSN) = SNmaxrad(iSN)*dx_SN
-        SNmenc(iSN) = mtot_all(iSN,SNmaxrad(iSN))
-        SNvol(iSN) = vol_gas_all(iSN,SNmaxrad(iSN))
-        ncellsSN = snncells_all(iSN,SNmaxrad(iSN))
+     if (SNmaxrad_all(iSN)*dx_SN < rSN(iSN)) then
+        if (myid==1)write(*,*)"WARNING: SN should extend ",rSN(iSN), " kpc but can only extend ",SNmaxrad_all(iSN)*dx_SN," kpc without overlapping coarser cells!!!"
+        rSN(iSN) = SNmaxrad_all(iSN)*dx_SN
+        SNmenc(iSN) = mtot_all(iSN,SNmaxrad_all(iSN))
+        SNvol(iSN) = vol_gas_all(iSN,SNmaxrad_all(iSN))
+        ncellsSN = snncells_all(iSN,SNmaxrad_all(iSN))
      endif
 #endif
     if (rSN(iSN) == 0)then
@@ -1180,18 +1192,18 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
        if (delayed_cooling)then
          SNcooling(iSN) = .false.
          kinetic_inj = .false.
-         if (SNmaxrad(iSN) >= 3)then
+         if (SNmaxrad_all(iSN) >= 3)then
             radcells = 3
          else
-            radcells = SNmaxrad(iSN)
+            radcells = SNmaxrad_all(iSN)
          endif
        else
          SNcooling(iSN) = .true.
          kinetic_inj = .true.
-         if (SNmaxrad(iSN) >= mominj_rad)then
+         if (SNmaxrad_all(iSN) >= mominj_rad)then
             radcells = mominj_rad
          else
-            radcells = SNmaxrad(iSN)
+            radcells = SNmaxrad_all(iSN)
          endif
        endif
        rSN(iSN) = radcells*dx_SN
@@ -1243,7 +1255,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
        if (skip)delayedstr = 'SKIP'
        write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
-       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad(iSN), coolstr
+       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN, 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad_all(iSN), coolstr
 #endif
        close(ilun)
      endif
