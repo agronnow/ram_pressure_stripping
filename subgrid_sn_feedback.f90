@@ -97,7 +97,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  logical,dimension(:),allocatable::ok_free
   integer,dimension(:),allocatable::indSN,SNlevel
   real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN
-  real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas
+  real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas,vol_center
   logical,dimension(:),allocatable::SNcooling
 
   logical,save::firstcall = .true.
@@ -956,7 +956,7 @@ end subroutine subgrid_sn_feedback
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,centervol,ind_blast,nSN,SNlevel,SNcooling,delayed)
+subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -985,7 +985,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,centervol,ind_blast,nSN,SNle
 #ifndef DELAYED_SN
   integer ,dimension(1:nSN)::SNmaxrad
 #endif
-  real(dp),dimension(1:nSN)::ekBlast,rSN,vol_center
+  real(dp),dimension(1:nSN)::ekBlast,rSN,vol_center,vol_center_all
   logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:RADCELL_MAX)::vol_gas,vol_gas_all,mtot,mtot_all
   integer,dimension(1:nSN,1:RADCELL_MAX)::snmaxlevel,snmaxlevel_all,snncells,snncells_all
