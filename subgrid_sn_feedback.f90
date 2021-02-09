@@ -937,7 +937,7 @@ write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(
   deallocate(xSN,mSN,indSN,vol_gas,rSN,volSN,vol_center,SNcooling)
 
 #ifdef SNIA_FEEDBACK
-  if (nSNIa > 0)deallocate(xpdf,xSNIa,min_r2,min_r2_all)
+  if (nSNIa > 0)deallocate(xpdf,xSNIa,min_r2,min_r2_all,levelSNIa)
 #endif
 
 
