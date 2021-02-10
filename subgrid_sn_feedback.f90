@@ -119,7 +119,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   integer,save::nhist = 1
   logical,save::sfhist_update = .false.
   real(dp)::unif_rand,r2,rho_SNIa,area,DTD_A,DTD_s,currad,Phi0,PhiR,mu_cloud,rho0dm,r,Pinf
-  real(dp)::PoissMeanIa,c_s2,nHc,ctime,csfh,diff,mindiff,signx,dt,sfr,sfr_tot_level
+  real(dp)::PoissMeanIa,c_s2,nHc,ctime,csfh,diff,mindiff,dt,sfr,sfr_tot_level,rcosphi,sndist,theta
   integer::nSNIa,nt,imin,stat,clevel
   real(dp),dimension(:,:),allocatable::xpdf,xSNIa,min_r2,min_r2_all
   integer,dimension(:),allocatable::levelSNIa
@@ -430,24 +430,29 @@ subroutine subgrid_sn_feedback(ilevel, icount)
          allocate(xpdf(1:nSNIa,1:ndim),xSNIa(1:nSNIa,1:ndim))
          ! Generate random positions for SNIa assuming that the stellar distribution follows the initial distribution of star forming gas
          do iSN=1,nSNIa
-            do idim=1,ndim
-               ! Generate random real on [0,1], transform to [-1,1], store the sign and transform back to [0,1] to allow coordinates on either side of the cloud
-               call ranf(localseedsn, unif_rand)
-               r = 2.0*unif_rand - 1.0
-               signx = sign(1d0,r)
-               r = abs(r)
-               mindiff = 1.e22
-               imin = 1
-               do i=1,NPDFBINS
-                  diff = abs(CDF_SNIa(i) - r)
-                  if (diff < mindiff) then
-                     mindiff = diff
-                     imin = i
-                  endif
-               enddo
-               xpdf(iSN,idim) = signx*binwidth*(imin-1) + xCloud(idim)*boxlen ! Random coordinate along each axis
-write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'unif_rand',unif_rand,'signx',signx,'r',r,'x(',idim,')=',xpdf(iSN,idim)
+            ! Generate random real on [0,1] and convert to value drawn from SNIa distance PDF
+            call ranf(localseedsn, unif_rand)
+            r = unif_rand
+            mindiff = 1.e22
+            imin = 1
+            do i=1,NPDFBINS
+               diff = abs(CDF_SNIa(i) - r)
+               if (diff < mindiff) then
+                  mindiff = diff
+                  imin = i
+               endif
             enddo
+            sndist = binwidth*(imin-1)
+            ! Generate random coordinates at this distance by picking random x, y, z on the surface of a sphere
+            ! This ONLY works in 3D
+            call ranf(localseedsn, unif_rand)
+            theta = twopi*unif_rand ! random theta in [0, 2pi]
+            call ranf(localseedsn, unif_rand)
+            rcosphi = sndist*(2d0*unif_rand - 1d0) ! random R*cos(phi) in [-R, R]
+            xpdf(iSN,1) = sqrt(sndist**2 - rcosphi**2)*cos(theta) + xCloud(1)*boxlen
+            xpdf(iSN,2) = sqrt(sndist**2 - rcosphi**2)*sin(theta) + xCloud(2)*boxlen
+            xpdf(iSN,3) = rcosphi + xCloud(3)*boxlen
+            write(*,*)'nSNIa',nSNIa,'SNIa',iSN,'rad',sndist,'theta',theta,'rcosphi',rcosphi,'r',r,'x,y,z=',xpdf(iSN,1),xpdf(iSN,2),xpdf(iSN,3)
          enddo
       endif
     endif
