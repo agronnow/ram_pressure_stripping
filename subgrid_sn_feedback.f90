@@ -1106,7 +1106,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,ind_blast,nSN,SNfin
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
                        do radcells=1,RADCELL_MAX
-                          if((dr_SN .lt. (dx_SN*(radcells+0.5))**2) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0)) then
+                          if(((dr_SN .lt. (dx_SN*(radcells+0.5))**2) .and. (radcells>1)) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0)) then
 !                             if ((ilevel ~= plevel) .and. (plevel >= 0) .and. (radcells <= SNmaxrad(iSN))) then
 !                                 SNmaxrad(iSN) = radcells-1 ! SN radius must be smaller than this to avoid overlapping coarse cells
 !                             endif
@@ -1334,7 +1334,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,ind_blast,nSN,SNfin
                     dr_SN=dxx**2+dyy**2
                     dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                    if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0))then
+                    if(((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .and. (rSN(iSN) > 1.1*dx_SN)) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0))then
                        update_boundary = .true.
                        write(*,*)'SN blast on cpu ',myid
                        ! redistribute the mass within the SN blast uniformly and update other quantities accordingly
@@ -1537,7 +1537,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,nSN,SNfinestle
                        dr_SN=dxx**2+dyy**2
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                       if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0))then
+                       if(((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .and. (rSN(iSN) > 1.1*dx_SN)) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0))then
                           if (momentum_fb)then
                               ! Kinetic feedback: Inject some fraction of SN energy as kinetic energy to alleviate overcooling
                               ! This largely follows either Gentry, Madau & Krumholz (2020) or Simpson et al. (2015)
