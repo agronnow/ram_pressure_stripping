@@ -1328,7 +1328,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_center,ind_blast,nSN,S
                     dr_SN=dxx**2+dyy**2
                     dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                    if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < dx_SN*1.1))then
+                    if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < 1.99*dx_SN))then
                        update_boundary = .true.
                        write(*,*)'SN blast on cpu ',myid
                        ! redistribute the mass within the SN blast uniformly and update other quantities accordingly
@@ -1532,7 +1532,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_center,nSN,SNleve
                        dr_SN=dxx**2+dyy**2
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                       if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < 1.1*dx_SN))then
+                       if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < 1.99*dx_SN))then
                           if (momentum_fb)then
                               ! Kinetic feedback: Inject some fraction of SN energy as kinetic energy to alleviate overcooling
                               ! This largely follows either Gentry, Madau & Krumholz (2020) or Simpson et al. (2015)
@@ -1588,7 +1588,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_center,nSN,SNleve
                                     etherm = (p_gas(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
                                     p_gas(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
                                  endif
-                                 !write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, p_gas(iSN)
+                                 if(index(outputdir,"sntest") > 0)write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, p_gas(iSN)
                               endif
                               uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + p_gas(iSN) !0.5*mom_inj**2/uold(ind_cell(i),1)
                           else
