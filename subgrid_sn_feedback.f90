@@ -95,8 +95,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  integer::nx_loc
 !  integer,dimension(:),allocatable::ind_grid
 !  logical,dimension(:),allocatable::ok_free
-  integer,dimension(:),allocatable::indSN,SNlevel
-  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN,vol_center
+  integer,dimension(:),allocatable::indSN,SNlevel,level_center
+  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas
   logical,dimension(:),allocatable::SNcooling
 
@@ -876,27 +876,27 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   if(nSN_prev > 0)then
      call MPI_ALLREDUCE(sn_isrefined,sn_isrefined_all,nSN_prev  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
      sn_isrefined = sn_isrefined_all
-     allocate(vol_gas(1:nSN_prev,1:RADCELL_MAX),rSN(1:nSN_prev),SNlevel(1:nSN_prev),volSN(1:nSN_prev),vol_center(1:nSN_prev),SNcooling(1:nSN_prev))
+     allocate(vol_gas(1:nSN_prev,1:RADCELL_MAX),rSN(1:nSN_prev),SNlevel(1:nSN_prev),volSN(1:nSN_prev),level_center(1:nSN_prev),SNcooling(1:nSN_prev))
      allocate(indSN(1:nSN_prev))
      ! Add SN from previous time step
      if(myid==1)write(*,*)nSN_prev,'delayed SNe at ',sn_coords(1,1),' ',sn_coords(1,2),' ',sn_coords(1,3)
      ! Compute blast radius
-     call subgrid_average_SN(sn_coords(1:nSN_prev,1:ndim),rSN,vol_gas,volSN,vol_center,indSN,nSN_prev,SNlevel,SNcooling,.true.)
+     call subgrid_average_SN(sn_coords(1:nSN_prev,1:ndim),rSN,vol_gas,volSN,level_center,indSN,nSN_prev,SNlevel,SNcooling,.true.)
 
      ! Modify hydro quantities to account for a Sedov blast wave
-     call subgrid_Sedov_blast(sn_coords(1:nSN_prev,1:ndim),mSN,rSN,indSN,volSN,vol_center,nSN_prev,SNlevel,SNcooling,.true.)
-     deallocate(vol_gas,rSN,indSN,SNlevel,volSN,vol_center,SNcooling)
+     call subgrid_Sedov_blast(sn_coords(1:nSN_prev,1:ndim),mSN,rSN,indSN,volSN,level_center,nSN_prev,SNlevel,SNcooling,.true.)
+     deallocate(vol_gas,rSN,indSN,SNlevel,volSN,level_center,SNcooling)
   endif
 #endif
 
-  allocate(vol_gas(1:nSN,1:RADCELL_MAX),rSN(1:nSN),SNlevel(1:nSN),volSN(1:nSN),vol_center(1:nSN),SNcooling(1:nSN))
+  allocate(vol_gas(1:nSN,1:RADCELL_MAX),rSN(1:nSN),SNlevel(1:nSN),volSN(1:nSN),level_center(1:nSN),SNcooling(1:nSN))
   allocate(indSN(1:nSN))
 
   ! Compute blast radius
-  call subgrid_average_SN(xSN,rSN,vol_gas,volSN,vol_center,indSN,nSN,SNlevel,SNcooling,.false.)
+  call subgrid_average_SN(xSN,rSN,vol_gas,volSN,level_center,indSN,nSN,SNlevel,SNcooling,.false.)
 
   ! Modify hydro quantities to account for a Sedov blast wave
-  call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,volSN,vol_center,nSN,SNlevel,SNcooling,.false.)
+  call subgrid_Sedov_blast(xSN,mSN,rSN,indSN,volSN,level_center,nSN,SNlevel,SNcooling,.false.)
 
 #ifdef DELAYED_SN
   inew=0
@@ -939,7 +939,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   enddo
 #endif
 
-  deallocate(xSN,mSN,indSN,vol_gas,rSN,volSN,vol_center,SNcooling)
+  deallocate(xSN,mSN,indSN,vol_gas,rSN,volSN,level_center,SNcooling)
 
 #ifdef SNIA_FEEDBACK
   if (nSNIa > 0)deallocate(xpdf,xSNIa,min_r2,min_r2_all,levelSNIa)
@@ -963,7 +963,7 @@ end subroutine subgrid_sn_feedback
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNlevel,SNcooling,delayed)
+subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_center,ind_blast,nSN,SNlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -1023,7 +1023,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
   call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
 
   ! Initialize the averaged variables
-  vol_gas=0.0;vol_center=0.0;vol_center_all=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0
+  vol_gas=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0
   snmaxlevel=0;snmaxlevel_all=0;flagrefine=0;flagrefine_all=0;snncells=0;snncells_all=0;level_center=0;level_center_all=0
 #ifndef DELAYED_SN
   SNmaxrad=RADCELL_MAX
@@ -1111,10 +1111,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
                              mtot(iSN,radcells) = mtot(iSN,radcells) + max(uold(ind_cell(i),1),smallr)*vol_loc
                              vol_gas(iSN,radcells) = vol_gas(iSN,radcells) + vol_loc
                              snncells(iSN,radcells) = snncells(iSN,radcells) + 1
-                             if (dr_SN < 1.e-10)then
-                                vol_center(iSN) = vol_loc
-                                level_center(iSN) = ilevel
-                             endif
+                             if (dr_SN < 1.e-10)level_center(iSN) = ilevel
 !write(*,*)'radcells',radcells,' mtot',mtot(iSN,radcells),' vol',vol_gas(iSN,radcells)
                           endif
                        enddo
@@ -1131,7 +1128,6 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
   call MPI_ALLREDUCE(vol_gas,vol_gas_all,nSN*RADCELL_MAX  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(mtot,mtot_all,nSN*RADCELL_MAX  ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(snncells,snncells_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
-  call MPI_ALLREDUCE(vol_center,vol_center_all,nSN ,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(level_center,level_center_all,nSN ,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
   if (.not. delayed)then
      call MPI_ALLREDUCE(snmaxlevel,snmaxlevel_all,nSN*RADCELL_MAX  ,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,info)
@@ -1158,7 +1154,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
      endif
 #endif
      mindiff = 1d10
-     dx_SN = 0.5D0**snmaxlevel_all(iSN,1)*scale
+     dx_SN = 0.5D0**level_center_all(iSN)*scale
      do radcells=1,RADCELL_MAX
         massdiff = abs(SN_blast_mass - mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33)
 !write(*,*)'radcells',radcells,' massdiff',massdiff,' mtot',mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33,' vol_gas',vol_gas_all(iSN,radcells)
@@ -1270,6 +1266,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
 #ifdef DELAYED_SN
      if (SNlevel(iSN) > 0)cycle
 #endif
+
      ! Evenly redistribute mass within SN injection region for fully thermal injection
      ! Loop over levels
      do ilevel=levelmin,nlevelmax
@@ -1331,7 +1328,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
                     dr_SN=dxx**2+dyy**2
                     dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                    if((dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2) .or. (dr_cell < dx_loc*1.1))then
+                    if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < dx_SN*1.1))then
                        update_boundary = .true.
                        write(*,*)'SN blast on cpu ',myid
                        ! redistribute the mass within the SN blast uniformly and update other quantities accordingly
@@ -1364,7 +1361,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,vol_center,ind_blast,nSN,SNl
   end do  ! End loop over SNe
 
   vol_gas=vol_gas_all
-  vol_center=vol_center_all
+  level_center=level_center_all
 
 !  if (update_boundary)then
 !    ! Update hydro quantities for split cells
@@ -1383,7 +1380,7 @@ end subroutine subgrid_average_SN
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,vol_center,nSN,SNlevel,SNcooling,delayed)
+subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_center,nSN,SNlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -1396,17 +1393,17 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,vol_center,nSN,SNlevel,
   integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip
   integer::i,nx_loc,igrid,ncache
   integer,dimension(1:nvector),save::ind_grid,ind_cell
-  real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell
+  real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell,vol_center,vol_mom,dx_SN
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
   real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
   real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar,massratio
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
-  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN,vol_center
+  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN,dx_SN
   logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:ndim)::xSN
-  integer ,dimension(1:nSN)::indSN,SNlevel
+  integer ,dimension(1:nSN)::indSN,SNlevel,level_center
   logical ,dimension(1:nvector),save::ok
   logical::delayed
   integer::info
@@ -1520,6 +1517,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,vol_center,nSN,SNlevel,
                        if (sn_isrefined(iSN)==0)cycle
                     endif
                     if (SNlevel(iSN) == 0)then
+                       dx_SN = scale*0.5D0**level_center(iSN)
+                       vol_center = dx_SN**3
+                       vol_mom = vol_gas(iSN) - vol_center
 #endif
                        ! Check if the cell lies within the SN radius
                        dxx=x-xSN(iSN,1)
@@ -1532,12 +1532,12 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,vol_center,nSN,SNlevel,
                        dr_SN=dxx**2+dyy**2
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                       if((dr_SN.lt.(rSN(iSN)+0.5*dx_loc)**2) .or. (dr_cell < 1.1*dx_loc))then
+                       if((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .or. (dr_cell < 1.1*dx_SN))then
                           if (momentum_fb)then
                               ! Kinetic feedback: Inject some fraction of SN energy as kinetic energy to alleviate overcooling
                               ! This largely follows either Gentry, Madau & Krumholz (2020) or Simpson et al. (2015)
                               ! but without star particles and no mass or metals is injected
-                              mom_ejecta = sqrt(2d0*mSN(iSN)*1d51/scale_eng)
+                              mom_ejecta = (vol_mom/vol_gas(iSN))*sqrt(2d0*mSN(iSN)*1d51/scale_eng)
                               engfac = 1d0
                               if (dr_SN > 0d0)then
                                  dr_SN = sqrt(dr_SN)
@@ -1563,7 +1563,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,vol_center,nSN,SNlevel,
                                        fkin = 3.97d-6 * max(uold(ind_cell(i),1),smallr)*R_pds**7*t_pds**(-2)*(1d3*dx_loc)**(-2)
                                        if (fkin > 1d0)fkin = 1d0
                                     endif
-                                    mom_inj = sqrt(fkin)*mom_ejecta*massratio/(vol_gas(iSN)-vol_center(iSN))
+                                    mom_inj = sqrt(fkin)*mom_ejecta*massratio/vol_mom
                                     write(*,*)"fkin: ",fkin," t_pds (kyr): ",t_pds," R_pds (kpc): ",1d-3*R_pds
                                  else
                                     ! Use scheme of Gentry, Madau & Krumholz (2020) to inject either terminal momentum or 100% kinetic energy
@@ -1575,7 +1575,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,vol_center,nSN,SNlevel,
                                     !else
                                     !   mom_inj = mom_term/vol_gas(iSN)
                                     !endif
-                                    mom_inj = mom_ejecta*min(massratio, mom_term/mom_ejecta)/(vol_gas(iSN)-vol_center(iSN))
+                                    mom_inj = mom_ejecta*min(massratio, mom_term/mom_ejecta)/vol_mom
                                  endif
                                  uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/dr_SN
                                  uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyy/dr_SN
