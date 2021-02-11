@@ -76,7 +76,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
 #ifndef WITHOUTMPI
   integer,dimension(1:ncpu)::nSN_icpu_all
-  real(dp),dimension(:),allocatable::mSN_all
+  real(dp),dimension(:),allocatable::mSN_all,levelSN_all
   real(dp),dimension(:,:),allocatable::xSN_all
 #endif
   !----------------------------------------------------------------------
@@ -95,8 +95,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  integer::nx_loc
 !  integer,dimension(:),allocatable::ind_grid
 !  logical,dimension(:),allocatable::ok_free
-  integer,dimension(:),allocatable::indSN,SNfinestlevel,level_center
-  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN
+  integer,dimension(:),allocatable::indSN,SNfinestlevel
+  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN,levelSN,levelSN_loc
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas
   logical,dimension(:),allocatable::SNcooling
 
