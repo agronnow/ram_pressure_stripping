@@ -1394,13 +1394,13 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_center,nSN,SNleve
   integer::i,nx_loc,igrid,ncache
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell,vol_center,vol_mom
-  real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min
+  real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min,dx_SN
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
   real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
   real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar,massratio
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
-  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN,dx_SN
+  real(dp),dimension(1:nSN)::mSN,p_gas,d_gas,d_metal,vol_gas,rSN
   logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:ndim)::xSN
   integer ,dimension(1:nSN)::indSN,SNlevel,level_center
