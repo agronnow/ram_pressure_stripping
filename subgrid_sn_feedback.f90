@@ -968,7 +968,7 @@ end subroutine subgrid_sn_feedback
 !################################################################
 !################################################################
 !################################################################
-subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,levelSN,ind_blast,nSN,SNfinestlevel,SNcooling,delayed)
+subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,ind_blast,nSN,SNfinestlevel,SNcooling,delayed)
   use pm_commons
   use amr_commons
   use hydro_commons
@@ -995,7 +995,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,levelSN,ind_blast,nSN,SNfine
   real(dp),dimension(1:twotondim,1:ndim)::xc
   integer ,dimension(1:nSN)::ind_blast,SNfinestlevel,flagrefine,flagrefine_all
 #ifndef DELAYED_SN
-  integer ,dimension(1:nSN)::SNmaxrad,SNmaxrad_all,levelSN
+  integer ,dimension(1:nSN)::SNmaxrad,SNmaxrad_all,level_SN
 #endif
   real(dp),dimension(1:nSN)::ekBlast,rSN,vol_center,vol_center_all
   logical,dimension(1:nSN)::SNcooling
