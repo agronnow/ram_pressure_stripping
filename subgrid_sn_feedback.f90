@@ -1517,10 +1517,10 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_center,nSN,SNleve
                        if (sn_isrefined(iSN)==0)cycle
                     endif
                     if (SNlevel(iSN) == 0)then
+#endif
                        dx_SN = scale*0.5D0**level_center(iSN)
                        vol_center = dx_SN**3
                        vol_mom = vol_gas(iSN) - vol_center
-#endif
                        ! Check if the cell lies within the SN radius
                        dxx=x-xSN(iSN,1)
                        dyy=y-xSN(iSN,2)
