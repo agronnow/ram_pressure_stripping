@@ -1396,7 +1396,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,nSN,SNfinestle
   integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip
   integer::i,nx_loc,igrid,ncache
   integer,dimension(1:nvector),save::ind_grid,ind_cell
-  real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell,vol_center,vol_mom
+  real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell,vol_mom
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min,dx_SN
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
   real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
@@ -1485,7 +1485,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,nSN,SNfinestle
         xc(ind,3)=(dble(iz)-0.5D0)*dx
 #endif
      end do
-(dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0)
+
      ! Loop over grids
      ncache=active(ilevel)%ngrid
      do igrid=1,ncache,nvector
@@ -1591,7 +1591,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,nSN,SNfinestle
                                     etherm = (p_gas(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
                                     p_gas(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
                                  endif
-                                 if(index(outputdir,"sntest") > 0)write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, p_gas(iSN)
+                                 if(index(output_dir,"sntest") > 0)write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, p_gas(iSN)
                               endif
                               uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + p_gas(iSN) !0.5*mom_inj**2/uold(ind_cell(i),1)
                           else
