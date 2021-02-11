@@ -95,8 +95,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  integer::nx_loc
 !  integer,dimension(:),allocatable::ind_grid
 !  logical,dimension(:),allocatable::ok_free
-  integer,dimension(:),allocatable::indSN,SNfinestlevel
-  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN,levelSN,levelSN_loc
+  integer,dimension(:),allocatable::indSN,SNfinestlevel,levelSN,levelSN_loc
+  real(dp),dimension(:),allocatable::mSN,mSN_loc,rSN,volSN
   real(dp),dimension(:,:),allocatable::xSN,xSN_loc,vol_gas
   logical,dimension(:),allocatable::SNcooling
 
