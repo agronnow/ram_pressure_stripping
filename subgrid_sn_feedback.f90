@@ -76,8 +76,9 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
 #ifndef WITHOUTMPI
   integer,dimension(1:ncpu)::nSN_icpu_all
-  real(dp),dimension(:),allocatable::mSN_all,levelSN_all
+  real(dp),dimension(:),allocatable::mSN_all
   real(dp),dimension(:,:),allocatable::xSN_all
+  integer,dimension(:),allocatable::levelSN_all
 #endif
   !----------------------------------------------------------------------
   ! This subroutine compute the kinetic feedback due to SNII and
