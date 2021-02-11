@@ -191,7 +191,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !  end do
 !#endif
 
-  allocate(xSN_loc(1:100,1:ndim),mSN_loc(1:100))
+  allocate(xSN_loc(1:1000,1:ndim),mSN_loc(1:1000),levelSN_loc(1:1000))
 
 #ifdef SNIA_FEEDBACK
 #ifdef SNIA_HERINGER19
@@ -862,6 +862,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
      levelSN(i+iSN) = levelSN_loc(i)
     end do
   end do
+  deallocate(xSN_loc,mSN_loc,levelSN_loc)
 
 #ifndef WITHOUTMPI
   allocate(xSN_all(1:nSN_tot,1:ndim),mSN_all(1:nSN_tot),levelSN_all(1:nSN_tot))
