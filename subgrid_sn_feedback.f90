@@ -1385,6 +1385,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ind_blast,nSN,
            end do
         end do     ! End loop over grids
      end do    ! End loop over levels
+     wtot(iSN) = wtot(iSN)/ncellsSN
   end do  ! End loop over SNe
 
   call MPI_ALLREDUCE(wtot,wtot_all,nSN,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
