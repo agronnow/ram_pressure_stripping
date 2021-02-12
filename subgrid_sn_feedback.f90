@@ -991,7 +991,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ind_blast,nSN,
   integer::i,nx_loc,igrid,ivar
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew,fZ
-  real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax,dx_SN
+  real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax,dx_SN,adjacency,cellweight
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
@@ -1373,7 +1373,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ind_blast,nSN,
                           elseif (adjacency == 1)then
                              ! Shares an edge with central cell
                              cellweight = 0.25d0
-                          elseif (adjcency == 2)then
+                          elseif (adjacency == 2)then
                              ! Shares a face with central cell
                              cellweight = 0.5d0
                           endif
@@ -1582,14 +1582,14 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,nSN,SNfin
                                    elseif (adjacency == 1)then
                                       ! Shares an edge with central cell
                                       cellweight = 0.25d0
-                                   elseif (adjcency == 2)then
+                                   elseif (adjacency == 2)then
                                       ! Shares a face with central cell
                                       cellweight = 0.5d0
                                    endif
                                  endif
                                  cellweight = (cellweight**(level_SN(iSN)-ilevel))/wtot(iSN)
                                  massratio = sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/(cellweight*mSN(iSN)))
-                                 prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/max(uold(ind_cell(i),1),r))*(gamma-1.0)
+                                 prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/max(uold(ind_cell(i),1),smallr))*(gamma-1.0)
                                  Tovermu = prs/max(uold(ind_cell(i),1),smallr)*scale_T2
                                  nH = max(uold(ind_cell(i),1),smallr)*scale_nH
                                  call GetMuAndTemperature(Tovermu,nH,mu,T2)
