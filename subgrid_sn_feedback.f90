@@ -1378,7 +1378,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ind_blast,nSN,
                              cellweight = 0.5d0
                           endif
                        endif
-                       wtot(iSN) = wtot(iSN) + cellweight
+                       wtot(iSN) = wtot(iSN) + cellweight**(level_SN(iSN)-ilevel)
                     endif
                  endif
               end do
