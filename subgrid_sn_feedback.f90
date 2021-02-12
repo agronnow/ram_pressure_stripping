@@ -1377,8 +1377,8 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ind_blast,nSN,
                              ! Shares a face with central cell
                              cellweight = 0.5d0
                           endif
-                          wtot(iSN) = wtot(iSN) + cellweight
                        endif
+                       wtot(iSN) = wtot(iSN) + cellweight
                     endif
                  endif
               end do
