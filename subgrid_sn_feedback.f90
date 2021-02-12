@@ -1364,9 +1364,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ind_blast,nSN,
                        cellweight = 1d0
                        if (ilevel /= level_SN(iSN))then
                           adjacency = 0
-                          if(dxx < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                          if(dyy < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                          if(dzz < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+                          if(abs(dxx) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+                          if(abs(dyy) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+                          if(abs(dzz) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
                           if(adjacency == 0)then
                              ! Shares a corner with central cell
                              cellweight = 0.125d0
@@ -1573,9 +1573,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,nSN,SNfin
                                  dr_SN = sqrt(dr_SN)
                                  if (ilevel /= level_SN(iSN))then
                                    adjacency = 0
-                                   if(dxx < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                                   if(dyy < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                                   if(dzz < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+                                   if(abs(dxx) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+                                   if(abs(dyy) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+                                   if(abs(dzz) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
                                    if(adjacency == 0)then
                                       ! Shares a corner with central cell
                                       cellweight = 0.125d0
