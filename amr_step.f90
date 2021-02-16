@@ -211,6 +211,7 @@ recursive subroutine amr_step(ilevel,icount)
                                call timer('feedback','start')
      if(hydro.and.star.and.eta_sn>0.and.f_w>0)call kinetic_feedback
 
+
   endif
 
   !--------------------

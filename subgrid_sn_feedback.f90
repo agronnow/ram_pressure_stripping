@@ -151,6 +151,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   ! the f2008 intrinsic erfc() function:
   real(dp) erfc_pre_f08
 
+!if (ilevel/=levelmin)return
+
   if(numbtot(1,ilevel)==0) return
   if(.not. hydro)return
   !if(ndim.ne.3)return
@@ -1000,7 +1002,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
   integer::ilevel,ncache,nSN,iSN,ind,ix,iy,iz,ngrid,iskip,radcells
   integer::i,nx_loc,igrid,ivar
   integer,dimension(1:nvector),save::ind_grid,ind_cell
-  real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew,fZ
+  real(dp)::x,y,z,dr_SN,u,v,w,u2,v2,w2,dr_cell,massdiff,mindiff,dprev,momprev,momnew,fZ,mcenter
   real(dp)::scale,dx,dxx,dyy,dzz,dx_min,dx_loc,vol_loc,rmax2,rmax,dx_SN,adjacency,cellweight
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v
   real(dp),dimension(1:3)::skip_loc
@@ -1130,6 +1132,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
                              mtot(iSN,radcells) = mtot(iSN,radcells) + max(uold(ind_cell(i),1),smallr)*vol_loc
                              vol_gas(iSN,radcells) = vol_gas(iSN,radcells) + vol_loc
                              snncells(iSN,radcells) = snncells(iSN,radcells) + 1
+                             if(dr_SN < 1d-10)mcenter=max(uold(ind_cell(i),1),smallr)*vol_loc
 !write(*,*)'radcells',radcells,' mtot',mtot(iSN,radcells),' vol',vol_gas(iSN,radcells)
                           endif
                        enddo
@@ -1203,13 +1206,19 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
         SNvol(iSN) = vol_gas_all(iSN,SNmaxrad_all(iSN))
         ncellsSN(iSN) = snncells_all(iSN,SNmaxrad_all(iSN))
      endif
+     if(SNmaxrad_all(iSN) == 0)then
+        rSN(iSN) = 0
+        SNmenc(iSN) = mcenter
+        SNvol(iSN) = dx_SN**3
+        ncellsSN(iSN) = 1
+     endif
 #endif
     if ((rSN(iSN) == 0) .or. (SNmaxrad_all(iSN)==0))then
-       if (myid==1)write(*,*)"WARNING: Skipping SN with radius 0"
+       if (myid==1)write(*,*)"WARNING: SN has radius 0!"
        skip=.true.
     endif
 
-    if (momentum_fb .or. ((rSN(iSN) < 3d0*dx_SN).and.delayed_cooling))then
+    if ((momentum_fb .or. ((rSN(iSN) < 3d0*dx_SN).and.delayed_cooling)) .and. (.not. skip))then
        if (delayed_cooling)then
          SNcooling(iSN) = .false.
          kinetic_inj = .false.
@@ -1222,7 +1231,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
        endif
        rSN(iSN) = radcells*dx_SN
        SNmenc(iSN) = mtot_all(iSN,radcells)
-       SNvol(iSN) = vol_gas_all(iSN,radcells)
+       SNvol(iSN) = dx_SN**3*27!vol_gas_all(iSN,radcells)
        ncellsSN(iSN) = snncells_all(iSN,radcells)
     else
        SNcooling(iSN) = .true.
@@ -1435,7 +1444,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
   real(dp)::dr_SNs,dxxs,dyys,dzzs,cellweight_mom,cellweight_eng,xs,ys,zs,dr_cells
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
   real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
-  real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar,massratio
+  real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar,massratio,totmomy,totmomy_all
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
   real(dp),dimension(1:nSN)::mSN,engdens_SN,d_gas,d_metal,vol_gas,rSN,wtot
@@ -1466,7 +1475,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
   ! Supernova specific energy from cgs to code units
   ESN=(1d51/(10d0*2d33))/scale_v**2
   do iSN=1,nSN
-     if (rSN(iSN) == 0)cycle
+!     if (rSN(iSN) == 0)cycle
 #ifdef DELAYED_SN
      if (delayed)then
         if (sn_isrefined(iSN)==0)cycle
@@ -1489,6 +1498,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
 
   ektot=0
   ektot_all=0
+  totmomy = 0
+  totmomy_all=0
+
   ! Loop over levels
   do ilevel=levelmin,nlevelmax
      ! Computing local volume (important for averaging hydro quantities)
@@ -1556,7 +1568,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                        dr_SN=dxx**2+dyy**2
                        dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
-                       if(((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .and. (rSN(iSN) > 1.1*dx_SN)) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0))then
+                       if (rSN(iSN) == 0)then
+                          if(dr_SN < 1d-10)uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + engdens_SN(iSN)
+                       elseif(((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .and. (rSN(iSN) > 1.1*dx_SN)) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0))then
                           if (momentum_fb)then
                               ! Kinetic feedback: Inject some fraction of SN energy as kinetic energy to alleviate overcooling
                               ! This largely follows either Gentry, Madau & Krumholz (2020) or Simpson et al. (2015)
@@ -1571,6 +1585,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                    if(abs(dxx) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
                                    if(abs(dyy) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
                                    if(abs(dzz) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+                                   write(*,*)"dxx,dyy,dzz,adj",dxx,dyy,dzz,adjacency
                                    if(adjacency == 0)then
                                       ! Shares a corner with central cell
                                       cellweight = 0.125d0
@@ -1581,11 +1596,14 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                       ! Shares a face with central cell
                                       cellweight = 0.5d0
                                    endif
+!                                   cellweight = 0.125d0
                                  endif
                                  ! Momentum injection region excludes central cell and so is weighted differently from energy and mass
-                                 cellweight_mom = (cellweight**(level_SN(iSN)-ilevel))/(wtot(iSN)-1d0)
-                                 cellweight_eng = (cellweight**(level_SN(iSN)-ilevel))/wtot(iSN)
-                                 massratio = sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/(cellweight_eng*mSN(iSN)))
+!                                 cellweight_mom = (cellweight**(level_SN(iSN)-ilevel))!*(ncellsSN(iSN)-1)/(wtot(iSN)-1d0)
+                                 cellweight_mom = 1d0
+                                 if (ilevel < level_SN(iSN))cellweight_mom = 0.125d0
+                                 cellweight_eng = cellweight_mom!(cellweight**(level_SN(iSN)-ilevel))!*ncellsSN(iSN)/wtot(iSN)
+                                 massratio = sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/(mSN(iSN)))
                                  prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/max(uold(ind_cell(i),1),smallr))*(gamma-1.0)
                                  Tovermu = prs/max(uold(ind_cell(i),1),smallr)*scale_T2
                                  nH = max(uold(ind_cell(i),1),smallr)*scale_nH
@@ -1627,12 +1645,12 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                        iz=(inds-1)/4
                                        iy=(inds-1-4*iz)/2
                                        ix=(inds-1-2*iy-4*iz)
-                                       xs=x+(dble(ix)-0.5D0)*dx_loc
-                                       ys=y+(dble(iy)-0.5D0)*dx_loc
+                                       xs=x+(dble(ix)-0.5D0)*dx_SN
+                                       ys=y+(dble(iy)-0.5D0)*dx_SN
                                        dxxs=xs-xSN(iSN,1)
                                        dyys=ys-xSN(iSN,2)
 #if NDIM==3
-                                       zs=z+(dble(iz)-0.5D0)*dx_loc
+                                       zs=z+(dble(iz)-0.5D0)*dx_SN
                                        dzzs=zs-xSN(iSN,3)
                                        dr_SNs=dxxs**2+dyys**2+dzzs**2
                                        dr_cells=MAX(ABS(dxxs),ABS(dyys),ABS(dzzs))
@@ -1640,12 +1658,15 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                        dr_SNs=dxxs**2+dyys**2
                                        dr_cells=MAX(ABS(dxxs),ABS(dyys))
 #endif
+                                       dr_SNs = sqrt(dr_SNs)
                                        if(dr_cells < 1d-9 + dx_SN)then
                                           uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxxs/dr_SNs
                                           uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyys/dr_SNs
 #if NDIM==3
                                           uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzzs/dr_SNs
 #endif
+                                          uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + cellweight_eng*engdens_SN(iSN)
+                                          write(*,*)"injection in subcell: ",xs,ys,zs,dxxs,dyys,dzzs,ix,iy,iz,8.0*mom_inj*dyys/dr_SNs,dr_SNs
                                        endif
                                     enddo
                                  else
@@ -1654,21 +1675,23 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
 #if NDIM==3
                                     uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/dr_SN
 #endif
+                                    uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + cellweight_eng*engdens_SN(iSN)
                                  endif
                                  R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
-                                 if (dr_SN > R_cool)then
+                                 if ((dr_SN > R_cool).and.(ilevel >= level_SN(ilevel)).and.(1==0))then
                                     engfac = (dr_SN/R_cool)**(-6.5d0)
                                     etherm = (engdens_SN(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
                                     engdens_SN(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
                                  endif
                                  if(index(output_dir,"sntest") > 0)then
-                                    write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, engdens_SN(iSN)
-                                    write(*,*)"dx_loc", dx_loc,"w",cellweight_mom,"wtot",wtot(iSN),"x ",x," y ",y," z ",z," dxx",dxx," dyy",dyy," dzz",dzz," momx",mom_inj*dxx/dr_SN,"momy ",mom_inj*dyy/dr_SN," momz ",mom_inj*dzz/dr_SN
+                                    write(*,*)"Tovermu, T, mu, numdens, vol_gas, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, vol_gas(iSN), R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, engdens_SN(iSN)
+                                    write(*,*)"dx_loc", dx_loc,"w_mom",cellweight_mom,"w_eng",cellweight_eng,"wtot",wtot(iSN),"x ",x," y ",y," z ",z," dxx",dxx," dyy",dyy," dzz",dzz," dr_SN",dr_SN," momx",mom_inj*dxx/dr_SN,"momy ",mom_inj*dyy/dr_SN," momz ",mom_inj*dzz/dr_SN
                                  endif
                               else
-                                 cellweight_eng=1d0/wtot(iSN)
+                                 cellweight_eng=1d0!ncellsSN(iSN)/wtot(iSN)
+                                 uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + cellweight_eng*engdens_SN(iSN)
                               endif
-                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + cellweight_eng*engdens_SN(iSN)
+!                              uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + cellweight_eng*engdens_SN(iSN)
                           else
                               ! Thermal dump
                               ! Update the total energy of the gas
@@ -1682,6 +1705,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                    endif
 #endif
                  end do
+                 totmomy=totmomy+uold(ind_cell(i),3)*vol_loc
               endif
            end do
 
@@ -1694,7 +1718,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
   
 #ifndef WITHOUTMPI
   call MPI_ALLREDUCE(ektot,ektot_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
-  if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng
+  call MPI_ALLREDUCE(totmomy,totmomy_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
+  if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng," momy:",totmomy_all*(scale_d*scale_l**3*scale_v/(2e33*1e5))
+!  if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng
 #endif
 
   if(verbose)write(*,*)'Exiting Sedov_blast'
