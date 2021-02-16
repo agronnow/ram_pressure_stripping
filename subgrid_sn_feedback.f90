@@ -1638,6 +1638,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
 #else
                                              dr_SNs=dxxs**2+dyys**2
                                              dr_cells=MAX(ABS(dxxs),ABS(dyys))
+#endif
                                              if(dr_cell < 1d-9 + dx_SN)then
                                                 uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxxs/dr_SNs
                                                 uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyys/dr_SNs
