@@ -1426,7 +1426,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
   !------------------------------------------------------------------------
   ! This routine merges SN using the FOF algorithm.
   !------------------------------------------------------------------------
-  integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip
+  integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip,inds
   integer::i,nx_loc,igrid,ncache
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell,vol_mom,vol_center
@@ -1622,10 +1622,10 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                  endif
                                  if ((ilevel < level_SN(iSN)) .and. (adjacency > 0))then
                                     ! Sample subcells of coarse cell overlapping 2 or 4 SN injection region cells on finer level
-                                    do ind=1,twotondim
-                                       iz=(ind-1)/4
-                                       iy=(ind-1-4*iz)/2
-                                       ix=(ind-1-2*iy-4*iz)
+                                    do inds=1,twotondim
+                                       iz=(inds-1)/4
+                                       iy=(inds-1-4*iz)/2
+                                       ix=(inds-1-2*iy-4*iz)
                                        xs=x+(dble(ix)-0.5D0)*dx_loc
                                        ys=y+(dble(iy)-0.5D0)*dx_loc
                                        dxxs=xs-xSN(iSN,1)
@@ -1658,10 +1658,10 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                  if (dr_SN > R_cool)then
                                     engfac = (dr_SN/R_cool)**(-6.5d0)
                                     etherm = (engdens_SN(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
-                                    p_gas(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
+                                    engdens_SN(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
                                  endif
                                  if(index(output_dir,"sntest") > 0)then
-                                    write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, p_gas(iSN)
+                                    write(*,*)"Tovermu, T, mu, numdens, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, engdens_SN(iSN)
                                     write(*,*)"dx_loc", dx_loc,"w",cellweight_mom,"wtot",wtot(iSN),"x ",x," y ",y," z ",z," dxx",dxx," dyy",dyy," dzz",dzz," momx",mom_inj*dxx/dr_SN,"momy ",mom_inj*dyy/dr_SN," momz ",mom_inj*dzz/dr_SN
                                  endif
                               else
