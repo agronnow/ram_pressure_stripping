@@ -1194,6 +1194,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
         skip=.true.
      endif
      if (delayed)SNfinestlevel(iSN) = 0
+     if ((momentum_fb).and.(allow_coarse_SN))SNmaxrad_all(iSN)=RADCELL_MAX
 #ifndef DELAYED_SN
      if (SNmaxrad_all(iSN)*dx_SN < rSN(iSN)) then
         if (myid==1)write(*,*)"WARNING: SN should extend ",rSN(iSN), " kpc but can only extend ",SNmaxrad_all(iSN)*dx_SN," kpc without overlapping coarser cells!!!"
@@ -1203,7 +1204,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
         ncellsSN(iSN) = snncells_all(iSN,SNmaxrad_all(iSN))
      endif
 #endif
-    if (rSN(iSN) == 0)then
+    if ((rSN(iSN) == 0) .or. (SNmaxrad_all(iSN)==0))then
        if (myid==1)write(*,*)"WARNING: Skipping SN with radius 0"
        skip=.true.
     endif
@@ -1216,7 +1217,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
        else
          SNcooling(iSN) = .true.
          kinetic_inj = .true.
-         if (myid==1)write(*,*)"WARNING: SN should extend ",mominj_rad, " cells but has been shrunk to only extend ",SNmaxrad_all(iSN)," cells to avoid overlapping coarser cells!"
+         if((myid==1).and.(SNmaxrad_all(iSN)<mominj_rad))write(*,*)"WARNING: SN should extend ",mominj_rad, " cells but has been shrunk to only extend ",SNmaxrad_all(iSN)," cells to avoid overlapping coarser cells!"
          radcells = min(SNmaxrad_all(iSN), mominj_rad)
        endif
        rSN(iSN) = radcells*dx_SN

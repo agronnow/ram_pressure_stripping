@@ -45,7 +45,7 @@ subroutine read_params
        & ,perspective_camera,smooth_frame,shader_frame,tstart_theta_camera,tstart_phi_camera &
        & ,tend_theta_camera,tend_phi_camera,method_frame,varmin_frame,varmax_frame
   namelist/prob_params/x1_c,x2_c,x3_c,vel_wind,rad_wind,rhomax_wind,T_wind,ndens_wind,T_cloud,Rad_cloud,R_s,n0g,r_cut,Z_wind,Z_cloud &
-       & ,orbitfile,sfhistfile,prob_debug,subgrid_feedback,momentum_fb,simpson_fb,mominj_rad,mom_fac,SN_blast_mass,rho_SN,vsfr_fac,vsfr_pow &
+       & ,orbitfile,sfhistfile,prob_debug,subgrid_feedback,momentum_fb,simpson_fb,allow_coarse_SN,mominj_rad,mom_fac,SN_blast_mass,rho_SN,vsfr_fac,vsfr_pow &
        & ,tinit_sim,tbeg_wind,sfr_boost,dt_sfhist,dt_sfrlog,r_plummer, ein_n, SN_inject_x, SN_inject_y, SN_inject_z &
        & ,inner_dens,outer_dens,r_inner,inner_slope,outer_slope
 
