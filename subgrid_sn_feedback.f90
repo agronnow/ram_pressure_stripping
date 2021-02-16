@@ -1426,11 +1426,12 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
   !------------------------------------------------------------------------
   ! This routine merges SN using the FOF algorithm.
   !------------------------------------------------------------------------
-  integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip
+  integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip,i
   integer::i,nx_loc,igrid,ncache
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell,vol_mom,vol_center
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min,dx_SN,cellweight,adjacency
+  real(dp)::dr_SNs,dxxs,dyys,dzzs,cellweight_mom,cellweight_eng,xs,ys,zs,dr_cells
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
   real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens
   real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar,massratio
@@ -1621,33 +1622,30 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                  endif
                                  if ((ilevel < level_SN(iSN)) .and. (adjacency > 0))then
                                     ! Sample subcells of coarse cell overlapping 2 or 4 SN injection region cells on finer level
-                                    do ix=0,1
-                                       do iy=0,1
+                                    do ind=1,twotondim
+                                       iz=(ind-1)/4
+                                       iy=(ind-1-4*iz)/2
+                                       ix=(ind-1-2*iy-4*iz)
+                                       xs=x+(dble(ix)-0.5D0)*dx_loc
+                                       ys=y+(dble(iy)-0.5D0)*dx_loc
+                                       dxxs=xs-xSN(iSN,1)
+                                       dyys=ys-xSN(iSN,2)
 #if NDIM==3
-                                          do iz=0,1
-                                             zs=z+((-0.5d0+iz)*dx_loc)
-#endif
-                                             xs=x+((-0.5d0+ix)*dx_loc)
-                                             ys=y+((-0.5d0+iy)*dx_loc)
-                                             dxxs=xs-xSN(iSN,1)
-                                             dyys=ys-xSN(iSN,2)
-#if NDIM==3
-                                             dzzs=zs-xSN(iSN,3)
-                                             dr_SNs=dxxs**2+dyys**2+dzzs**2
-                                             dr_cells=MAX(ABS(dxxs),ABS(dyys),ABS(dzzs))
+                                       zs=z+(dble(iz)-0.5D0)*dx_loc
+                                       dzzs=zs-xSN(iSN,3)
+                                       dr_SNs=dxxs**2+dyys**2+dzzs**2
+                                       dr_cells=MAX(ABS(dxxs),ABS(dyys),ABS(dzzs))
 #else
-                                             dr_SNs=dxxs**2+dyys**2
-                                             dr_cells=MAX(ABS(dxxs),ABS(dyys))
+                                       dr_SNs=dxxs**2+dyys**2
+                                       dr_cells=MAX(ABS(dxxs),ABS(dyys))
 #endif
-                                             if(dr_cell < 1d-9 + dx_SN)then
-                                                uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxxs/dr_SNs
-                                                uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyys/dr_SNs
+                                       if(dr_cells < 1d-9 + dx_SN)then
+                                          uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxxs/dr_SNs
+                                          uold(ind_cell(i),3)=uold(ind_cell(i),3) + mom_inj*dyys/dr_SNs
 #if NDIM==3
-                                                uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzzs/dr_SNs
+                                          uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzzs/dr_SNs
 #endif
-                                             endif
-                                          enddo
-                                       enddo
+                                       endif
                                     enddo
                                  else
                                     uold(ind_cell(i),2)=uold(ind_cell(i),2) + mom_inj*dxx/dr_SN
