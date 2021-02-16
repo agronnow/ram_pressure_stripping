@@ -322,7 +322,7 @@ module amr_parameters
   logical::subgrid_feedback = .true.    ! Turn SN feedback on/off
   logical::momentum_fb = .true.         ! Turn kinetic feedback on/off (alleviates SN overcooling at low res.)
   logical::simpson_fb = .false.         ! Use kinetic FB scheme of Simpson+ 2015 instead of def. Gentry+ 2020
-  logical::allow_coarse_SN = .true.     ! Allow/Disallow kinetic SN injection region to overlap coarse cells
+  logical::allow_coarse_SN = .false.     ! Allow/Disallow kinetic SN injection region to overlap coarse cells
   integer::mominj_rad = 1               ! Radius in cells of SN injection region used for kinetic feedback     []
   real(dp)::mom_fac = 1.0               ! Factor to multiply terminal momentum by                              []
   real(dp)::SN_blast_mass = 0.0         ! Mass to enclose within SN explosion region                           [Msun]
