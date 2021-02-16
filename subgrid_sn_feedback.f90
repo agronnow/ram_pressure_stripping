@@ -1583,8 +1583,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                    endif
                                  endif
                                  ! Momentum injection region excludes central cell and so is weighted differently from energy and mass
-                                 cellweight_mom = (cellweight**(level_SN(iSN)-ilevel))*(ncellsSN(iSN)-1)/(wtot(iSN)-1d0)
-                                 cellweight_eng = (cellweight**(level_SN(iSN)-ilevel))*ncellsSN(iSN)/wtot(iSN)
+                                 cellweight_mom = (cellweight**(level_SN(iSN)-ilevel))/(wtot(iSN)-1d0)
+                                 cellweight_eng = (cellweight**(level_SN(iSN)-ilevel))/wtot(iSN)
                                  massratio = sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/(cellweight_eng*mSN(iSN)))
                                  prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/max(uold(ind_cell(i),1),smallr))*(gamma-1.0)
                                  Tovermu = prs/max(uold(ind_cell(i),1),smallr)*scale_T2
@@ -1666,7 +1666,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                     write(*,*)"dx_loc", dx_loc,"w",cellweight_mom,"wtot",wtot(iSN),"x ",x," y ",y," z ",z," dxx",dxx," dyy",dyy," dzz",dzz," momx",mom_inj*dxx/dr_SN,"momy ",mom_inj*dyy/dr_SN," momz ",mom_inj*dzz/dr_SN
                                  endif
                               else
-                                 cellweight_eng=ncellsSN(iSN)/wtot(iSN)
+                                 cellweight_eng=1d0/wtot(iSN)
                               endif
                               uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + cellweight_eng*engdens_SN(iSN)
                           else
