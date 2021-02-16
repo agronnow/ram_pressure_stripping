@@ -1426,7 +1426,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
   !------------------------------------------------------------------------
   ! This routine merges SN using the FOF algorithm.
   !------------------------------------------------------------------------
-  integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip,i
+  integer::ilevel,iSN,nSN,ind,ix,iy,iz,ngrid,iskip
   integer::i,nx_loc,igrid,ncache
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   real(dp)::x,y,z,dx,dxx,dyy,dzz,dr_SN,u,v,w,ESN,vol,vol_all,dr_cell,vol_mom,vol_center
@@ -1440,7 +1440,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
   real(dp),dimension(1:nSN)::mSN,engdens_SN,d_gas,d_metal,vol_gas,rSN,wtot
   logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:ndim)::xSN
-  integer ,dimension(1:nSN)::indSN,SNfinestlevel,level_SN
+  integer ,dimension(1:nSN)::indSN,SNfinestlevel,level_SN,ncellsSN
   logical ,dimension(1:nvector),save::ok
   logical::delayed
   integer::info
@@ -1657,7 +1657,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                  R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
                                  if (dr_SN > R_cool)then
                                     engfac = (dr_SN/R_cool)**(-6.5d0)
-                                    etherm = (p_gas(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
+                                    etherm = (engdens_SN(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
                                     p_gas(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
                                  endif
                                  if(index(output_dir,"sntest") > 0)then
