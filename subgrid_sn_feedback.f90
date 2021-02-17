@@ -1280,7 +1280,7 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
 #endif
        close(ilun)
      endif
-     ((skip).or.(kinetic_inj))cycle
+     if((skip).or.(kinetic_inj))cycle
 
 #ifdef DELAYED_SN
      if (SNfinestlevel(iSN) > 0)cycle
