@@ -1043,7 +1043,7 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
 
   ! Initialize the averaged variables
   vol_gas=0.0;ind_blast=-1;rSN=0.0;vol_gas_all=0.0;mtot=0.0;mtot_all=0.0;SNmenc=0.0;SNvol=0.0;ncellsSN=0
-  snmaxlevel=0;snmaxlevel_all=0;flagrefine=0;flagrefine_all=0;snncells=0;snncells_all=0;wtot=0.0;wtot_all=0.0;SNcoarsestlevel=0;SNcoarsestlevel_all=0
+  snmaxlevel=0;snmaxlevel_all=0;flagrefine=0;flagrefine_all=0;snncells=0;snncells_all=0;wtot=0.0;wtot_all=0.0;SNcoarsestlevel=nlevelmax;SNcoarsestlevel_all=0
 #ifndef DELAYED_SN
   SNmaxrad=RADCELL_MAX
 #endif
@@ -1675,13 +1675,13 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
 #if NDIM==3
                                     uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/dr_SN
 #endif
+                                    R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
+                                    if ((dr_SN > R_cool).and.(ilevel >= level_SN(ilevel)))then
+                                       engfac = (dr_SN/R_cool)**(-6.5d0)
+                                       etherm = (engdens_SN(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
+                                       engdens_SN(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
+                                    endif
                                     uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2) + cellweight_eng*engdens_SN(iSN)
-                                 endif
-                                 R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
-                                 if ((dr_SN > R_cool).and.(ilevel >= level_SN(ilevel)))then
-                                    engfac = (dr_SN/R_cool)**(-6.5d0)
-                                    etherm = (engdens_SN(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
-                                    engdens_SN(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
                                  endif
                                  if(index(output_dir,"sntest") > 0)then
                                     write(*,*)"Tovermu, T, mu, numdens, vol_gas, Rcool, engfac, mom_inj, mom_term, e_inj: ",Tovermu, T2, mu, numdens, vol_gas(iSN), R_cool, engfac, mom_inj*vol_gas(iSN), mom_term, engdens_SN(iSN)
