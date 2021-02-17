@@ -1274,9 +1274,9 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
           delayedstr = 'Y'
        endif
        if (skip)delayedstr = 'SKIP'
-       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
+       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (SN_batch_size*1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
-       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad_all(iSN), coolstr
+       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (SN_batch_size*1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad_all(iSN), coolstr
 #endif
        close(ilun)
      endif
