@@ -1009,7 +1009,7 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
 #ifndef DELAYED_SN
   integer ,dimension(1:nSN)::SNmaxrad,SNmaxrad_all
 #endif
-  real(dp),dimension(1:nSN)::ekBlast,rSN,vol_center,vol_center_all,wtot,wtot_all
+  real(dp),dimension(1:nSN)::ekBlast,rSN,vol_center,vol_center_all,wtot,wtot_all,mSN
   logical,dimension(1:nSN)::SNcooling
   real(dp),dimension(1:nSN,1:RADCELL_MAX)::vol_gas,vol_gas_all,mtot,mtot_all
   integer,dimension(1:nSN,1:RADCELL_MAX)::snmaxlevel,snmaxlevel_all,snncells,snncells_all,SNcoarsestlevel,SNcoarsestlevel_all
@@ -1172,8 +1172,8 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
         if(sn_isrefined(iSN)==0)cycle
      endif
 #endif
-     mindiff = 1d10
      dx_SN = 0.5D0**level_SN(iSN)*scale
+     mindiff = 1d10
      do radcells=1,RADCELL_MAX
         massdiff = abs(SN_blast_mass - mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33)
 !write(*,*)'radcells',radcells,' massdiff',massdiff,' mtot',mtot_all(iSN,radcells)*scale_d*scale_l**3/2d33,' vol_gas',vol_gas_all(iSN,radcells)
@@ -1216,7 +1216,7 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
        skip=.true.
     endif
 
-    if ((momentum_fb .or. ((rSN(iSN) < 3d0*dx_SN).and.delayed_cooling)) .and. (.not. skip))then
+    if (((momentum_fb.and.(rSN(iSN) < 3d0*dx_SN)) .or. ((rSN(iSN) < 3d0*dx_SN).and.delayed_cooling)) .and. (.not. skip))then
        if (delayed_cooling)then
          SNcooling(iSN) = .false.
          kinetic_inj = .false.
@@ -1280,7 +1280,7 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
 #endif
        close(ilun)
      endif
-     if(skip)cycle !((skip).or.(kinetic_inj))cycle
+     ((skip).or.(kinetic_inj))cycle
 
 #ifdef DELAYED_SN
      if (SNfinestlevel(iSN) > 0)cycle
@@ -1348,7 +1348,7 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
                     dr_cell=MAX(ABS(dxx),ABS(dyy))
 #endif
                     if(((dr_SN.lt.(rSN(iSN)+0.5*dx_SN)**2) .and. (rSN(iSN) > 1.1*dx_SN)) .or. (dr_cell < 1d-9 + dx_SN/2d0 + dx_loc/2d0))then
-                       if(.not.(momentum_fb))then
+                       if(.not.(momentum_fb.and.(rSN(iSN) < 3d0*dx_SN)))then
                           update_boundary = .true.
                           !write(*,*)'SN blast on cpu ',myid
                           ! redistribute the mass within the SN blast uniformly and update other quantities accordingly
@@ -1373,27 +1373,27 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
 !                         write(*,*)"redist on level ",ilevel,' rad ',sqrt(dr_SN),' coords ',x,' ',y,' ',z
 !                         write(*,*)"redist dens:",uold(ind_cell(i),1)," redist temp:",(uold(ind_cell(i),ndim+2)*(gamma-1.0)-0.5*(uold(ind_cell(i),2)**2+uold(ind_cell(i),3)**2+uold(ind_cell(i),4)**2)/uold(ind_cell(i),1))*scale_t2/uold(ind_cell(i),1)
                        endif
-                       cellweight = 1d0
-                       if ((ilevel /= level_SN(iSN)).and.(momentum_fb))then
-                          ! Calculate normalization constant for weights used to ensure correct amounts of momentum and energy injection in regions with non-uniform refinement
-                          ! Cells coarser than the central SN cell are weighted by the fraction of their volume that overlaps with the 3x3x3 finer cell SN injection region
-                          ! Cells finer than the central SN cell are weighted by how many of the fine cells that overlap with the 3x3x3 coarser cell SN injection region
-                          adjacency = 0
-                          if(abs(dxx) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                          if(abs(dyy) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                          if(abs(dzz) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                          if(adjacency == 0)then
-                             ! Shares a corner with central cell
-                             cellweight = 0.125d0
-                          elseif (adjacency == 1)then
-                             ! Shares an edge with central cell
-                             cellweight = 0.25d0
-                          elseif (adjacency == 2)then
-                             ! Shares a face with central cell
-                             cellweight = 0.5d0
-                          endif
-                       endif
-                       wtot(iSN) = wtot(iSN) + cellweight**(level_SN(iSN)-ilevel)
+                       !cellweight = 1d0
+!                       if ((ilevel /= level_SN(iSN)).and.(momentum_fb))then
+!                          ! Calculate normalization constant for weights used to ensure correct amounts of momentum and energy injection in regions with non-uniform refinement
+!                          ! Cells coarser than the central SN cell are weighted by the fraction of their volume that overlaps with the 3x3x3 finer cell SN injection region
+!                          ! Cells finer than the central SN cell are weighted by how many of the fine cells that overlap with the 3x3x3 coarser cell SN injection region
+!                          adjacency = 0
+!                          if(abs(dxx) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+!                          if(abs(dyy) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+!                          if(abs(dzz) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+!                          if(adjacency == 0)then
+!                             ! Shares a corner with central cell
+!                             cellweight = 0.125d0
+!                          elseif (adjacency == 1)then
+!                             ! Shares an edge with central cell
+!                             cellweight = 0.25d0
+!                          elseif (adjacency == 2)then
+!                             ! Shares a face with central cell
+!                             cellweight = 0.5d0
+!                          endif
+!                       endif
+!                       wtot(iSN) = wtot(iSN) + cellweight**(level_SN(iSN)-ilevel)
                     endif
                  endif
               end do
@@ -1402,9 +1402,9 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
      end do    ! End loop over levels
   end do  ! End loop over SNe
 
-  call MPI_ALLREDUCE(wtot,wtot_all,nSN,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
+!  call MPI_ALLREDUCE(wtot,wtot_all,nSN,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
 
-  wtot=wtot_all
+!  wtot=wtot_all
 
 !  if (update_boundary)then
 !    ! Update hydro quantities for split cells
@@ -1577,28 +1577,29 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
                               cellweight = 1d0
                               if (dr_SN > 1d-10)then
                                  dr_SN = sqrt(dr_SN)
-                                 if (ilevel /= level_SN(iSN))then
-                                   adjacency = 0
-                                   if(abs(dxx) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                                   if(abs(dyy) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                                   if(abs(dzz) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
-                                   write(*,*)"dxx,dyy,dzz,adj",dxx,dyy,dzz,adjacency
-                                   if(adjacency == 0)then
-                                      ! Shares a corner with central cell
-                                      cellweight = 0.125d0
-                                   elseif (adjacency == 1)then
-                                      ! Shares an edge with central cell
-                                      cellweight = 0.25d0
-                                   elseif (adjacency == 2)then
-                                      ! Shares a face with central cell
-                                      cellweight = 0.5d0
-                                   endif
-!                                   cellweight = 0.125d0
-                                 endif
-                                 ! Momentum injection region excludes central cell and so is weighted differently from energy and mass
+!                                 if (ilevel /= level_SN(iSN))then
+!                                   adjacency = 0
+!                                   if(abs(dxx) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+!                                   if(abs(dyy) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+!                                   if(abs(dzz) < 1d-9 + dx_SN/2d0)adjacency = adjacency+1
+!                                   write(*,*)"dxx,dyy,dzz,adj",dxx,dyy,dzz,adjacency
+!                                   if(adjacency == 0)then
+!                                      ! Shares a corner with central cell
+!                                      cellweight = 0.125d0
+!                                   elseif (adjacency == 1)then
+!                                      ! Shares an edge with central cell
+!                                      cellweight = 0.25d0
+!                                   elseif (adjacency == 2)then
+!                                      ! Shares a face with central cell
+!                                      cellweight = 0.5d0
+!                                   endif
+!!                                   cellweight = 0.125d0
+!                                 endif
+!                                 ! Momentum injection region excludes central cell and so is weighted differently from energy and mass
 !                                 cellweight_mom = (cellweight**(level_SN(iSN)-ilevel))!*(ncellsSN(iSN)-1)/(wtot(iSN)-1d0)
                                  cellweight_mom = 1d0
                                  if (ilevel < level_SN(iSN))cellweight_mom = 0.125d0
+                                 if (ilevel > level_SN(iSN))cellweight_mom = 8d0
                                  cellweight_eng = cellweight_mom!(cellweight**(level_SN(iSN)-ilevel))!*ncellsSN(iSN)/wtot(iSN)
                                  massratio = sqrt(max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/(mSN(iSN)))
                                  prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/max(uold(ind_cell(i),1),smallr))*(gamma-1.0)
