@@ -305,8 +305,8 @@ module amr_parameters
   real(dp)::x2_c = 0.0                  ! Center y coordinate of dSph                                          [kpc]
   real(dp)::x3_c = 0.0                  ! Center z coordinate of dSph                                          [kpc]
   real(dp)::vel_wind = 0.0              ! Set to zero for static sim, otherwise vel. from file will be used    []
-  real(dp)::rad_wind = 0.0              ! Radius outside of xwhich the wind is added
-  real(dp)::rhomax_wind = 0.0           ! Maximum density for adding the wind
+  real(dp)::rad_wind = 0.0              ! Radius outside of which the wind is added                            [kpc]
+  real(dp)::rhomax_wind = 0.0           ! Maximum density for adding the wind                                  [amu cm^-3]
   real(dp)::T_wind = 0.0                ! Temperature of corona gas                                            [K]
   real(dp)::ndens_wind = 0.0            ! Corona gas particle number density                                   [amu cm^-3]
   real(dp)::T_cloud = 0.0               ! Temperature of dSph gas                                              [K]
@@ -322,7 +322,8 @@ module amr_parameters
   logical::subgrid_feedback = .true.    ! Turn SN feedback on/off
   logical::momentum_fb = .true.         ! Turn kinetic feedback on/off (alleviates SN overcooling at low res.)
   logical::simpson_fb = .false.         ! Use kinetic FB scheme of Simpson+ 2015 instead of def. Gentry+ 2020
-  logical::allow_coarse_SN = .false.     ! Allow/Disallow kinetic SN injection region to overlap coarse cells
+  logical::allow_coarse_SN = .false.    ! Allow/Disallow kinetic SN injection region to overlap coarse cells
+  integer::SN_batch_size = 1            ! Number of SNe injected per FB injection event, 1=single SNe resolved
   integer::mominj_rad = 1               ! Radius in cells of SN injection region used for kinetic feedback     []
   real(dp)::mom_fac = 1.0               ! Factor to multiply terminal momentum by                              []
   real(dp)::SN_blast_mass = 0.0         ! Mass to enclose within SN explosion region                           [Msun]

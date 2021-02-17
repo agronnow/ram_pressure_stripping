@@ -420,7 +420,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
          rho_SNIa = rho_SNIa + sfhist(nhist-nt+1)*DTD_A*(t_sfhist(nt))**DTD_s*dt*1d9 ! SNIa per year
          !write(*,*)nt,nhist-nt+1,rho_SNIa,t_sfhist(nt),sfhist(nhist-nt+1),dt,DTD_A,DTD_s
       end do
-      PoissMeanIa=rho_SNIa*scale_t/(3600*24*365.25)*dtnew(ilevel) ! Get expected number of SNIa formed taking units into account
+      PoissMeanIa=rho_SNIa*scale_t/(3600*24*365.25)*dtnew(ilevel)/SN_batch_size ! Get expected number of SNIa formed taking units into account
 #if NDIM==2
       PoissMeanIa = PoissMeanIa*4.0*Rad_cloud/3.0
 #endif
@@ -673,7 +673,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
                 endif
 #endif
                 ! Poisson mean
-                PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel) ! Get expected number of SNe formed taking units into account
+                PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel)/SN_batch_size ! Get expected number of SNe formed taking units into account
 #if NDIM==2
                 PoissMean = PoissMean*4.0*Rad_cloud/3.0
 #endif
@@ -717,7 +717,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
                    xSN_loc(nSN_loc,3)=z
 #endif
                    levelSN_loc(nSN_loc) = ilevel
-                   mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
+                   mSN_loc(nSN_loc)=SN_batch_size*10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
                    !if (outputSN) then
                       fileloc=trim(output_dir)//'sn.dat'
                       ilun=140
@@ -768,7 +768,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #if NDIM==3
            xSN_loc(nSN_loc,3)=xSNIa(iSN,3)
 #endif
-           mSN_loc(nSN_loc)=10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
+           mSN_loc(nSN_loc)=SN_batch_size*10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
            levelSN_loc(nSN_loc) = levelSNIa(iSN)
            !if (outputSN) then
            fileloc=trim(output_dir)//'snIa.dat'
@@ -1245,9 +1245,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
        if(.not.file_exist) then
           open(ilun, file=fileloc, form='formatted')
 #ifdef DELAYED_SN
-          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast cells              Cooling length (kpc)       Blast mass (Msun)          Blast temperature (K)   Delayed  To be delayed"
+          write(ilun,*)"Time                      x                         y                         z                         Ejecta mass (Msun)        Blast radius (kpc)        Blast radius (cells)        Blast cells              Cooling length (kpc)       Blast mass (Msun)          Blast temperature (K)   Delayed  To be delayed"
 #else
-          write(ilun,*)"Time                      x                         y                         z                         Blast radius (kpc)        Blast radius (cells)        Blast cells              Cooling length (kpc)       Blast mass (Msun)          Blast temperature (K)   Max rad (cells)  Cooling"
+          write(ilun,*)"Time                      x                         y                         z                         Ejecta mass (Msun)        Blast radius (kpc)        Blast radius (cells)        Blast cells              Cooling length (kpc)       Blast mass (Msun)          Blast temperature (K)   Max rad (cells)  Cooling"
 #endif
        else
           open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
@@ -1276,9 +1276,9 @@ subroutine subgrid_average_SN(xSN,rSN,vol_gas,SNvol,level_SN,wtot,ncellsSN,ind_b
           delayedstr = 'Y'
        endif
        if (skip)delayedstr = 'SKIP'
-       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
+       write(ilun,'(5E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
-       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad_all(iSN), coolstr
+       write(ilun,'(5E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad_all(iSN), coolstr
 #endif
        close(ilun)
      endif
@@ -1481,7 +1481,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
         if (sn_isrefined(iSN)==0)cycle
      endif
 #endif
-     mSN(iSN)=10d0*2d33/(scale_d*scale_l**3) ! Always assume 10 solar masses ejecta, can be changed in the future
+     !mSN(iSN)=SN_batch_size*10d0*2d33/(scale_d*scale_l**3) ! Always assume 10 solar masses ejecta, can be changed in the future
 !     d_gas(iSN)=mSN(iSN)/vol_gas(iSN)
 !     if(metal)d_metal(iSN)=ZSN(iSN)*mSN(iSN)/vol_gas(iSN)
      engdens_SN(iSN)=mSN(iSN)*ESN/vol_gas(iSN)
@@ -1631,7 +1631,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                                     ! Use scheme of Gentry, Madau & Krumholz (2020) to inject either terminal momentum or 100% kinetic energy
                                     fZ = 2d0
                                     if (ZonZsolar > 0.01)fZ=ZonZsolar**(-0.14)
-                                    mom_term = mom_fac * 9.6d43 * numdens**(-2d0/17d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
+                                    mom_term = mom_fac * 9.6d43 * SN_batch_size**(16d0/17d0)**numdens**(-2d0/17d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
                                     !if (sqrt(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)) < mom_term/mom_ejecta)then
                                     !   mom_inj = mom_ejecta*massratio/vol_gas(iSN)
                                     !else
@@ -1675,7 +1675,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
 #if NDIM==3
                                     uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/dr_SN
 #endif
-                                    R_cool = 0.0284*numdens**(-3d0/7d0)*fZ
+                                    R_cool = 0.0284*SN_batch_size**(2d0/7d0)*numdens**(-3d0/7d0)*fZ
                                     if ((dr_SN > R_cool).and.(ilevel >= level_SN(ilevel)))then
                                        engfac = (dr_SN/R_cool)**(-6.5d0)
                                        etherm = (engdens_SN(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
@@ -1697,9 +1697,9 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,indSN,vol_gas,level_SN,wtot,ncellsSN,
                               ! Update the total energy of the gas
                               uold(ind_cell(i),ndim+2)=uold(ind_cell(i),ndim+2)+engdens_SN(iSN)
                               if (.not.SNcooling(iSN))uold(ind_cell(i),idelay) = uold(ind_cell(i),idelay) + max(uold(ind_cell(i),1),smallr) ! + d_gas(iSN)
-                           endif
-                           etherm = uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1)
-                           ektot = ektot + (uold(ind_cell(i),ndim+2) - etherm)*vol_loc
+                          endif
+                          etherm = uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/uold(ind_cell(i),1)
+                          ektot = ektot + (uold(ind_cell(i),ndim+2) - etherm)*vol_loc
                        endif
 #ifdef DELAYED_SN
                    endif
