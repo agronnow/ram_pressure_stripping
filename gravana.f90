@@ -3,6 +3,7 @@
 !#########################################################
 !#########################################################
 subroutine gravana(x,f,dx,ncell)
+  use amr_commons, ONLY: t
   use amr_parameters
   use poisson_parameters
   use cooling_module, ONLY: twopi
@@ -38,8 +39,11 @@ subroutine gravana(x,f,dx,ncell)
      rz = 0.0
 #endif
      r=sqrt(rx**2+ry**2+rz**2)
-     if (pot_growth_rate > 0.0) r_max = min(max(r_cut, r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))), r_tidal) ! Evolving r_cut
-     else r_max = r_cut
+     if (pot_grow_rate > 0.0)then
+        r_max = min(max(r_cut, r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))), r_tidal) ! Evolving r_cut
+     else
+        r_max = r_cut
+     endif
      if (r < r_max) then
 #ifdef EINASTO
        if (firstcall) then
