@@ -18,7 +18,7 @@ subroutine gravana(x,f,dx,ncell)
   ! f(i,1:ndim) is the gravitational acceleration in user units.
   !================================================================
   integer::i
-  real(dp)::r,rx,ry,rz,rho0,xmass,ymass,zmass,acc
+  real(dp)::r,rx,ry,rz,rho0,xmass,ymass,zmass,acc,r_max
 #ifdef EINASTO
   logical, save::firstcall = .true.
   real(dp), save::gamma3n
@@ -38,7 +38,9 @@ subroutine gravana(x,f,dx,ncell)
      rz = 0.0
 #endif
      r=sqrt(rx**2+ry**2+rz**2)
-     if (r < r_cut) then
+     if (pot_growth_rate > 0.0) r_max = min(max(r_cut, r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))), r_tidal) ! Evolving r_cut
+     else r_max = r_cut
+     if (r < r_max) then
 #ifdef EINASTO
        if (firstcall) then
          gamma3n = cmpgamma(3d0*ein_n)
