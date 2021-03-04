@@ -58,7 +58,7 @@ subroutine gravana(x,f,dx,ncell)
      else
        acc=0.0
      endif
-     if (stellarpotential)acc = acc + M_plummer*r/(r_plummer**2 + r**2)**(3d0/2d0)
+     if (M_plummer > 0.0)acc = acc + M_plummer*r/(r_plummer**2 + r**2)**(3d0/2d0)
      f(i,1)=acc*rx/r
      f(i,2)=acc*ry/r
 #if NDIM == 3

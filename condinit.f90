@@ -106,7 +106,7 @@ subroutine condinit(x,u,dx,nn)
     ! NFW
     PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
 #endif
-    if (stellarpotential)then
+    if (M_plummer > 0.0)then
        PhiR = PhiR - M_plummer/sqrt(r_plummer**2 + currad**2)
        Phi0 = Phi0 - M_plummer/r_plummer
     endif
