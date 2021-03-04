@@ -106,6 +106,10 @@ subroutine condinit(x,u,dx,nn)
     ! NFW
     PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
 #endif
+    if (stellarpotential)then
+       PhiR = PhiR - M_plummer/sqrt(r_plummer**2 + currad**2)
+       Phi0 = Phi0 - M_plummer/r_plummer
+    endif
     if (inner_dens > 0.0) then
        if (currad < r_inner) then
           rho_cloud = inner_dens*dexp(-inner_slope*currad)
