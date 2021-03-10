@@ -1629,7 +1629,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
                                     ! Use scheme of Gentry, Madau & Krumholz (2020) to inject either terminal momentum or 100% kinetic energy
                                     fZ = 2d0
                                     if (ZonZsolar > 0.01)fZ=ZonZsolar**(-0.14)
-                                    mom_term = mom_fac * 9.6d43 * SN_batch_size**(16d0/17d0)**numdens**(-2d0/17d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
+                                    mom_term = mom_fac * 9.6d43 * SN_batch_size**(16d0/17d0)*numdens**(-2d0/17d0)*fZ**(3d0/2d0)/(scale_d*scale_l**3*scale_v) !Terminal momentum from Cioffi+ 1988
                                     !if (sqrt(1d0 + max(uold(ind_cell(i),1),smallr)*vol_gas(iSN)/mSN(iSN)) < mom_term/mom_ejecta)then
                                     !   mom_inj = mom_ejecta*massratio/vol_gas(iSN)
                                     !else
