@@ -350,11 +350,11 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   endif
   
   if ((myid==1) .and. ((pot_grow_rate > 0.0) .or. firstcall) .and. .not.(pot_rad_max)) then
-    ! Calculate SNIa radius Comulative Distribution Function
-    potrad = r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start)))
+    ! Calculate SNIa radius Comulative Distribution Function for the current potential truncation radius
+    potrad = r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))
     if (potrad > r_tidal)then
       potrad = r_tidal
-      pot_rad_max = .true.
+      pot_rad_max = .true. ! Potential truncation radius will not grow further, stop recalculating SNIa CDF
       sniadist_fname = 'snIa_pdf_final.dat'
     else
       sniadist_fname = 'snIa_pdf_init.dat'
