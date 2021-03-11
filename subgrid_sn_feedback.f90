@@ -384,6 +384,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
           write(ilun,'(3E26.16)') (i-1)*binwidth, PDF_SNIa(i), CDF_SNIa(i)
        enddo
        close(ilun)
+       write(*,*)"Wrote ",sniadist_fname
     endif
 #endif
   endif
