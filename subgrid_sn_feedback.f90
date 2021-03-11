@@ -129,6 +129,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   character(len=255)::dummyline
   integer,save::nhist = 1
   logical,save::sfhist_update = .false.
+  logical,save::pot_rad_max = .false.
+  character(len=255)::sniadist_fname
   real(dp)::unif_rand,r2,rho_SNIa,area,DTD_A,DTD_s,currad,Phi0,PhiR,mu_cloud,rho0dm,r,Pinf
   real(dp)::PoissMeanIa,c_s2,nHc,ctime,csfh,diff,mindiff,dt,sfr,sfr_tot_level,rcosphi,sndist,theta
   integer::nSNIa,nt,imin,stat,clevel
@@ -339,49 +341,42 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !        t_sfhfile = t_sfhist(nhist)
         close(ilun)
      endif
-
-     if (myid==1) then
-       ! Calculate SNIa radius Comulative Distribution Function
-#ifndef SNIA_PLUMMER
-       nHc = n0g*scale_nH
-       call GetMuFromTemperature(T_cloud,nHc,mu_cloud)
-       rho0dm = gravity_params(1)
-       Phi0 = -2.0*twopi*rho0dm*R_s**2
-       c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
-       Pinf= dexp(-(Phi0*R_s*dlog(1+Rad_cloud/R_s)/Rad_cloud - Phi0)/c_s2)
-#endif
-       area = 0.0
-       binwidth = Rad_cloud/(NPDFBINS-1.0)
-       
-       do i=1,NPDFBINS
-          currad = (i-1)*binwidth
-#ifdef SNIA_PLUMMER
-          PDF_SNIa(i) = (3.0/(2.0*twopi*r_plummer**3))*(1.0+currad**2/r_plummer**2)**(-2.5)
-#else
-          if (currad > 0.0) then
-            PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
-          else
-            PhiR = Phi0
-          endif
-          PDF_SNIa(i) = dexp(-(PhiR-Phi0)/c_s2)-Pinf
-#endif
-          area = area + PDF_SNIa(i)*binwidth
-       enddo
-       do i=1,NPDFBINS
-          ! Normalize PDF
-          PDF_SNIa(i) = PDF_SNIa(i)/area
-       enddo
-       do i=1,NPDFBINS
-          CDF_SNIa(i) = sum(PDF_SNIa(1:i))*binwidth
-       enddo
-       xCloud(1) = x1_c
-       xCloud(2) = x2_c
+     
+     xCloud(1) = x1_c
+     xCloud(2) = x2_c
 #if NDIM==3
-       xCloud(3) = x3_c
+     xCloud(3) = x3_c
 #endif
-
+  endif
+  
+  if ((myid==1) .and. ((pot_grow_rate > 0.0) .or. firstcall) .and. .not.(pot_rad_max)) then
+    ! Calculate SNIa radius Comulative Distribution Function
+    potrad = r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start)))
+    if (potrad > r_tidal)then
+      potrad = r_tidal
+      pot_rad_max = .true.
+      sniadist_fname = 'snIa_pdf_final.dat'
+    else
+      sniadist_fname = 'snIa_pdf_init.dat'
+    endif
+    area = 0.0
+    binwidth = potrad/(NPDFBINS-1.0)
+    
+    do i=1,NPDFBINS
+       currad = (i-1)*binwidth
+       PDF_SNIa(i) = (3.0/(2.0*twopi*r_plummer**3))*(1.0+currad**2/r_plummer**2)**(-2.5)
+       area = area + PDF_SNIa(i)*binwidth
+    enddo
+    do i=1,NPDFBINS
+       ! Normalize PDF
+       PDF_SNIa(i) = PDF_SNIa(i)/area
+    enddo
+    do i=1,NPDFBINS
+       CDF_SNIa(i) = sum(PDF_SNIa(1:i))*binwidth
+    enddo
 #ifdef DEBUG_SNIA
-       fileloc=trim(output_dir)//'snIa_pdf.dat'
+    if ((t==0.0) .or. pot_rad_max)then
+       fileloc=trim(output_dir)//sniadist_fname
        ilun=130
        open(ilun, file=fileloc, form='formatted')
        write(ilun,*)"rad                      PDF                   CDF"
@@ -389,8 +384,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
           write(ilun,'(3E26.16)') (i-1)*binwidth, PDF_SNIa(i), CDF_SNIa(i)
        enddo
        close(ilun)
+    endif
 #endif
-     endif
   endif
 
   if ((ilevel == levelmin) .and. .not.(firstcall)) then
