@@ -131,7 +131,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   logical,save::sfhist_update = .false.
   logical,save::pot_rad_max = .false.
   character(len=255)::sniadist_fname
-  real(dp)::unif_rand,r2,rho_SNIa,area,DTD_A,DTD_s,currad,Phi0,PhiR,mu_cloud,rho0dm,r,Pinf
+  real(dp)::unif_rand,r2,rho_SNIa,area,DTD_A,DTD_s,currad,r,potrad
   real(dp)::PoissMeanIa,c_s2,nHc,ctime,csfh,diff,mindiff,dt,sfr,sfr_tot_level,rcosphi,sndist,theta
   integer::nSNIa,nt,imin,stat,clevel
   real(dp),dimension(:,:),allocatable::xpdf,xSNIa,min_r2,min_r2_all
