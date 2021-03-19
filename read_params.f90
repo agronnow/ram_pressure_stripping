@@ -49,7 +49,7 @@ subroutine read_params
        & ,orbitfile,sfhistfile,prob_debug,subgrid_feedback,momentum_fb,simpson_fb,allow_coarse_SN &
        & ,SN_batch_size,mominj_rad,mom_fac,SN_blast_mass,rho_SN,vsfr_fac,vsfr_pow &
        & ,tinit_sim,tbeg_wind,sfr_boost,dt_sfhist,dt_sfrlog,r_plummer, M_plummer, ein_n, SN_inject_x, SN_inject_y, SN_inject_z &
-       & ,inner_dens,outer_dens,r_inner,inner_slope,outer_slope
+       & ,inner_dens,outer_dens,r_inner,inner_slope,outer_slope,Tmu_min
 
   ! MPI initialization
 #ifndef WITHOUTMPI

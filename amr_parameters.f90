@@ -349,5 +349,6 @@ module amr_parameters
   real(dp)::inner_slope = 0.0           ! Slope 'b' for inner exponential                                      []
   real(dp)::outer_slope = 0.0           ! Slope 'b' for outer exponential                                      []
   real(dp)::r_inner = 0.0               ! Radius to switch from inner to outer exponential density             [kpc]
+  real(dp)::Tmu_min = 10.0              ! Minimum temperature*mu allowed after cooling                         [K*amu]
 
 end module amr_parameters
