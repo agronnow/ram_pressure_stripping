@@ -1680,7 +1680,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
                                     uold(ind_cell(i),4)=uold(ind_cell(i),4) + mom_inj*dzz/dr_SN
 #endif
                                     R_cool = 0.0284*SN_batch_size**(2d0/7d0)*numdens**(-3d0/7d0)*fZ
-                                    if ((dr_SN > R_cool).and.(ilevel >= level_SN(ilevel)))then
+                                    if ((dr_SN > R_cool).and.(ilevel >= level_SN(ilevel)).and.Rcool_correction)then
                                        engfac = (dr_SN/R_cool)**(-6.5d0)
                                        etherm = (engdens_SN(iSN) - 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1))*engfac
                                        engdens_SN(iSN) = etherm + 0.5d0*((mom_inj*dxx/dr_SN)**2 + (mom_inj*dyy/dr_SN)**2 + (mom_inj*dzz/dr_SN)**2)/uold(ind_cell(i),1)
