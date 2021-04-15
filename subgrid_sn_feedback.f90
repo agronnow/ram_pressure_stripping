@@ -1721,10 +1721,10 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
   ! End loop over levels
   
 #ifndef WITHOUTMPI
-  call MPI_REDUCE(ektot,ektot_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,1,MPI_COMM_WORLD,info)
-  call MPI_REDUCE(totmomy,totmomy_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,1,MPI_COMM_WORLD,info)
-  call MPI_REDUCE(nkin,nkin_all,1,MPI_INTEGER,MPI_SUM,1,MPI_COMM_WORLD,info)
-  call MPI_REDUCE(nterm,nterm_all,1,MPI_INTEGER,MPI_SUM,1,MPI_COMM_WORLD,info)
+  call MPI_REDUCE(ektot,ektot_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,info)
+  call MPI_REDUCE(totmomy,totmomy_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,info)
+  call MPI_REDUCE(nkin,nkin_all,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,info)
+  call MPI_REDUCE(nterm,nterm_all,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,info)
   if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng," momy:",totmomy_all*(scale_d*scale_l**3*scale_v/(2e33*1e5))
   if (myid==1)write(*,*)"N_kin: ",nkin_all," N_term:",nterm_all
 !  if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng
