@@ -1493,6 +1493,10 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
   ektot_all=0
   totmomy = 0
   totmomy_all=0
+  nkin=0
+  nterm=0
+  nkin_all = 0
+  nterm_all = 0
 
   ! Loop over levels
   do ilevel=levelmin,nlevelmax
@@ -1632,6 +1636,8 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
                                     !else
                                     !   mom_inj = mom_term/vol_gas(iSN)
                                     !endif
+                                    if (massratio > mom_term/mom_ejecta) nterm=nterm+1
+                                    else nkin=nkin+1
                                     mom_inj = cellweight_mom*mom_ejecta*min(massratio, mom_term/mom_ejecta)/vol_mom
                                  endif
                                  if ((ilevel < level_SN(iSN)) .and. (adjacency > 0))then
@@ -1714,7 +1720,10 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
 #ifndef WITHOUTMPI
   call MPI_ALLREDUCE(ektot,ektot_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
   call MPI_ALLREDUCE(totmomy,totmomy_all,1,MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,info)
+  call MPI_ALLREDUCE(nkin,nkin_all,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
+  call MPI_ALLREDUCE(nterm,nterm_all,1,MPI_INTEGER,MPI_SUM,MPI_COMM_WORLD,info)
   if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng," momy:",totmomy_all*(scale_d*scale_l**3*scale_v/(2e33*1e5))
+  if (myid==1)write(*,*)"N_kin: ",nkin_all," N_term:",nterm_all
 !  if (myid==1)write(*,*)"Ekin: ",ektot_all*scale_eng
 #endif
 
