@@ -327,6 +327,8 @@ module amr_parameters
   logical::simpson_fb = .false.         ! Use kinetic FB scheme of Simpson+ 2015 instead of def. Gentry+ 2020
   logical::allow_coarse_SN = .false.    ! Allow/Disallow kinetic SN injection region to overlap coarse cells
   logical::Rcool_correction = .false.   ! Decrease thermal energy injection for cells outside SN cooling rad.
+  logical::cioffi_mom = .false.         ! Calculate terminal momentum using Cioffi+88 rather than Rosdahl+17
+  logical::sn_smooth_transition=.false. ! Smooth transition from kinetic to term. mom. injection (Rosdahl+17)
   integer::SN_batch_size = 1            ! Number of SNe injected per FB injection event, 1=single SNe resolved
   integer::mominj_rad = 1               ! Radius in cells of SN injection region used for kinetic feedback     []
   real(dp)::mom_fac = 1.0               ! Factor to multiply terminal momentum by                              []

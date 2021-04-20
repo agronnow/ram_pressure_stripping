@@ -4,18 +4,18 @@ This namelist contains various input parameters for RAMSES run cloud-wind
 verbose=.false.
 hydro=.true.
 pic=.false.
-poisson=.false.
+poisson=.true.
 ncontrol=1
-nsubcycle=1,1,1,1,1,1,1,1,1,1,1 !2,2,2,2,2,2,2,2,2,2,2,2,2
+nsubcycle=2,2,2,2,2,2,2,2,2,2,2,2,2
 nremap=4
 cost_weighting=.true.
 /
 
 &AMR_PARAMS 
-levelmin=4
-levelmax=4
-ngridmax=1500000
-boxlen=0.5
+levelmin=5
+levelmax=12
+ngridmax=100000
+boxlen=24.0
 /
 
 &COOLING_PARAMS
@@ -25,7 +25,7 @@ metal = .true.
 
 &POISSON_PARAMS 
 gravity_type=1
-gravity_params=20.3756,0.5,0.5,0.5
+gravity_params=20.3756,0.5,0.25,0.5
 /
 
 &BOUNDARY_PARAMS
@@ -36,7 +36,7 @@ jbound_min= 0, 0,-1,+1,-1,-1
 jbound_max= 0, 0,-1,+1,+1,+1
 kbound_min= 0, 0, 0, 0,-1,+1
 kbound_max= 0, 0, 0, 0,-1,+1
-bound_type= 2, 2, 2, 2, 2, 2
+bound_type= 2, 2, 2, 3, 2, 2
 /
 
 &UNITS_PARAMS
@@ -47,34 +47,17 @@ units_length  = 0.308567758128200E+22 ! kpc
 
 &INIT_PARAMS
 nregion=1
-region_type='square'
-x_center=0.5
-y_center=0.5
-z_center=0.5
-length_x=1.0
-length_y=1.0
-length_z=1.0
-exp_region=11.0
-d_region=10.0
-u_region=0.0
-v_region=0.0
-w_region=0.0
-p_region=6.68
 /
 
-
 &OUTPUT_PARAMS
-!noutput=2
-!foutput=1
-!tout=0.0001,0.0002,0.0003,0.0004,0.0005,0.0006,0.0007,0.0008,0.0009,0.001,0.002,0.003,0.004,0.005,0.006,0.007,0.008,0.009
-delta_tout=0.0001
-tend=0.01
-output_dir='/net/dataserver3/data/users/gronnow/sims/ram_pressure/fornax/sntest/uniform/kineticfb/hiz/slores/'
+delta_tout=0.05
+tend=1.2
+output_dir='/lustre1/0/rampress/fornax/static/hires/'
 /
 
 &HYDRO_PARAMS
 gamma=1.667
-courant_factor=0.1
+courant_factor=0.5
 slope_type=3
 scheme='muscl'
 riemann='hllc'
@@ -89,8 +72,8 @@ pressure_fix = .true.
 hydro_ref_levelmax = 13
 geometry_ref_levelmax = 13
 sfr_refine = 1.e-7
-sfr_ref_levelmax = 13
-sn_mass_refine = 2.0
+sfr_ref_levelmax = 1
+sn_mass_refine = 20.0
 !r_sn_refine = 0.05
 m_refine = 8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
 mass_sph = 4.1d-8 ! 24393036.0 ! Set refinement mass to be in units of solar masses
@@ -108,7 +91,7 @@ t_diss = 0.06
 
 &PROB_PARAMS
 x1_c=0.5
-x2_c=0.5
+x2_c=0.25
 x3_c=0.5
 vel_wind=0.0
 T_wind=1.8d6
@@ -116,34 +99,24 @@ ndens_wind=1.d-4
 T_cloud=1.d4
 Rad_cloud=1.0589783458371023 !0.9402318 !0.875877
 R_s=0.0424137 !4.0
-n0g=7.50001! !3.65468 !8.2449355
+n0g=7.50001 !3.495746 !3.65468 !8.2449355
 r_cut=1.0589783458371023 !0.9402318 !0.875877 !1.5575 !1.03377 !0.80125748034242250
 Z_wind = 0.1
-Z_cloud = 1.0
-orbitfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
-sfhistfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
+Z_cloud = 0.02
+orbitfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
+sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
-momentum_fb = .true.
-simpson_fb = .false.
-rcool_correction = .true.
-cioffi_mom = .false.
-sn_smooth_transition = .true.
-mominj_rad = 1
 mom_fac = 1.0
-SN_blast_mass = 0.0001
-rho_SN = 0.0 !0.0118
-vsfr_fac = 0.0 !12.0
-vsfr_pow = 2.04
-tinit_sim = 12.0
+SN_blast_mass = 60.0
+rho_SN = 0.0118
+vsfr_fac = 7.94
+vsfr_pow = 1.91
+tinit_sim = 11.0
 tbeg_wind = 0.0
 sfr_boost = 4.5
 dt_sfhist = 0.01
 dt_sfrlog = 0.001
 r_plummer = 0.578
 ein_n = 2.5
-Tmu_min = 8650.0
-SN_inject_x = 0.265625 !0.25390625 !0.19375 !2.994140625 !2.830078125 !0.2821289062500000E+01
-SN_inject_y = 0.265625 !0.25390625 !0.19375 !2.994140625 !3.310546875 !0.3301757812500000E+01
-SN_inject_z = 0.265625 !0.25390625 !0.19375 !2.994140625 !2.771484375 !0.2768554687500000E+01
 /
