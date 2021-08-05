@@ -1,0 +1,134 @@
+This namelist contains various input parameters for RAMSES run cloud-wind
+
+&RUN_PARAMS
+verbose=.false.
+hydro=.true.
+pic=.false.
+poisson=.true.
+ncontrol=1
+nsubcycle=2,2,2,2,2,2,2,2,2,2,2,2,2
+nremap=4
+cost_weighting=.true.
+/
+
+&AMR_PARAMS
+levelmin=5
+levelmax=10
+ngridmax=5000
+boxlen=32.0
+/
+
+&COOLING_PARAMS
+cooling = .true.
+metal = .true.
+/
+
+&POISSON_PARAMS
+gravity_type=1
+gravity_params=22.55924
+/
+
+&BOUNDARY_PARAMS
+nboundary = 6
+ibound_min=-1,+1,-1,-1,-1,-1
+ibound_max=-1,+1,+1,+1,+1,+1
+jbound_min= 0, 0,-1,+1,-1,-1
+jbound_max= 0, 0,-1,+1,+1,+1
+kbound_min= 0, 0, 0, 0,-1,+1
+kbound_max= 0, 0, 0, 0,-1,+1
+bound_type= 2, 2, 2, 2, 2, 2
+/
+
+&UNITS_PARAMS
+units_density = 1.6726219E-24 ! proton masses per cc
+units_time    = 2.9939062E+15 ! G=1, 94.924 Myr
+units_length  = 0.308567758128200E+22 ! kpc
+/
+
+&INIT_PARAMS
+nregion=1
+/
+
+&OUTPUT_PARAMS
+delta_tout=0.1
+tend=0.11
+output_dir='/p/project/icei-prace-2020-0005/fornax/static/lores/sfr3/'
+/
+
+&HYDRO_PARAMS
+gamma=1.667
+courant_factor=0.5
+slope_type=3
+scheme='muscl'
+riemann='hllc'
+pressure_fix = .true.
+/
+
+&REFINE_PARAMS
+x_refine = 16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0
+y_refine = 6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4
+z_refine = 16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0
+r_refine = 1.9,1.9,1.9,1.9,1.9,1.9,1.9,1.9,1.9,1.9,1.9
+hydro_ref_levelmax = 13
+geometry_ref_levelmax = 13
+sfr_refine = 1.e-7
+sfr_ref_levelmax = 1
+sn_mass_refine = 20.0
+!r_sn_refine = 0.05
+m_refine = 8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
+mass_sph = 4.1d-8 ! 24393036.0 ! Set refinement mass to be in units of solar masses
+!m_refine = -1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,2.0,2.0
+!interpol_var=0
+!interpol_type=1
+!err_grad_d=0.8
+/
+
+&FEEDBACK_PARAMS
+f_ek = 0.0
+delayed_cooling = .false.
+t_diss = 0.06
+/
+
+&PROB_PARAMS
+x1_c=0.5
+x2_c=0.2
+x3_c=0.5
+vel_wind=0.0
+T_wind=1.8d6
+ndens_wind=1.d-4
+T_cloud=1.d4
+Rad_cloud=0.7396577171731581 !0.6852207206297605
+R_s=0.0424137 !4.0
+n0g=9.172295153674632 !5.50760387528 !3.495746 !3.65468
+r_cut=0.7396577171731581 !0.6852207206297605 !0.9402318 !0.875877 !1.5575 !1.03377
+t_pot_grow_start = 0.1
+pot_grow_rate = 7.0
+r_tidal = 2.0
+Z_wind = 0.1
+Z_cloud = 0.4
+orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
+sfhistfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
+prob_debug = .false.
+subgrid_feedback=.true.
+simpson_fb = .false.
+allow_coarse_SN = .false.
+rcool_correction = .true.
+cioffi_mom = .false.
+sn_smooth_transition = .false.
+SN_batch_size = 10
+mominj_rad = 1
+mom_fac = 1.0
+SN_blast_mass = 0.00001
+rho_SN = 0.0118
+vsfr_fac = 12.59 !7.94
+vsfr_pow = 2.03 !1.91
+tinit_sim = 11.0
+tbeg_wind = 0.0
+sfr_boost = 3.0
+dt_sfhist = 0.01
+dt_sfrlog = 0.001
+r_plummer = 0.578
+M_plummer = 1.76626
+ein_n = 2.5
+Tmu_min = 8650.0
+/
