@@ -658,7 +658,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
         do i=1,ngrid
            if(ok(i))then !Compute number of SNII if temperature is low enough for star formation
 #ifndef SN_INJECT
-              d=uold(ind_cell(i),imetal+2) !SF gas density (gas initially within r_SFR)
+              d=uold(ind_cell(i),1) 
               d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
               if (d > 0d0) then
                 rho_sfr = vsfr_fac*d**vsfr_pow ! 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019
@@ -727,11 +727,11 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #if NDIM==2
                       z = 0.0
 #endif
-#ifdef SN_INJECT
+!#ifdef SN_INJECT
                       write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4) !No passive tracer in SN injection test sim
-#else
-                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),imetal+2), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
-#endif
+!#else
+!                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+!#endif
                       close(ilun)
                    !endif
                 !   do iSN=1,nSN
@@ -1583,7 +1583,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
                                    if(abs(dxx) < 1d-9)adjacency = adjacency+1
                                    if(abs(dyy) < 1d-9)adjacency = adjacency+1
                                    if(abs(dzz) < 1d-9)adjacency = adjacency+1
-                                   write(*,*)"dxx,dyy,dzz,adj",dxx,dyy,dzz,adjacency
+                                   !write(*,*)"dxx,dyy,dzz,adj",dxx,dyy,dzz,adjacency
                                    cellweight_mom = (adjacency/2d0)*1.5d0!0.125d0
 
 !                                 if (ilevel /= level_SN(iSN))then

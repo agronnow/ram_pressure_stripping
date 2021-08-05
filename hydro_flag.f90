@@ -158,7 +158,7 @@ subroutine hydro_flag(ilevel)
            call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)           
            do idim=1,ndim
               do i=1,ngrid
-                 d = uold(ind_cell(i),imetal+2)
+                 d = uold(ind_cell(i),1)
                  d = d*0.02439303604/1.36 ! Convert cell density from H+He density in amu cm^-3 to hydrogen density in M_sol pc^-3 assuming a helium fraction of 0.36 as in Gatto et al. 2013
                  ! Poisson mean
                  rho_sfr = 10.0**(0.9+1.91*dlog10(d)) ! Volumetric SFR in M_sol yr^-1 kpc^-3 from Bacchini et al. 2019

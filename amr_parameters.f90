@@ -316,7 +316,8 @@ module amr_parameters
   real(dp)::pot_grow_rate = 0.0         ! Rate of growth for r_cut < r_tidal after t_pot_grow_start            [sim time units^-1]
   real(dp)::r_tidal = 0.0               ! Tidal radius, r_cut stops growing once it reaches this radius        [kpc]
   real(dp)::R_s = 0.0                   ! DM profile scale length (R_s for NFW or Einasto "h" parameter)       [kpc]
-  real(dp)::n0g = 0.0                   ! Central gas particle number density                                  [amu cm^-3]
+  real(dp)::rhodm0 = 0.0                ! DM reference density (rho_s for NFW, rho at r=0 for Einasto)         [amu cm^-3]
+  real(dp)::n0g = 0.0                   ! Central gas particle number density                                  [cm^-3]
   real(dp)::Z_wind = 0.0                ! Metallicity of corona gas in solar metallicity fraction              []
   real(dp)::Z_cloud = 0.0               ! Metallicity of dSph gas in solar metallicity fraction                []
   character(len=256)::orbitfile         ! Path to file containing orbit velocity up to end time of simulation

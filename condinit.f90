@@ -54,8 +54,6 @@ subroutine condinit(x,u,dx,nn)
   call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
   scale_prs = scale_d * scale_v**2
 
-  rho0dm = gravity_params(1)
-
   xc = x1_c*boxlen
   yc = x2_c*boxlen
   zc = x3_c*boxlen
@@ -80,11 +78,11 @@ subroutine condinit(x,u,dx,nn)
      endif
 #ifdef EINASTO
      gamma3n = cmpgamma(3d0*ein_n)
-     ein_M = 2d0*twopi*rho0dm*R_s**3*ein_n*gamma3n
+     ein_M = 2d0*twopi*rhodm0*R_s**3*ein_n*gamma3n
      Phi0 = -ein_M*cmpgamma(2d0*ein_n)/(R_s*gamma3n)
 #else
      ! NFW
-     Phi0 = -2d0*twopi*rho0dm*R_s**2
+     Phi0 = -2d0*twopi*rhodm0*R_s**2
 #endif
      if(M_plummer > 0.0)Phi0 = Phi0 - M_plummer/r_plummer
      firstcall = .false.

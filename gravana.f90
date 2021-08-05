@@ -19,13 +19,12 @@ subroutine gravana(x,f,dx,ncell)
   ! f(i,1:ndim) is the gravitational acceleration in user units.
   !================================================================
   integer::i
-  real(dp)::r,rx,ry,rz,rho0,xmass,ymass,zmass,acc,r_max
+  real(dp)::r,rx,ry,rz,xmass,ymass,zmass,acc,r_max
 #ifdef EINASTO
   logical, save::firstcall = .true.
   real(dp), save::gamma3n
 #endif
 
-  rho0 =gravity_params(1)
   xmass = x1_c*boxlen
   ymass = x2_c*boxlen
   zmass = x3_c*boxlen
@@ -50,10 +49,10 @@ subroutine gravana(x,f,dx,ncell)
          gamma3n = cmpgamma(3d0*ein_n)
          firstcall = .false.
        endif
-       acc = -2d0*twopi*rho0*R_s**3*ein_n*(gamma3n - gammainc3n((r/R_s)**(1d0/(ein_n))))/r**2
+       acc = -2d0*twopi*rhodm0*R_s**3*ein_n*(gamma3n - gammainc3n((r/R_s)**(1d0/(ein_n))))/r**2
 #else
        ! NFW
-       acc=-2d0*twopi*rho0*R_s**3*(dlog(1+r/R_s)-r/(r+R_s))/r**2
+       acc=-2d0*twopi*rhodm0*R_s**3*(dlog(1+r/R_s)-r/(r+R_s))/r**2
 #endif
      else
        acc=0.0
