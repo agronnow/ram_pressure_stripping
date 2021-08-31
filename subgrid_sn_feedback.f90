@@ -81,7 +81,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
   real(dp)::ESN
   logical,save::nosn = .true.
   integer::Tpass,Tfail,Tpass_all,Tfail_all
-  integer,parameter::RADCELL_MAX=10
+  integer,parameter::RADCELL_MAX=1
 
 
 #ifndef WITHOUTMPI
@@ -989,7 +989,7 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
 #ifndef WITHOUTMPI
   integer::info
 #endif
-  integer,parameter::RADCELL_MAX=10
+  integer,parameter::RADCELL_MAX=1
   !------------------------------------------------------------------------
   ! This routine average the hydro quantities inside the SN bubble
   !------------------------------------------------------------------------

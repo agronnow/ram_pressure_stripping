@@ -44,7 +44,7 @@ subroutine read_params
        & ,theta_camera,phi_camera,dtheta_camera,dphi_camera,focal_camera,dist_camera,ddist_camera &
        & ,perspective_camera,smooth_frame,shader_frame,tstart_theta_camera,tstart_phi_camera &
        & ,tend_theta_camera,tend_phi_camera,method_frame,varmin_frame,varmax_frame
-  namelist/prob_params/x1_c,x2_c,x3_c,vel_wind,rad_wind,rhomax_wind,T_wind,ndens_wind,T_cloud,Rad_cloud,R_s,n0g &
+  namelist/prob_params/x1_c,x2_c,x3_c,vel_wind,rad_wind,rhomax_wind,T_wind,ndens_wind,T_cloud,Rad_cloud,R_s,rhodm0,n0g &
        & ,r_cut,t_pot_grow_start,pot_grow_rate,r_tidal,Z_wind,Z_cloud &
        & ,orbitfile,sfhistfile,prob_debug,subgrid_feedback,momentum_fb,simpson_fb &
        & ,allow_coarse_SN, Rcool_correction, cioffi_mom, sn_smooth_transition &

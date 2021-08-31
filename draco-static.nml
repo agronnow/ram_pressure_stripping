@@ -13,8 +13,8 @@ cost_weighting=.true.
 
 &AMR_PARAMS
 levelmin=5
-levelmax=11
-ngridmax=20000
+levelmax=12
+ngridmax=15000
 boxlen=32.0
 /
 
@@ -50,7 +50,7 @@ nregion=1
 
 &OUTPUT_PARAMS
 delta_tout=0.05
-tend=0.01
+tend=4.0
 output_dir='/p/project/icei-prace-2020-0005/draco/static/'
 /
 
