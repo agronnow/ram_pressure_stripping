@@ -14,7 +14,7 @@ cost_weighting=.false.
 &AMR_PARAMS
 levelmin=5
 levelmax=12
-ngridmax=18000
+ngridmax=25000
 boxlen=32.0
 /
 
@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.05
 tend=4.0
-output_dir='/p/project/icei-prace-2020-0005/draco/static/staticpot/'
+output_dir='/p/project/icei-prace-2020-0005/draco/static/staticpot/sfr4/'
 /
 
 &HYDRO_PARAMS
@@ -96,14 +96,14 @@ vel_wind=0.0
 T_wind=1.8d6
 ndens_wind=1.d-4
 T_cloud=1.d4
-Rad_cloud=0.40308
+Rad_cloud=0.4665776 !0.40308
 R_s=1.46
 rhodm0=1.12
-n0g=3.84
-r_cut=0.40308
-t_pot_grow_start = 0.0
-pot_grow_rate = 0.0
-r_tidal = 1.0
+n0g=7.59433 !3.84
+r_cut=0.4665776 !0.40308
+t_pot_grow_start = 0.0 !0.1
+pot_grow_rate = 0.0 !3.0
+r_tidal = 0.8
 Z_wind = 0.1
 Z_cloud = 0.01
 orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco.dat'
@@ -122,9 +122,9 @@ SN_blast_mass = 60.0
 rho_SN = 0.0118
 vsfr_fac = 12.59 !7.94
 vsfr_pow = 2.03 !1.91
-tinit_sim = 2.0
+tinit_sim = 4.0
 tbeg_wind = 0.0
-sfr_boost = 1.0
+sfr_boost = 4.0
 dt_sfhist = 0.01
 dt_sfrlog = 0.001
 r_plummer = 0.196

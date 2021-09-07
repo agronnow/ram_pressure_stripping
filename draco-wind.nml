@@ -8,13 +8,13 @@ poisson=.true.
 ncontrol=1
 nsubcycle=2,2,2,2,2,2,2,2,2,2,2,2,2
 nremap=4
-cost_weighting=.false.
+cost_weighting=.true.
 /
 
 &AMR_PARAMS
 levelmin=5
 levelmax=12
-ngridmax=18000
+ngridmax=20000
 boxlen=32.0
 /
 
@@ -49,9 +49,11 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.05
-tend=4.0
-output_dir='/p/project/icei-prace-2020-0005/draco/static/staticpot/'
+!delta_tout=0.1
+!tend=10.0
+delta_tout=1.e-6
+tend=0.47
+output_dir='/p/project/icei-prace-2020-0005/draco/windtest/debug/'
 /
 
 &HYDRO_PARAMS
@@ -92,7 +94,9 @@ t_diss = 0.06
 x1_c=0.5
 x2_c=0.2
 x3_c=0.5
-vel_wind=0.0
+vel_wind=12.64737027032685
+rad_wind = 0.7
+rhomax_wind = 1.e-3
 T_wind=1.8d6
 ndens_wind=1.d-4
 T_cloud=1.d4
@@ -101,8 +105,8 @@ R_s=1.46
 rhodm0=1.12
 n0g=3.84
 r_cut=0.40308
-t_pot_grow_start = 0.0
-pot_grow_rate = 0.0
+t_pot_grow_start = 0.1
+pot_grow_rate = 7.0
 r_tidal = 1.0
 Z_wind = 0.1
 Z_cloud = 0.01
@@ -123,7 +127,7 @@ rho_SN = 0.0118
 vsfr_fac = 12.59 !7.94
 vsfr_pow = 2.03 !1.91
 tinit_sim = 2.0
-tbeg_wind = 0.0
+tbeg_wind = 0.455844753278984
 sfr_boost = 1.0
 dt_sfhist = 0.01
 dt_sfrlog = 0.001

@@ -34,7 +34,7 @@ subroutine condinit(x,u,dx,nn)
   real(dp)::currad,xc,yc,zc,rho0g,rho0dm,rho_cloud,c_s2,PhiR,P_wind,P_cloud,nH
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
   real(dp),save::mu_cloud,mu_wind,Phi0
-  real(dp),save::r_max=0.0,velinit=0.0
+  real(dp),save::r_max=0.0,velinit=0.0,rtinit=0.0
   real(dp)::tinit
   character(len=256)::fileloc
   logical::file_exists = .false.
@@ -76,6 +76,19 @@ subroutine condinit(x,u,dx,nn)
      else
         velinit = vel_wind
      endif
+
+     if (evolve_rtidal)then
+        fileloc=trim(output_dir)//trim(rtidalfile)
+        inquire(file=fileloc,exist=file_exists)
+        if(file_exists) then
+           open(newunit=ilun, file=fileloc)
+           read(ilun,*)tinit,rtinit
+           close(ilun)
+        else
+           write(*,*)"File ",trim(rtidalfile)," missing!"
+        endif
+     endif
+
 #ifdef EINASTO
      gamma3n = cmpgamma(3d0*ein_n)
      ein_M = 2d0*twopi*rhodm0*R_s**3*ein_n*gamma3n
@@ -116,7 +129,7 @@ subroutine condinit(x,u,dx,nn)
        rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
     endif
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
-    if (P_cloud < P_wind) then
+    if ((evolve_rtidal .and. (currad < rtinit)) .or. ((.not.(evolve_rtidal)) .and. (P_cloud < P_wind)))then
       q(i,1) = ndens_wind*mu_wind
       q(i,ndim+2) = P_wind
       q(i,2) = 0.0      !x-velocity

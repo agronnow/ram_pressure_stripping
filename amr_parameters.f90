@@ -312,6 +312,7 @@ module amr_parameters
   real(dp)::T_cloud = 0.0               ! Temperature of dSph gas                                              [K]
   real(dp)::Rad_cloud = 0.0             ! Radius of the dSph gas (where pressure is in equilibrium w/ corona)  [kpc]
   real(dp)::r_cut = 0.0                 ! Truncation radius of potential, should generally equal Rad_cloud     [kpc]
+  logical::evolve_rtidal = .true.       ! Evolve tidal radius according to table
   real(dp)::t_pot_grow_start = 0.0      ! Start growing r_cut after this time                                  [sim time units]
   real(dp)::pot_grow_rate = 0.0         ! Rate of growth for r_cut < r_tidal after t_pot_grow_start            [sim time units^-1]
   real(dp)::r_tidal = 0.0               ! Tidal radius, r_cut stops growing once it reaches this radius        [kpc]
@@ -320,6 +321,7 @@ module amr_parameters
   real(dp)::n0g = 0.0                   ! Central gas particle number density                                  [cm^-3]
   real(dp)::Z_wind = 0.0                ! Metallicity of corona gas in solar metallicity fraction              []
   real(dp)::Z_cloud = 0.0               ! Metallicity of dSph gas in solar metallicity fraction                []
+  character(len=256)::rtidalfile        ! Path to file containing tidal radius up to end time of simulation
   character(len=256)::orbitfile         ! Path to file containing orbit velocity up to end time of simulation
   character(len=256)::sfhistfile        ! Path to file containing star formation history
   logical::prob_debug = .false.         ! Turn some extra debug logging on/off
@@ -337,7 +339,7 @@ module amr_parameters
   real(dp)::rho_SN = 0.0                ! SN rate defined as SNe per solar mass of formed stars                [Msun^-1]
   real(dp)::vsfr_fac = 0.0              ! Factor "A" in volumetric SF law (Bacchini et al.) A*rho^alpha        [yr^-1]
   real(dp)::vsfr_pow = 0.0              ! Exponent "alpha" in volumetric SF law A*rho^alpha                    []
-  real(dp)::tinit_sim = 0.0             ! Initial cosmic time of simulation for use in SNIa rate calculation   [Gyr]
+  real(dp)::tinit_sim = 0.0             ! Initial cosmic time for use in SNIa rate calculation (present=13.88) [Gyr]
   real(dp)::tbeg_wind = 0.0             ! Time elapsed before the wind is added                                [sim time units]
   real(dp)::sfr_boost = 1.0             ! Factor to multiply SFH by for SNIa rates before the wind is added    []
   real(dp)::dt_sfhist = 0.0             ! Time interval between SF history updates in SNIa rate calculation    [Gyr]

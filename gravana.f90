@@ -24,10 +24,38 @@ subroutine gravana(x,f,dx,ncell)
   logical, save::firstcall = .true.
   real(dp), save::gamma3n
 #endif
+  real(dp),allocatable,save::tab_t(:),tab_rt(:)
+  real(dp),save::dt
+  integer::itab,ilun
+  integer,save::ntab
+  character(len=256)::fileloc
+  logical::file_exists
 
   xmass = x1_c*boxlen
   ymass = x2_c*boxlen
   zmass = x3_c*boxlen
+  
+  if ((firstcall) .and. (vel_wind > 0.0))then
+     fileloc=trim(output_dir)//trim(rtidalfile)
+     inquire(file=fileloc,exist=file_exists)
+     ntab = 0
+     if(file_exists) then
+        open(newunit=ilun, file=fileloc)
+        do
+           read(ilun,*,end=10)
+           ntab=ntab+1
+        end do
+10      rewind(ilun)
+        allocate(tab_t(ntab))
+        allocate(tab_rt(ntab))
+        do i=1,ntab
+           read(ilun,*)tab_t(i), tab_rt(i)
+        end do
+        close(ilun)
+     endif
+     dt = tab_t(2) - tab_t(1)
+  endif
+
 
   do i=1,ncell
      rx=x(i,1)-xmass
@@ -38,7 +66,10 @@ subroutine gravana(x,f,dx,ncell)
      rz = 0.0
 #endif
      r=sqrt(rx**2+ry**2+rz**2)
-     if (pot_grow_rate > 0.0)then
+     if (evolve_rtidal .and. (vel_wind > 0.0))then
+        itab = idint((t-tbeg_wind)/dt)+1 !Assume table starts at t=0 and is evenly spaced in t 
+        r_max = (tab_rt(itab)*(tab_t(itab+1) - (t-tbeg_wind)) + tab_rt(itab+1)*(t-tbeg_wind - tab_t(itab)))/dt
+     elseif (pot_grow_rate > 0.0)then
         r_max = min(max(r_cut, r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))), r_tidal) ! Evolving r_cut
      else
         r_max = r_cut
@@ -47,7 +78,6 @@ subroutine gravana(x,f,dx,ncell)
 #ifdef EINASTO
        if (firstcall) then
          gamma3n = cmpgamma(3d0*ein_n)
-         firstcall = .false.
        endif
        acc = -2d0*twopi*rhodm0*R_s**3*ein_n*(gamma3n - gammainc3n((r/R_s)**(1d0/(ein_n))))/r**2
 #else
@@ -65,6 +95,7 @@ subroutine gravana(x,f,dx,ncell)
 #endif
   end do
 
+  firstcall = .false.
 end subroutine gravana
 !#########################################################
 !#########################################################

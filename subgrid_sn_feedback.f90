@@ -292,7 +292,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
   if (firstcall) then
      ! Construct initial Star Formation History
-     ! SFH table is assumed to use cosmic age (t=0 is current time, t=13.6 Gyr is big bang) and is reordered to use cosmic time (t=0 is big bang, t=tinit_sim is t_sim=0)
+     ! SFH table is assumed to use cosmic age (t=0 is current time, t=13.88 Gyr is big bang) and is reordered to use cosmic time (t=0 is big bang, t=tinit_sim is t_sim=0)
      fileloc=trim(sfhistfile)
      ilun=150
      inquire(file=fileloc,exist=file_exist)
@@ -304,8 +304,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
         do
            read(ilun,*, iostat=stat)ctime,csfh
            if (stat /= 0)exit
-           if (ctime < 13.6-tinit_sim)cycle
-           t_sfhist(nhist+1) = 13.6 - ctime
+           if (ctime < 13.88-tinit_sim)cycle
+           t_sfhist(nhist+1) = 13.88 - ctime
            if (t_sfhist(nhist+1) < 0.1)t_sfhist(nhist+1) = 0.1
            sfhist(nhist+1) = csfh*sfr_boost
            nhist=nhist+1 
@@ -437,7 +437,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
       call poissdev(localseedsn,PoissMeanIa,nSNIa)
       if (nSNIa > 0) then
          allocate(xpdf(1:nSNIa,1:ndim),xSNIa(1:nSNIa,1:ndim))
-         ! Generate random positions for SNIa assuming that the stellar distribution follows the initial distribution of star forming gas
+         ! Generate random positions for SNIa according to PDF
          do iSN=1,nSNIa
             ! Generate random real on [0,1] and convert to value drawn from SNIa distance PDF
             call ranf(localseedsn, unif_rand)
