@@ -31,8 +31,8 @@ subroutine boundana(x,u,dx,ibound,ncell)
   !================================================================
   integer::ivar,i
   real(dp),dimension(1:nvector,1:nvar),save::q ! Primitive variables
-  real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
-  real(dp)::Pwind,nH,vel
+  real(dp),save::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
+  real(dp)::Pwind,nH,vel,cosmo_time
   real(dp),allocatable,save::tab_t(:),tab_vel(:)
   real(dp),save::dt
   integer::itab,ilun
@@ -52,14 +52,13 @@ subroutine boundana(x,u,dx,ibound,ncell)
 !     end do
 !  end do
 
-  call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
-
   if (firstcall) then
+     call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
      nH = ndens_wind*scale_nH
      call GetMuFromTemperature(T_wind,nH,mu_wind)
 
      if (vel_wind > 0.0)then
-        fileloc=trim(output_dir)//trim(orbitfile)
+        fileloc=trim(orbitfile)
         inquire(file=fileloc,exist=file_exists)
         ntab = 0
         if(file_exists) then
@@ -83,8 +82,9 @@ subroutine boundana(x,u,dx,ibound,ncell)
   Pwind = ndens_wind*T_wind/scale_T2
 
   if (vel_wind > 0.0)then
-     itab = idint((t-tbeg_wind)/dt)+1 !Assume table starts at t=0 and is evenly spaced in t
-     vel = (tab_vel(itab)*(tab_t(itab+1) - (t-tbeg_wind)) + tab_vel(itab+1)*(t-tbeg_wind - tab_t(itab)))/dt
+     cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
+     itab = idint((cosmo_time-tab_t(0))/dt)+1 !Assume table is evenly spaced in t
+     vel = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
   else !Static run
      vel = 0.0
   endif

@@ -64,7 +64,7 @@ subroutine condinit(x,u,dx,nn)
      call GetMuFromTemperature(T_wind,nH,mu_wind)
 
      if (vel_wind > 0.0) then
-        fileloc=trim(output_dir)//trim(orbitfile)
+        fileloc=trim(orbitfile)
         inquire(file=fileloc,exist=file_exists)
         if(file_exists) then
            open(newunit=ilun, file=fileloc)
@@ -78,7 +78,7 @@ subroutine condinit(x,u,dx,nn)
      endif
 
      if (evolve_rtidal)then
-        fileloc=trim(output_dir)//trim(rtidalfile)
+        fileloc=trim(rtidalfile)
         inquire(file=fileloc,exist=file_exists)
         if(file_exists) then
            open(newunit=ilun, file=fileloc)

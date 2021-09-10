@@ -19,9 +19,10 @@ subroutine gravana(x,f,dx,ncell)
   ! f(i,1:ndim) is the gravitational acceleration in user units.
   !================================================================
   integer::i
-  real(dp)::r,rx,ry,rz,xmass,ymass,zmass,acc,r_max
-#ifdef EINASTO
+  real(dp)::r,rx,ry,rz,xmass,ymass,zmass,acc,r_max,cosmo_time
+  real(dp),save::scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2
   logical, save::firstcall = .true.
+#ifdef EINASTO
   real(dp), save::gamma3n
 #endif
   real(dp),allocatable,save::tab_t(:),tab_rt(:)
@@ -34,9 +35,10 @@ subroutine gravana(x,f,dx,ncell)
   xmass = x1_c*boxlen
   ymass = x2_c*boxlen
   zmass = x3_c*boxlen
-  
+
+  if (firstcall)call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
   if ((firstcall) .and. (vel_wind > 0.0))then
-     fileloc=trim(output_dir)//trim(rtidalfile)
+     fileloc=trim(rtidalfile)
      inquire(file=fileloc,exist=file_exists)
      ntab = 0
      if(file_exists) then
@@ -67,8 +69,9 @@ subroutine gravana(x,f,dx,ncell)
 #endif
      r=sqrt(rx**2+ry**2+rz**2)
      if (evolve_rtidal .and. (vel_wind > 0.0))then
-        itab = idint((t-tbeg_wind)/dt)+1 !Assume table starts at t=0 and is evenly spaced in t 
-        r_max = (tab_rt(itab)*(tab_t(itab+1) - (t-tbeg_wind)) + tab_rt(itab+1)*(t-tbeg_wind - tab_t(itab)))/dt
+        cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
+        itab = idint((cosmo_time-tab_t(0))/dt)+1 !Assume table starts at t=0 and is evenly spaced in t 
+        r_max = (tab_rt(itab)*(tab_t(itab+1) - cosmo_time) + tab_rt(itab+1)*(cosmo_time - tab_t(itab)))/dt
      elseif (pot_grow_rate > 0.0)then
         r_max = min(max(r_cut, r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))), r_tidal) ! Evolving r_cut
      else

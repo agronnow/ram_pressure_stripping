@@ -106,6 +106,7 @@ pot_grow_rate = 7.0
 r_tidal = 1.0
 Z_wind = 0.1
 Z_cloud = 0.01
+rtidalfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco.dat'
 orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco.dat'
 sfhistfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/sfhist-draco.dat'
 prob_debug = .false.
