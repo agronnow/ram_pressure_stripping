@@ -83,7 +83,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
 
   if (vel_wind > 0.0)then
      cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
-     itab = idint((cosmo_time-tab_t(0))/dt)+1 !Assume table is evenly spaced in t
+     itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
      vel = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
   else !Static run
      vel = 0.0

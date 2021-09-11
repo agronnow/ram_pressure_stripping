@@ -30,7 +30,7 @@ subroutine condinit(x,u,dx,nn)
 #endif
   real(dp),dimension(1:nvector,1:nvar),save::q   ! Primitive variables
 
-  integer::i,ilun
+  integer::i,ilun,itab,ntab
   real(dp)::currad,xc,yc,zc,rho0g,rho0dm,rho_cloud,c_s2,PhiR,P_wind,P_cloud,nH
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
   real(dp),save::mu_cloud,mu_wind,Phi0
@@ -38,6 +38,8 @@ subroutine condinit(x,u,dx,nn)
   real(dp)::tinit
   character(len=256)::fileloc
   logical::file_exists = .false.
+  real(dp),allocatable::tab_t(:),tab_vel(:),tab_rt(:)
+  real(dp)::dt,cosmo_time
   logical,save::firstcall=.true.
 #ifdef EINASTO
   real(dp),save::gamma3n,ein_M
@@ -63,15 +65,30 @@ subroutine condinit(x,u,dx,nn)
      nH = ndens_wind*scale_nH
      call GetMuFromTemperature(T_wind,nH,mu_wind)
 
+     cosmo_time = tinit_sim*3.154e16/scale_t-tbeg_wind
      if (vel_wind > 0.0) then
         fileloc=trim(orbitfile)
         inquire(file=fileloc,exist=file_exists)
         if(file_exists) then
            open(newunit=ilun, file=fileloc)
-           read(ilun,*)tinit,velinit
+           ntab=0
+           do
+              read(ilun,*,end=10)
+              ntab=ntab+1
+           end do
+10         rewind(ilun)
+           allocate(tab_t(ntab))
+           allocate(tab_vel(ntab))
+           do i=1,ntab
+              read(ilun,*)tab_t(i), tab_rt(i)
+           end do
            close(ilun)
+           dt = tab_t(2) - tab_t(1)
+           itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
+           velinit = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
         else
-           write(*,*)"File ",trim(orbitfile)," missing!"
+           write(*,*)"ERROR: File ",trim(orbitfile)," missing!"
+           STOP
         endif
      else
         velinit = vel_wind
@@ -82,10 +99,25 @@ subroutine condinit(x,u,dx,nn)
         inquire(file=fileloc,exist=file_exists)
         if(file_exists) then
            open(newunit=ilun, file=fileloc)
-           read(ilun,*)tinit,rtinit
+           ntab=0
+           do
+              read(ilun,*,end=20)
+              ntab=ntab+1
+           end do
+20         rewind(ilun)
+           allocate(tab_t(ntab))
+           allocate(tab_rt(ntab))
+           do i=1,ntab
+              read(ilun,*)tab_t(i), tab_rt(i)
+           end do
            close(ilun)
+           dt = tab_t(2) - tab_t(1)
+           cosmo_time = tinit_sim*3.154e16/scale_t-tbeg_wind
+           itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
+           rtinit = (tab_rt(itab)*(tab_t(itab+1) - cosmo_time) + tab_rt(itab+1)*(cosmo_time - tab_t(itab)))/dt
         else
-           write(*,*)"File ",trim(rtidalfile)," missing!"
+           write(*,*)"ERROR: File ",trim(rtidalfile)," missing!"
+           STOP
         endif
      endif
 

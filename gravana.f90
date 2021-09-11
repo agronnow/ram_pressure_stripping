@@ -70,7 +70,7 @@ subroutine gravana(x,f,dx,ncell)
      r=sqrt(rx**2+ry**2+rz**2)
      if (evolve_rtidal .and. (vel_wind > 0.0))then
         cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
-        itab = idint((cosmo_time-tab_t(0))/dt)+1 !Assume table starts at t=0 and is evenly spaced in t 
+        itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t 
         r_max = (tab_rt(itab)*(tab_t(itab+1) - cosmo_time) + tab_rt(itab+1)*(cosmo_time - tab_t(itab)))/dt
      elseif (pot_grow_rate > 0.0)then
         r_max = min(max(r_cut, r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))), r_tidal) ! Evolving r_cut
