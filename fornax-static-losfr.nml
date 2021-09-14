@@ -12,20 +12,20 @@ cost_weighting=.true.
 /
 
 &AMR_PARAMS 
-levelmin=3
-levelmax=5
-ngridmax=50000
-boxlen=1.5
+levelmin=5
+levelmax=10
+ngridmax=500000
+boxlen=32.0
 /
 
 &COOLING_PARAMS
-cooling = .false.
+cooling = .true.
 metal = .true.
 /
 
 &POISSON_PARAMS 
 gravity_type=1
-gravity_params=22.55924,0.5,0.25,0.5
+gravity_params=22.55924
 /
 
 &BOUNDARY_PARAMS
@@ -50,14 +50,14 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.1
-tend=1.0
-output_dir='/net/dataserver3/data/users/gronnow/sims/ram_pressure/fornax/stellarpottest/'
+delta_tout=0.05
+tend=1.2
+output_dir='/lustre1/0/rampress/fornax/static/lores/stellarpot/SNbatch10/sfr3/'
 /
 
 &HYDRO_PARAMS
 gamma=1.667
-courant_factor=0.3
+courant_factor=0.5
 slope_type=3
 scheme='muscl'
 riemann='hllc'
@@ -91,7 +91,7 @@ t_diss = 0.06
 
 &PROB_PARAMS
 x1_c=0.5
-x2_c=0.5
+x2_c=0.2
 x3_c=0.5
 vel_wind=0.0
 T_wind=1.8d6
@@ -101,7 +101,7 @@ Rad_cloud=0.6852207206297605 !0.9402318 !0.875877
 R_s=0.0424137 !4.0
 n0g=5.50760387528 !3.495746 !3.65468 !8.2449355
 r_cut=0.6852207206297605 !0.9402318 !0.875877 !1.5575 !1.03377 !0.80125748034242250
-t_pot_grow_start = 100.1
+t_pot_grow_start = 0.1
 pot_grow_rate = 7.0
 r_tidal = 2.0
 Z_wind = 0.1
@@ -109,22 +109,26 @@ Z_cloud = 0.4
 orbitfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
 sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
-subgrid_feedback=.false.
+subgrid_feedback=.true.
 simpson_fb = .false.
 allow_coarse_SN = .false.
-SN_batch_size = 1
+rcool_correction = .true.
+cioffi_mom = .false.
+sn_smooth_transition = .false.
+SN_batch_size = 10
 mominj_rad = 1
-mom_fac = 0.667
-SN_blast_mass = 0.0001
-rho_SN = 0.006
+mom_fac = 1.0
+SN_blast_mass = 0.00001
+rho_SN = 0.0118
 vsfr_fac = 7.94
 vsfr_pow = 1.91
 tinit_sim = 11.0
 tbeg_wind = 0.0
-sfr_boost = 4.5
+sfr_boost = 1.0
 dt_sfhist = 0.01
 dt_sfrlog = 0.001
 r_plummer = 0.578
 M_plummer = 1.76626
 ein_n = 2.5
+Tmu_min = 8650.0
 /

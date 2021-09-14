@@ -21,8 +21,6 @@ boxlen=32.0
 &COOLING_PARAMS
 cooling = .true.
 metal = .true.
-haardt_madau = .true.
-self_shielding = .true.
 /
 
 &POISSON_PARAMS
@@ -54,7 +52,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.1
 tend=2.4
-output_dir='/p/project/icei-prace-2020-0005/fornax/static/lores/sfr4/heating/'
+output_dir='/lustre1/0/rampress/fornax/static/rtidal/sfr4/'
 /
 
 &HYDRO_PARAMS
@@ -101,15 +99,17 @@ ndens_wind=1.d-4
 T_cloud=1.d4
 Rad_cloud=0.7549617475298108 !0.7396577171731581 !0.6852207206297605
 R_s=0.0424137 !4.0
+rhodm0=22.55924
 n0g=10.568586877109404 !9.172295153674632 !5.50760387528 !3.495746 !3.65468
 r_cut=0.7549617475298108 !0.7396577171731581 !0.6852207206297605 !0.9402318 !0.875877 !1.5575 !1.03377
-t_pot_grow_start = 0.1
-pot_grow_rate = 7.0
-r_tidal = 2.0
+t_pot_grow_start = 0.0
+pot_grow_rate = 0.0
+r_tidal = 12.55671503437775627
 Z_wind = 0.1
 Z_cloud = 0.4
-orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
-sfhistfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
+rtidalfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/rtidal-fornax.dat'
+orbitfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
+sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
 simpson_fb = .false.

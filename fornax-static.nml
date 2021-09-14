@@ -13,9 +13,9 @@ cost_weighting=.true.
 
 &AMR_PARAMS 
 levelmin=5
-levelmax=12
-ngridmax=1500000
-boxlen=22.0
+levelmax=10
+ngridmax=500000
+boxlen=24.0
 /
 
 &COOLING_PARAMS
@@ -36,7 +36,7 @@ jbound_min= 0, 0,-1,+1,-1,-1
 jbound_max= 0, 0,-1,+1,+1,+1
 kbound_min= 0, 0, 0, 0,-1,+1
 kbound_max= 0, 0, 0, 0,-1,+1
-bound_type= 2, 2, 2, 3, 2, 2
+bound_type= 2, 2, 2, 2, 2, 2
 /
 
 &UNITS_PARAMS
@@ -50,14 +50,14 @@ nregion=1
 /
 
 &OUTPUT_PARAMS
-delta_tout=0.02
-tend=0.1
-output_dir='/gpfs/work/IscrC_RAMPRESS/sims/static/hires/'
+delta_tout=0.05
+tend=1.2
+output_dir='/lustre1/0/rampress/fornax/static/medres/SNbatch10/'
 /
 
 &HYDRO_PARAMS
 gamma=1.667
-courant_factor=0.5
+courant_factor=0.3
 slope_type=3
 scheme='muscl'
 riemann='hllc'
@@ -65,10 +65,10 @@ pressure_fix = .true.
 /
 
 &REFINE_PARAMS
-!x_refine = 3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0
-!y_refine = 3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0
-!z_refine = 3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0
-!r_refine = 2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0,2.0
+x_refine = 12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0
+y_refine = 6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0
+z_refine = 12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0
+r_refine = 2.12,2.12,2.12,2.12,2.12,2.12,2.12,2.12,2.12,2.12,2.12,2.12
 hydro_ref_levelmax = 13
 geometry_ref_levelmax = 13
 sfr_refine = 1.e-7
@@ -85,7 +85,7 @@ mass_sph = 4.1d-8 ! 24393036.0 ! Set refinement mass to be in units of solar mas
 
 &FEEDBACK_PARAMS
 f_ek = 0.0
-delayed_cooling = .true.
+delayed_cooling = .false.
 t_diss = 0.06
 /
 
@@ -103,15 +103,20 @@ n0g=7.50001 !3.495746 !3.65468 !8.2449355
 r_cut=1.0589783458371023 !0.9402318 !0.875877 !1.5575 !1.03377 !0.80125748034242250
 Z_wind = 0.1
 Z_cloud = 0.02
-orbitfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
-sfhistfile = '/galileo/home/userexternal/agroenno/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
+orbitfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-fornax.dat'
+sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-fornax.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
-SN_blast_mass = 60.0
+simpson_fb = .false.
+allow_coarse_SN = .false.
+SN_batch_size = 10
+mominj_rad = 1
+mom_fac = 0.667
+SN_blast_mass = 600.0
 rho_SN = 0.0118
 vsfr_fac = 7.94
 vsfr_pow = 1.91
-tinit_sim = 12.0
+tinit_sim = 11.0
 tbeg_wind = 0.0
 sfr_boost = 4.5
 dt_sfhist = 0.01
