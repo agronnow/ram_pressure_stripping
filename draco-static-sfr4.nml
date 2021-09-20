@@ -13,8 +13,8 @@ cost_weighting=.false.
 
 &AMR_PARAMS
 levelmin=5
-levelmax=12
-ngridmax=25000
+levelmax=11
+ngridmax=20000
 boxlen=32.0
 /
 
@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.05
 tend=2.0
-output_dir='/p/project/icei-prace-2020-0005/draco/static/sfr4/rtidal/'
+output_dir='/p/project/icei-prace-2020-0005/draco/static/sfr4/rtidal/lores/newref/'
 /
 
 &HYDRO_PARAMS
@@ -74,7 +74,7 @@ sfr_refine = 1.e-7
 sfr_ref_levelmax = 1
 sn_mass_refine = 20.0
 !r_sn_refine = 0.05
-m_refine = 8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
+m_refine = 48.0,32.0,32.0,24.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
 mass_sph = 4.1d-8 ! 24393036.0 ! Set refinement mass to be in units of solar masses
 !m_refine = -1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,2.0,2.0
 !interpol_var=0
@@ -119,7 +119,7 @@ sn_smooth_transition = .false.
 SN_batch_size = 1
 mominj_rad = 1
 mom_fac = 1.0
-SN_blast_mass = 60.0
+SN_blast_mass = 0.001
 rho_SN = 0.0118
 vsfr_fac = 12.59 !7.94 Baccinni+
 vsfr_pow = 2.03 !1.91 Baccinni+

@@ -598,47 +598,49 @@ subroutine subgrid_sn_feedback(ilevel, icount)
         end do
 	    ! Temperature criterion
         do i=1,ngrid
-           d=max(uold(ind_cell(i),1),smallr)
-           u=uold(ind_cell(i),2)/d
-           v=uold(ind_cell(i),3)/d
+           if (ok(i))then
+              d=max(uold(ind_cell(i),1),smallr)
+              u=uold(ind_cell(i),2)/d
+              v=uold(ind_cell(i),3)/d
 #if NDIM==3
-           w=uold(ind_cell(i),4)/d
+              w=uold(ind_cell(i),4)/d
 #else
-           w=0.0
+              w=0.0
 #endif
-           e=uold(ind_cell(i),ndim+2)
-           prs=e
+              e=uold(ind_cell(i),ndim+2)
+              prs=e
 #ifdef SOLVERmhd
-           bx1=uold(ind_cell(i),6)
-           by1=uold(ind_cell(i),7)
+              bx1=uold(ind_cell(i),6)
+              by1=uold(ind_cell(i),7)
 #if NDIM==3
-           bz1=uold(ind_cell(i),8)
+              bz1=uold(ind_cell(i),8)
 #endif
-           bx2=uold(ind_cell(i),nvar+1)
-           by2=uold(ind_cell(i),nvar+2)
+              bx2=uold(ind_cell(i),nvar+1)
+              by2=uold(ind_cell(i),nvar+2)
 #if NDIM==3
-           bz2=uold(ind_cell(i),nvar+3)
-           prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2+(bz1+bz2)**2)
+              bz2=uold(ind_cell(i),nvar+3)
+              prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2+(bz1+bz2)**2)
 #else
-           prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2)
+              prs=prs-0.125d0*((bx1+bx2)**2+(by1+by2)**2)
 #endif
 #endif
-           prs=prs-0.5d0*d*(u**2+v**2+w**2)
+              prs=prs-0.5d0*d*(u**2+v**2+w**2)
 #if NENER>0
-           do irad=0,nener-1
-              prs=prs-uold(ind_cell(i),inener+irad)
-           end do
+              do irad=0,nener-1
+                 prs=prs-uold(ind_cell(i),inener+irad)
+              end do
 #endif
-           prs = prs*(gamma-1.0)
-           T2=prs*scale_T2*0.6/d
-!           nH=max(uold(ind_cell(i),1),smallr)*scale_nH
-!          T_poly=T2_star*(nH/nISM)**(g_star-1.0)
-!          T2=T2-T_poly
-           if(T2>4e4) then
-              ok(i)=.false.
-              Tfail=Tfail+1
-           else
-              Tpass=Tpass+1
+              prs = prs*(gamma-1.0)
+              T2=prs*scale_T2*0.6/d
+              !           nH=max(uold(ind_cell(i),1),smallr)*scale_nH
+              !          T_poly=T2_star*(nH/nISM)**(g_star-1.0)
+              !          T2=T2-T_poly
+              if(T2>4e4) then
+                 ok(i)=.false.
+                 Tfail=Tfail+1
+              else
+                 Tpass=Tpass+1
+              endif
            endif
         end do
 !        ! Geometrical criterion

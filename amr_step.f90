@@ -141,9 +141,12 @@ recursive subroutine amr_step(ilevel,icount)
      call MPI_BARRIER(MPI_COMM_WORLD,mpi_err)
      call MPI_ALLREDUCE(output_now,output_now_all,1,MPI_LOGICAL,MPI_LOR,MPI_COMM_WORLD,mpi_err)
 #endif
+     if (myid==1)write(*,*)"Checking for output"
      fileloc=trim(output_dir)//trim("output_now")
      inquire(file=fileloc,exist=output_file_exists)
-     if(mod(nstep_coarse,foutput)==0.or.aexp>=aout(iout).or.t>=tout(iout).or.output_now_all.EQV..true. .or. (dtold(ilevel) < 1d-11 .and. t>0.1) .or. isnan(ekin_tot+epot_tot) .or. output_file_exists)then
+     if(myid==1 .and. output_file_exists)write(*,*)"output file exists"
+     if(mod(nstep_coarse,foutput)==0.or.aexp>=aout(iout).or.t>=tout(iout).or.(output_now_all.EQV..true.) .or. ((dtold(ilevel) < 1d-11) .and. t>0.1) .or. isnan(ekin_tot+epot_tot) .or. output_file_exists)then
+        if(myid==1)write(*,*)"output now"
                                call timer('io','start')
         if(.not.ok_defrag)then
            call defrag
@@ -210,6 +213,7 @@ recursive subroutine amr_step(ilevel,icount)
      !----------------------------------------------------
                                call timer('feedback','start')
      if(hydro.and.star.and.eta_sn>0.and.f_w>0)call kinetic_feedback
+     if(hydro.and.(.not.static_gas).and.subgrid_feedback.and.coarse_step_fb)call subgrid_sn_feedback_coarse(icount)
 
 
   endif
@@ -465,7 +469,7 @@ recursive subroutine amr_step(ilevel,icount)
 #endif
 
                                call timer('feedback','start')
-  if(hydro.and.(.not.static_gas).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
+  if(hydro.and.(.not.static_gas).and.(.not.coarse_step_fb).and.subgrid_feedback)call subgrid_sn_feedback(ilevel,icount)
 
 
 

@@ -326,6 +326,7 @@ module amr_parameters
   character(len=256)::sfhistfile        ! Path to file containing star formation history
   logical::prob_debug = .false.         ! Turn some extra debug logging on/off
   logical::subgrid_feedback = .true.    ! Turn SN feedback on/off
+  logical::coarse_step_fb = .false.     ! Only do feedback at coarse steps, saves time for low SFR galaxies
   logical::momentum_fb = .true.         ! Turn kinetic feedback on/off (alleviates SN overcooling at low res.)
   logical::simpson_fb = .false.         ! Use kinetic FB scheme of Simpson+ 2015 instead of def. Gentry+ 2020
   logical::allow_coarse_SN = .false.    ! Allow/Disallow kinetic SN injection region to overlap coarse cells

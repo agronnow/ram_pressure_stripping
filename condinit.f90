@@ -38,7 +38,7 @@ subroutine condinit(x,u,dx,nn)
   real(dp)::tinit
   character(len=256)::fileloc
   logical::file_exists = .false.
-  real(dp),allocatable::tab_t(:),tab_vel(:),tab_rt(:)
+  real(dp),allocatable::tab_tr(:),tab_tv(:),tab_vel(:),tab_rt(:)
   real(dp)::dt,cosmo_time
   logical,save::firstcall=.true.
 #ifdef EINASTO
@@ -77,15 +77,15 @@ subroutine condinit(x,u,dx,nn)
               ntab=ntab+1
            end do
 10         rewind(ilun)
-           allocate(tab_t(ntab))
+           allocate(tab_tv(ntab))
            allocate(tab_vel(ntab))
            do i=1,ntab
-              read(ilun,*)tab_t(i), tab_rt(i)
+              read(ilun,*)tab_tv(i), tab_vel(i)
            end do
            close(ilun)
-           dt = tab_t(2) - tab_t(1)
-           itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
-           velinit = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
+           dt = tab_tv(2) - tab_tv(1)
+           itab = idint((cosmo_time-tab_tv(1))/dt)+1 !Assume table is evenly spaced in t
+           velinit = (tab_vel(itab)*(tab_tv(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_tv(itab)))/dt
         else
            write(*,*)"ERROR: File ",trim(orbitfile)," missing!"
            STOP
@@ -105,16 +105,16 @@ subroutine condinit(x,u,dx,nn)
               ntab=ntab+1
            end do
 20         rewind(ilun)
-           allocate(tab_t(ntab))
+           allocate(tab_tr(ntab))
            allocate(tab_rt(ntab))
            do i=1,ntab
-              read(ilun,*)tab_t(i), tab_rt(i)
+              read(ilun,*)tab_tr(i), tab_rt(i)
            end do
            close(ilun)
-           dt = tab_t(2) - tab_t(1)
+           dt = tab_tr(2) - tab_tr(1)
            cosmo_time = tinit_sim*3.154e16/scale_t-tbeg_wind
-           itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
-           rtinit = (tab_rt(itab)*(tab_t(itab+1) - cosmo_time) + tab_rt(itab+1)*(cosmo_time - tab_t(itab)))/dt
+           itab = idint((cosmo_time-tab_tr(1))/dt)+1 !Assume table is evenly spaced in t
+           rtinit = (tab_rt(itab)*(tab_tr(itab+1) - cosmo_time) + tab_rt(itab+1)*(cosmo_time - tab_tr(itab)))/dt
         else
            write(*,*)"ERROR: File ",trim(rtidalfile)," missing!"
            STOP
