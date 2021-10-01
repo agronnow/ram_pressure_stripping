@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.05
 tend=2.0
-output_dir='/p/project/icei-prace-2020-0005/draco/static/sfr4/rtidal/lores/newref/'
+output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/static/'
 /
 
 &HYDRO_PARAMS
@@ -103,14 +103,15 @@ n0g=7.59433 !3.84
 r_cut=0.4665776 !0.40308
 t_pot_grow_start = 0.0 !0.1
 pot_grow_rate = 0.0 !3.0
-r_tidal = 3.152842055082989425 !0.8
+r_tidal = 13.23007970429652858 !3.152842055082989425 !0.8
 Z_wind = 0.1
 Z_cloud = 0.01
-rtidalfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco.dat'
-orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco.dat'
+rtidalfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco-mvir14e11.dat'
+orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco-mvir14e11.dat'
 sfhistfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/sfhist-draco.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
+coarse_step_fb=.false.
 simpson_fb = .false.
 allow_coarse_SN = .false.
 rcool_correction = .true.
@@ -123,7 +124,7 @@ SN_blast_mass = 0.001
 rho_SN = 0.0118
 vsfr_fac = 12.59 !7.94 Baccinni+
 vsfr_pow = 2.03 !1.91 Baccinni+
-tinit_sim = 3.3185
+tinit_sim = 3.3
 tbeg_wind = 0.0
 sfr_boost = 4.0
 dt_sfhist = 0.01

@@ -970,7 +970,7 @@ enddo !loop over levels
   deallocate(xSN,mSN,rSN,volSN,wtot,levelSN,SNcooling)
 
 #ifdef SNIA_FEEDBACK
-  deallocate(xpdf,xSNIa,min_r2,min_r2_all,levelSNIa)
+  if (nSNIa>0)deallocate(xpdf,xSNIa,min_r2,min_r2_all,levelSNIa)
 #endif
 
   ! Update hydro quantities for split cells
