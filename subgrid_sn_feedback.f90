@@ -760,32 +760,35 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 
      do iSN=1,nSNIa
         if (int(min_r2_all(2,iSN)) == myid) then ! The cell containing the SN center is on this processor
-           nSN_loc=nSN_loc+1
-           xSN_loc(nSN_loc,1)=xSNIa(iSN,1)
-           xSN_loc(nSN_loc,2)=xSNIa(iSN,2)
+           if (levelSNIa(iSN) == nlevelmax)then
+              nSN_loc=nSN_loc+1
+              xSN_loc(nSN_loc,1)=xSNIa(iSN,1)
+              xSN_loc(nSN_loc,2)=xSNIa(iSN,2)
 #if NDIM==3
-           xSN_loc(nSN_loc,3)=xSNIa(iSN,3)
+              xSN_loc(nSN_loc,3)=xSNIa(iSN,3)
 #endif
-           mSN_loc(nSN_loc)=SN_batch_size*10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
-           levelSN_loc(nSN_loc) = levelSNIa(iSN)
-           !if (outputSN) then
-           fileloc=trim(output_dir)//'snIa.dat'
-           ilun=140
-           inquire(file=fileloc,exist=file_exist)
-           if(.not.file_exist) then
-              open(ilun, file=fileloc, form='formatted')
-              write(ilun,*)"Time                      x                         y                         z ProbSN                    Level         ProcID"!  Seeds"
-           else
-              open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
-           endif
+              mSN_loc(nSN_loc)=SN_batch_size*10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
+              levelSN_loc(nSN_loc) = levelSNIa(iSN)
+              !if (outputSN) then
+              fileloc=trim(output_dir)//'snIa.dat'
+              ilun=140
+              inquire(file=fileloc,exist=file_exist)
+              if(.not.file_exist) then
+                 open(ilun, file=fileloc, form='formatted')
+                 write(ilun,*)"Time                      x                         y                         z ProbSN                    Level         ProcID"!  Seeds"
+              else
+                 open(ilun, file=fileloc, status="old", position="append", action="write", form='formatted')
+              endif
 #if NDIM==3
-           z = xSNIa(iSN,3)
+              z = xSNIa(iSN,3)
 #else
-          z = 0.0
+              z = 0.0
 #endif
-           write(ilun,'(4E26.16,E26.16,2I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, levelSNIa(iSN),myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
-           close(ilun)
-           !endif
+              write(ilun,'(4E26.16,E26.16,2I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, levelSNIa(iSN),myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+              close(ilun)
+           else
+              write(*,*)"WARNING: Skipping SNIa on coarse level: Level ",levelSNIa(iSN)," x,y,z: ",xSNIa(iSN,1), xSNIa(iSN,2), xSNIa(iSN,3)
+           endif
         endif
      end do
   endif
