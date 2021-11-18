@@ -175,9 +175,11 @@ subroutine init_hydro
                     else if(ivar>=2.and.ivar<=ndim+1)then
                        do i=1,ncache
                           vel = 0
-                          rad = sqrt(((xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale - x1c)**2 + ((xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale - x2c)**2 + ((xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale - x3c)**2)
-!                          if (ivar==3)write(120,*)rad,xg(ind_grid(i),1),xc(ind,1),x1c,xg(ind_grid(i),2),xc(ind,2),x2c,xg(ind_grid(i),3),xc(ind,3),x3c
-                          if ((ivar==3) .and. (rad > rad_wind) .and. (uold(ind_grid(i)+iskip,1) < rhomax_wind)) vel=vel_wind
+                          if(nrestart_wind == nrestart)then
+                             rad = sqrt(((xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale - x1c)**2 + ((xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale - x2c)**2 + ((xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale - x3c)**2)
+                             !if (ivar==3)write(120,*)rad,xg(ind_grid(i),1),xc(ind,1),x1c,xg(ind_grid(i),2),xc(ind,2),x2c,xg(ind_grid(i),3),xc(ind,3),x3c
+                             if ((ivar==3) .and. (rad > rad_wind) .and. (uold(ind_grid(i)+iskip,1) < rhomax_wind)) vel=vel_wind*velocity_multiplier
+                          endif
                           uold(ind_grid(i)+iskip,ivar)=(xx(i)+vel)*max(uold(ind_grid(i)+iskip,1),smallr)
                        end do
                     endif

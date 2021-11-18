@@ -13,9 +13,9 @@ cost_weighting=.false.
 
 &AMR_PARAMS
 levelmin=5
-levelmax=11
+levelmax=12
 ngridmax=20000
-boxlen=32.0
+boxlen=24.0
 /
 
 &COOLING_PARAMS
@@ -50,8 +50,8 @@ nregion=1
 
 &OUTPUT_PARAMS
 delta_tout=0.05
-tend=2.0
-output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/static/'
+tend=1.0
+output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/static/hires24/'
 /
 
 &HYDRO_PARAMS
@@ -64,9 +64,9 @@ pressure_fix = .true.
 /
 
 &REFINE_PARAMS
-x_refine = 16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0
-y_refine = 6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4,6.4
-z_refine = 16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0
+x_refine = 12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0
+y_refine = 4.8,4.8,4.8,4.8,4.8,4.8,4.8,4.8,4.8,4.8,4.8,4.8,4.8,4.8
+z_refine = 12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0
 r_refine = 0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85,0.85
 hydro_ref_levelmax = 13
 geometry_ref_levelmax = 13
@@ -74,7 +74,8 @@ sfr_refine = 1.e-7
 sfr_ref_levelmax = 1
 sn_mass_refine = 20.0
 !r_sn_refine = 0.05
-m_refine = 48.0,32.0,32.0,24.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
+m_refine = 128.0,128.0,128.0,64.0,32.0,16.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
+!m_refine = 48.0,32.0,32.0,24.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
 mass_sph = 4.1d-8 ! 24393036.0 ! Set refinement mass to be in units of solar masses
 !m_refine = -1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,2.0,2.0
 !interpol_var=0

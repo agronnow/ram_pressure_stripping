@@ -89,6 +89,8 @@ subroutine boundana(x,u,dx,ibound,ncell)
      vel = 0.0
   endif
 
+  vel = vel*velocity_multiplier
+
   q(1:ncell,1) = ndens_wind*mu_wind	!density
   q(1:ncell,2) = 0.0	        !x-velocity
   q(1:ncell,3) = vel !vel_wind*1.e5/scale_v	!y-velocity (given in km/s)

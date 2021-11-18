@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.5
 tend=19.0
-output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/wind/'
+output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/wind/highvel/'
 /
 
 &HYDRO_PARAMS
@@ -92,9 +92,10 @@ t_diss = 0.06
 x1_c=0.5
 x2_c=0.2
 x3_c=0.5
+nrestart_wind = 10
 vel_wind=7.402254905837635235 !13.77649242330087986 !12.64737027032685
 rad_wind = 1.1
-rhomax_wind = 0.0 !1.e-3
+rhomax_wind = 1.e-3
 T_wind=1.8d6
 ndens_wind=1.d-4
 T_cloud=1.d4
@@ -135,4 +136,5 @@ r_plummer = 0.196
 M_plummer = 0.013
 ein_n = 0.0
 Tmu_min = 8650.0
+velocity_multiplier = 4.0
 /

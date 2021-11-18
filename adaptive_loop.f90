@@ -46,7 +46,7 @@ subroutine adaptive_loop
   endif
 #else
   if(cooling.and..not.neq_chem) &
-       call set_table(dble(aexp))    ! Initialize cooling look up table
+       call set_table(dble(aexp_ini))    ! Initialize cooling look up table
 #endif
   if(pic)call init_part              ! Initialize particle variables
   if(pic)call init_tree              ! Initialize particle tree

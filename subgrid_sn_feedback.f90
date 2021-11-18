@@ -349,9 +349,9 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #endif
   endif
   
-  if ((myid==1) .and. ((pot_grow_rate > 0.0) .or. firstcall) .and. .not.(pot_rad_max)) then
+  if ((myid==1) .and. firstcall)then !((pot_grow_rate > 0.0) .or. firstcall) .and. .not.(pot_rad_max)) then
     ! Calculate SNIa radius Comulative Distribution Function for the current potential truncation radius
-    potrad = r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))
+    potrad = 2d0*r_cut !r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))
     if (potrad > r_tidal)then
       potrad = r_tidal
       pot_rad_max = .true. ! Potential truncation radius will not grow further, stop recalculating SNIa CDF
@@ -374,8 +374,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
     do i=1,NPDFBINS
        CDF_SNIa(i) = sum(PDF_SNIa(1:i))*binwidth
     enddo
-#ifdef DEBUG_SNIA
-    if ((t==0.0) .or. pot_rad_max)then
+!#ifdef DEBUG_SNIA
+!    if ((t==0.0) .or. pot_rad_max)then
        fileloc=trim(output_dir)//sniadist_fname
        ilun=130
        open(ilun, file=fileloc, form='formatted')
@@ -385,8 +385,8 @@ subroutine subgrid_sn_feedback(ilevel, icount)
        enddo
        close(ilun)
        write(*,*)"Wrote ",sniadist_fname
-    endif
-#endif
+!    endif
+!#endif
   endif
 
   if ((ilevel == levelmin) .and. .not.(firstcall)) then
@@ -784,7 +784,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #else
               z = 0.0
 #endif
-              write(ilun,'(4E26.16,E26.16,2I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, PoissMeanIa, levelSNIa(iSN),myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+              write(ilun,'(5E26.16,E26.16,2I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, sqrt(xSNIa(iSN,1)**2+xSNIa(iSN,2)**2+z**2), PoissMeanIa, levelSNIa(iSN),myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
               close(ilun)
            else
               write(*,*)"WARNING: Skipping SNIa on coarse level: Level ",levelSNIa(iSN)," x,y,z: ",xSNIa(iSN,1), xSNIa(iSN,2), xSNIa(iSN,3)
@@ -1191,10 +1191,15 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
         endif
         !write(*,*)"Ncells: ",radcells, " ", snncells_all(iSN,radcells)
      enddo
-     if (rSN(iSN) >= RADCELL_MAX*dx_SN)then
-        if (myid==1)write(*,*)"WARNING: Skipping SN with radius greater than the maximum number of cells allowed:", RADCELL_MAX
-        skip=.true.
-     endif
+     if (SNmenc(iSN)*scale_d*scale_l**3/2d33 < 1d0)then
+        if(myid==1)write(*,*)"SN enclosed mass less than 1 M_sun, skipping this SN!!!"
+        rSN(iSN)=-1d0
+        cycle
+      endif
+!     if (rSN(iSN) > 1.1*RADCELL_MAX*dx_SN)then
+!        if (myid==1)write(*,*)"WARNING: Skipping SN with radius greater than the maximum number of cells allowed:", RADCELL_MAX
+!        skip=.true.
+!     endif
      if (delayed)SNfinestlevel(iSN) = 0
      if ((momentum_fb).and.(allow_coarse_SN))SNmaxrad_all(iSN)=RADCELL_MAX
 #ifndef DELAYED_SN
@@ -1277,6 +1282,7 @@ subroutine subgrid_average_SN(xSN,mSN,rSN,SNvol,level_SN,wtot,ncellsSN,nSN,SNfin
        if (skip)delayedstr = 'SKIP'
        write(ilun,'(6E26.16,2I5,3E26.16,3A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (SN_batch_size*1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16), coolstr, delayedstr1,delayedstr
 #else
+       if (skip)coolstr = 'SKIP'
        write(ilun,'(6E26.16,2I5,3E26.16,I5,A7)') t, xSN(iSN,1), xSN(iSN,2), z, mSN(iSN)/(2d33/(scale_d*scale_l**3)), rSN(iSN), int(rSN(iSN)/dx_SN), ncellsSN(iSN), 0.0284*(mSN(iSN)/(10d0*2d33/(scale_d*scale_l**3)))**(2d0/7d0)*(SNmenc(iSN)/SNvol(iSN))**(-3d0/7d0)*fZ, SNmenc(iSN)*scale_d*scale_l**3/2d33, (SN_batch_size*1d51*(gamma-1d0)/(SNmenc(iSN)*scale_d*scale_l**3))*(0.6*1.66e-24/1.3806e-16),SNmaxrad_all(iSN), coolstr
 #endif
        close(ilun)
@@ -1558,6 +1564,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
                     endif
                     if (SNfinestlevel(iSN) == 0)then
 #endif
+                    if(rSN(iSN)<0)cycle
                        dx_SN = scale*0.5D0**level_SN(iSN)
                        vol_center = dx_SN**3
                        vol_mom = vol_gas(iSN) - vol_center

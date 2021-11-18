@@ -250,8 +250,13 @@ subroutine set_model(Nmodel,J0in_in,J0min_in,alpha_in,normfacJ0_in,zreioniz_in, 
   real(kind=8) :: astart,aend,dasura,T2end,mu,ne,minus1
   ! Temperature floor in T/mu corresponding to T=1e4 K
   ! Value depends on UV background because photoionization changes mu
-  Tmufloor = 8650.0 ! Value appropriate when no photoionization is included
-  Nmodel = 1
+  if(.not.use_heating)then
+     Tmufloor = 8650.0 ! Value appropriate when no photoionization is included
+     Nmodel = 1
+  else
+     Tmufloor = 120.0
+     Nmodel = 3
+  endif
   if (Nmodel /= -1) then
      teyssier=.false.
      theuns=.false.

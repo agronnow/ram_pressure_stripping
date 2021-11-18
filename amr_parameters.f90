@@ -304,6 +304,7 @@ module amr_parameters
   real(dp)::x1_c = 0.0                  ! Center x coordinate of dSph                                          [kpc]
   real(dp)::x2_c = 0.0                  ! Center y coordinate of dSph                                          [kpc]
   real(dp)::x3_c = 0.0                  ! Center z coordinate of dSph                                          [kpc]
+  integer::nrestart_wind = 0            ! Restart output number where the wind should added
   real(dp)::vel_wind = 0.0              ! Set to zero for static sim, otherwise vel. from file will be used    []
   real(dp)::rad_wind = 0.0              ! Radius outside of which the wind is added                            [kpc]
   real(dp)::rhomax_wind = 0.0           ! Maximum density for adding the wind                                  [amu cm^-3]
@@ -357,5 +358,7 @@ module amr_parameters
   real(dp)::outer_slope = 0.0           ! Slope 'b' for outer exponential                                      []
   real(dp)::r_inner = 0.0               ! Radius to switch from inner to outer exponential density             [kpc]
   real(dp)::Tmu_min = 10.0              ! Minimum temperature*mu allowed after cooling                         [K*amu]
+  logical::use_heating = .false.        ! Allow UV heating
+  real(dp)::velocity_multiplier = 1d0   ! Multiply velocity by this to artificially boost orbit velocity       []
 
 end module amr_parameters
