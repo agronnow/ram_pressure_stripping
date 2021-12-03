@@ -52,7 +52,7 @@ aexp_ini=0.33
 &OUTPUT_PARAMS
 delta_tout=0.5
 tend=20.0
-output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/new/n5e-4/'
+output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/new/n2e-4/sfr15/'
 /
 
 &HYDRO_PARAMS
@@ -96,16 +96,16 @@ x2_c=0.2
 x3_c=0.5
 nrestart_wind = 1000
 vel_wind=7.402254905837635235 !13.77649242330087986 !12.64737027032685
-rad_wind = 0.2652860064142931 !1.0
+rad_wind = 0.355703996062332
 rhomax_wind = 1.e-3
 T_wind=1.8d6
-ndens_wind=5.d-4
+ndens_wind=2.d-4
 T_cloud=1.d4
-Rad_cloud=0.2652860064142931 !0.32167365753728455
+Rad_cloud= 0.355703996062332
 R_s=1.46
 rhodm0=1.12
-n0g=3.8967320390937243 !7.636493629030454
-r_cut=0.2652860064142931 !0.32167365753728455
+n0g=4.7581110682919885
+r_cut=0.355703996062332
 t_pot_grow_start = 0.0 !0.1
 pot_grow_rate = 0.0 !3.0
 r_tidal = 13.23007970429652858 !3.152842055082989425 !0.8

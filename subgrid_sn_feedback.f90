@@ -670,6 +670,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !                  write(*,*)'sfr',sfr,'rho_sfr',rho_sfr,'vol_loc',vol_loc,'d',d
                 endif
 #endif
+                if(allow_coarse_sn .or. (ilevel==nlevelmax))then
                 ! Poisson mean
                 PoissMean=rho_SN*rho_sfr*scale_t/(3600*24*365.25)*vol_loc*dtnew(ilevel)/SN_batch_size ! Get expected number of SNe formed taking units into account
 #if NDIM==2
@@ -741,6 +742,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
                 !      write(*,*) "SN explosion!"
                 !   end do
                 end do
+                endif
 #ifndef SN_INJECT
               else
                 rho_sfr = 0.0
@@ -784,7 +786,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #else
               z = 0.0
 #endif
-              write(ilun,'(5E26.16,E26.16,2I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, sqrt(xSNIa(iSN,1)**2+xSNIa(iSN,2)**2+z**2), PoissMeanIa, levelSNIa(iSN),myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
+              write(ilun,'(5E26.16,E26.16,2I5)') t, xSNIa(iSN,1), xSNIa(iSN,2), z, sqrt((xSNIa(iSN,1)-x1_c*boxlen)**2+(xSNIa(iSN,2)-x2_c*boxlen)**2+(z-x3_c*boxlen)**2), PoissMeanIa, levelSNIa(iSN),myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
               close(ilun)
            else
               write(*,*)"WARNING: Skipping SNIa on coarse level: Level ",levelSNIa(iSN)," x,y,z: ",xSNIa(iSN,1), xSNIa(iSN,2), xSNIa(iSN,3)
@@ -1829,9 +1831,11 @@ subroutine init_subgrid_feedback
         enddo
         close(ilun)
       endif
-
       call MPI_SCATTER(allseeds,IRandNumSize,MPI_INTEGER,localseedsn,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
+  else
+     iseed=seed_init
   endif
+
   if (myid==200) then
      write(*,*)'seeds(200): ',localseedsn
   endif

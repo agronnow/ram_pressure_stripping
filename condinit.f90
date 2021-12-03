@@ -41,9 +41,7 @@ subroutine condinit(x,u,dx,nn)
   real(dp),allocatable::tab_tr(:),tab_tv(:),tab_vel(:),tab_rt(:)
   real(dp)::dt,cosmo_time
   logical,save::firstcall=.true.
-#ifdef EINASTO
   real(dp),save::gamma3n,ein_M
-#endif
 
 #ifdef SIMPLE_IC
   call region_condinit(x,q,dx,nn)
@@ -122,14 +120,14 @@ subroutine condinit(x,u,dx,nn)
         write(*,*)'rtidal: ',rtinit,' idtab: ',itab
      endif
 
-#ifdef EINASTO
-     gamma3n = cmpgamma(3d0*ein_n)
-     ein_M = 2d0*twopi*rhodm0*R_s**3*ein_n*gamma3n
-     Phi0 = -ein_M*cmpgamma(2d0*ein_n)/(R_s*gamma3n)
-#else
-     ! NFW
-     Phi0 = -2d0*twopi*rhodm0*R_s**2
-#endif
+     if(ein_n > 0d0)then
+        gamma3n = cmpgamma(3d0*ein_n)
+        ein_M = 2d0*twopi*rhodm0*R_s**3*ein_n*gamma3n
+        Phi0 = -ein_M*cmpgamma(2d0*ein_n)/(R_s*gamma3n)
+     else
+        ! NFW
+        Phi0 = -2d0*twopi*rhodm0*R_s**2
+     endif
      if(M_plummer > 0.0)Phi0 = Phi0 - M_plummer/r_plummer
      firstcall = .false.
   endif
@@ -145,12 +143,12 @@ subroutine condinit(x,u,dx,nn)
     currad = dsqrt((x(i,1)-xc)**2 + (x(i,2)-yc)**2)
 #endif
 
-#ifdef EINASTO
-    PhiR = -ein_M*(R_s*gamma3n + currad*gammainc2n((currad/R_s)**(1d0/ein_n)) - R_s*gammainc3n((currad/R_s)**(1d0/ein_n)))/(R_s*currad*gamma3n)
-#else
-    ! NFW
-    PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
-#endif
+    if(ein_n > 0d0)then
+       PhiR = -ein_M*(R_s*gamma3n + currad*gammainc2n((currad/R_s)**(1d0/ein_n)) - R_s*gammainc3n((currad/R_s)**(1d0/ein_n)))/(R_s*currad*gamma3n)
+    else
+       ! NFW
+       PhiR = Phi0*R_s*dlog(1+currad/R_s)/currad
+    endif
     if (M_plummer > 0.0)PhiR = PhiR - M_plummer/sqrt(r_plummer**2 + currad**2)
     if (inner_dens > 0.0) then
        if (currad < r_inner) then

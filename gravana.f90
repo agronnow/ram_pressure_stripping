@@ -22,9 +22,7 @@ subroutine gravana(x,f,dx,ncell)
   real(dp)::r,rx,ry,rz,xmass,ymass,zmass,acc,r_max,cosmo_time
   real(dp),save::scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2
   logical, save::firstcall = .true.
-#ifdef EINASTO
   real(dp), save::gamma3n
-#endif
   real(dp),allocatable,save::tab_t(:),tab_rt(:)
   real(dp),save::dt
   integer::itab,ilun
@@ -82,15 +80,15 @@ subroutine gravana(x,f,dx,ncell)
         r_max = r_cut
      endif
      if (r < r_max) then
-#ifdef EINASTO
-       if (firstcall) then
-         gamma3n = cmpgamma(3d0*ein_n)
+       if (ein_n > 0d0)then
+          if (firstcall) then
+             gamma3n = cmpgamma(3d0*ein_n)
+          endif
+          acc = -2d0*twopi*rhodm0*R_s**3*ein_n*(gamma3n - gammainc3n((r/R_s)**(1d0/(ein_n))))/r**2
+       else
+          ! NFW
+          acc=-2d0*twopi*rhodm0*R_s**3*(dlog(1+r/R_s)-r/(r+R_s))/r**2
        endif
-       acc = -2d0*twopi*rhodm0*R_s**3*ein_n*(gamma3n - gammainc3n((r/R_s)**(1d0/(ein_n))))/r**2
-#else
-       ! NFW
-       acc=-2d0*twopi*rhodm0*R_s**3*(dlog(1+r/R_s)-r/(r+R_s))/r**2
-#endif
      else
        acc=0.0
      endif
