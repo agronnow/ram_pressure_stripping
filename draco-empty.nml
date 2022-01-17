@@ -4,7 +4,7 @@ This namelist contains various input parameters for RAMSES run cloud-wind
 verbose=.false.
 hydro=.true.
 pic=.false.
-poisson=.true.
+poisson=.false.
 ncontrol=1
 nsubcycle=2,2,2,2,2,2,2,2,2,2,2,2,2
 nremap=4
@@ -12,10 +12,10 @@ cost_weighting=.false.
 /
 
 &AMR_PARAMS
-levelmin=5
-levelmax=8
+levelmin=3
+levelmax=3
 ngridmax=20000
-boxlen=16.0
+boxlen=1.0
 /
 
 &COOLING_PARAMS
@@ -52,7 +52,7 @@ aexp_ini=0.33
 &OUTPUT_PARAMS
 delta_tout=0.5
 tend=20.0
-output_dir='/net/dataserver3/data/users/gronnow/sims/ram_pressure/draco/mvir14e11/new/n5e-4/test/'
+output_dir='/net/dataserver3/data/users/gronnow/sims/ram_pressure/draco/mvir14e11/new/n5e-4/empty/'
 /
 
 &HYDRO_PARAMS
@@ -101,9 +101,9 @@ rhomax_wind = 1.e-3
 T_wind=1.8d6
 ndens_wind=5.d-4
 T_cloud=1.d4
-Rad_cloud= 0.2790139901350311
+Rad_cloud=0.0! 0.2790139901350311
 R_s=1.46
-rhodm0=1.12
+rhodm0=0.0!1.12
 n0g=4.799602506980033
 r_cut= 0.2790139901350311
 t_pot_grow_start = 0.0 !0.1
@@ -115,7 +115,7 @@ rtidalfile = '/Users/users/gronnow/ramses/patch/asger/ram_pressure_stripping/rti
 orbitfile = '/Users/users/gronnow/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco-mvir14e11.dat'
 sfhistfile = '/Users/users/gronnow/ramses/patch/asger/ram_pressure_stripping/sfhist-draco.dat'
 prob_debug = .false.
-subgrid_feedback=.true.
+subgrid_feedback=.false.
 coarse_step_fb = .false.
 simpson_fb = .false.
 allow_coarse_SN = .false.
@@ -139,4 +139,6 @@ M_plummer = 0.013
 ein_n = 0.0
 Tmu_min = 120.0!8650.0
 use_heating = .true.
+dt_floor = 1.d-3
+velocity_multiplier=0.5
 /
