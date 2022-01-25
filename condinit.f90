@@ -136,21 +136,7 @@ subroutine condinit(x,u,dx,nn)
   c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
   P_wind = ndens_wind*T_wind/scale_T2
 
-if(1==1)then
   do i=1,nn
-      q(i,1) = ndens_wind*mu_wind
-      q(i,ndim+2) = P_wind
-      q(i,2) = 0.0      !x-velocity                                                                                                                                                                                                                                                       
-      q(i,3) = velinit ! vel_wind*1.e5/scale_v !y-velocity (given in km/s)                                                                                                                                                                                                                
-#if NDIM==3
-      q(i,4) = 0.0      !z-velocity                                                                                                                                                                                                                                                       
-#endif
-      q(i,imetal) = Z_wind*0.02
-      q(i,imetal+1) = 0.0       !delayed cooling                                                                                                                                                                                                                                        
-      q(i,imetal+2) = 0.0       !tracer     
-   enddo
-else
-   do i=1,nn
 #if NDIM==3
     currad = dsqrt((x(i,1)-xc)**2 + (x(i,2)-yc)**2 + (x(i,3)-zc)**2)
 #else
@@ -207,7 +193,7 @@ else
 !    write(*,*) "i ", i, " r ", currad, " rho: ", q(i,1), " P:",q(i,ndim+2), "Phi:",PhiR,"gammainc2n:",gammainc2n((currad/R_s)**(1d0/ein_n)),"gammainc3n",gammainc3n((currad/R_s)**(1d0/ein_n))!" vy: ", q(i,3), " P: ", q(i,ndim+2), " T ", (q(i,ndim+2)*mu/q(i,1))*scale_t2, " x1: ", x1_c
   enddo
 !write(*,*)'r_max:',r_max, 'mu_wind:',mu_wind,'mu_cloud:',mu_cloud
-endif
+!endif
 #endif
   ! Convert primitive to conservative variables
   ! density -> density
