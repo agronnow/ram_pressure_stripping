@@ -52,7 +52,7 @@ aexp_ini=0.33
 &OUTPUT_PARAMS
 delta_tout=0.5
 tend=20.0
-output_dir='/net/dataserver3/data/users/gronnow/sims/ram_pressure/draco/mvir14e11/new/n5e-4/empty/'
+output_dir='/net/dataserver3/data/users/gronnow/sims/ram_pressure/draco/mvir14e11/new/n1e-3/empty/'
 /
 
 &HYDRO_PARAMS
@@ -97,9 +97,9 @@ x3_c=0.5
 nrestart_wind = 1000
 vel_wind=13.21729091991593918 !13.77649242330087986 !12.64737027032685
 rad_wind = 0.2790139901350311
-rhomax_wind = 1.e-3
+rhomax_wind = 2.e-3
 T_wind=1.8d6
-ndens_wind=5.d-4
+ndens_wind=1.d-3
 T_cloud=1.d4
 Rad_cloud=0.0! 0.2790139901350311
 R_s=1.46
