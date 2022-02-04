@@ -506,14 +506,14 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
   real(kind=8)::facT,dlog_nH,dlog_T2,precoeff,h,h2,h3
   real(kind=8)::metal,cool,heat,cool_com,heat_com,yy,yy2,yy3
   real(kind=8)::metal_prime,cool_prime,heat_prime,cool_com_prime,heat_com_prime,wcool
-  real(kind=8)::lambda,lambda_prime,logT2max
+  real(kind=8)::lambda,lambda_prime,logT2max,facH_heat
   real(kind=8)::fa,fb,fprimea,fprimeb,alpha,beta,gamma
   real(kind=8),dimension(1:ncell)::tau,tau_old
   real(kind=8),dimension(1:ncell)::time,time_old,facH,zzz,tau_ini
-  real(kind=8),dimension(1:ncell)::w1H,w2H,wmax,time_max
+  real(kind=8),dimension(1:ncell)::w1H,w2H,wmax,time_max,w1H_heat,w2H_heat
   real(kind=8)::varmax=4d0
   integer::i,i_T2,iter,n,n_active,t2_neg
-  integer,dimension(1:ncell)::ind,i_nH
+  integer,dimension(1:ncell)::ind,i_nH,i_nH_heat
   logical::tau_negative
 
   ! Initializations
@@ -528,10 +528,16 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
   do i=1,ncell
      if (ok_cool(i))then
         zzz(i)=zsolar(i)
-        facH(i)=MIN(MAX(log10(nH(i)/boost(i)),table%nH(1)),table%nH(table%n1))
+        facH(i)=MIN(MAX(log10(nH(i)),table%nH(1)),table%nH(table%n1))
         i_nH(i)=MIN(MAX(int((facH(i)-table%nH(1))*dlog_nH)+1,1),table%n1-1)
         w1H(i)=(table%nH(i_nH(i)+1)-facH(i))*dlog_nH
         w2H(i)=(facH(i)-table%nH(i_nH(i)  ))*dlog_nH
+        if(n_shield>0d0)then
+           facH_heat=MIN(MAX(log10(nH(i)/boost(i)),table%nH(1)),table%nH(table%n1))
+           i_nH_heat(i)=MIN(MAX(int((facH_heat-table%nH(1))*dlog_nH)+1,1),table%n1-1)
+           w1H_heat(i)=(table%nH(i_nH_heat(i)+1)-facH_heat)*dlog_nH
+           w2H_heat(i)=(facH_heat-table%nH(i_nH_heat(i)  ))*dlog_nH
+        endif
         time_max(i)=dt*precoeff*nH(i)
         time(i)=0d0
         wmax(i)=1d0/time_max(i)
@@ -591,10 +597,17 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
               cool_prime=cool/tau(ind(i))*(alpha+2d0*beta*yy+3d0*gamma*yy2)
 
               ! Heating
-              fa=table%heat(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
-              fb=table%heat(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
-              fprimea=table%heat_prime(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat_prime(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
-              fprimeb=table%heat_prime(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat_prime(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
+              if(n_shield>0d0)then
+                 fa=table%heat(i_nH_heat(ind(i)),i_T2  )*w1H_heat(ind(i))+table%heat(i_nH_heat(ind(i))+1,i_T2  )*w2H_heat(ind(i))
+                 fb=table%heat(i_nH_heat(ind(i)),i_T2+1)*w1H_heat(ind(i))+table%heat(i_nH_heat(ind(i))+1,i_T2+1)*w2H_heat(ind(i))
+                 fprimea=table%heat_prime(i_nH_heat(ind(i)),i_T2  )*w1H_heat(ind(i))+table%heat_prime(i_nH_heat(ind(i))+1,i_T2  )*w2H_heat(ind(i))
+                 fprimeb=table%heat_prime(i_nH_heat(ind(i)),i_T2+1)*w1H_heat(ind(i))+table%heat_prime(i_nH_heat(ind(i))+1,i_T2+1)*w2H_heat(ind(i))
+              else
+                 fa=table%heat(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
+                 fb=table%heat(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
+                 fprimea=table%heat_prime(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat_prime(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
+                 fprimeb=table%heat_prime(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat_prime(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
+              endif
               alpha=fprimea
               beta=3d0*(fb-fa)/h2-(2d0*fprimea+fprimeb)/h
               gamma=(fprimea+fprimeb)/h2-2d0*(fb-fa)/h3
@@ -613,10 +626,17 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
               cool_com_prime=cool_com/tau(ind(i))*(alpha+2d0*beta*yy+3d0*gamma*yy2)
 
               ! Compton heating
-              fa=table%heat_com(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat_com(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
-              fb=table%heat_com(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat_com(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
-              fprimea=table%heat_com_prime(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat_com_prime(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
-              fprimeb=table%heat_com_prime(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat_com_prime(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
+              if(n_shield>0d0)then
+                 fa=table%heat_com(i_nH_heat(ind(i)),i_T2  )*w1H_heat(ind(i))+table%heat_com(i_nH_heat(ind(i))+1,i_T2  )*w2H_heat(ind(i))
+                 fb=table%heat_com(i_nH_heat(ind(i)),i_T2+1)*w1H_heat(ind(i))+table%heat_com(i_nH_heat(ind(i))+1,i_T2+1)*w2H_heat(ind(i))
+                 fprimea=table%heat_com_prime(i_nH_heat(ind(i)),i_T2  )*w1H_heat(ind(i))+table%heat_com_prime(i_nH_heat(ind(i))+1,i_T2  )*w2H_heat(ind(i))
+                 fprimeb=table%heat_com_prime(i_nH_heat(ind(i)),i_T2+1)*w1H_heat(ind(i))+table%heat_com_prime(i_nH_heat(ind(i))+1,i_T2+1)*w2H_heat(ind(i))
+              else
+                 fa=table%heat_com(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat_com(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
+                 fb=table%heat_com(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat_com(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
+                 fprimea=table%heat_com_prime(i_nH(ind(i)),i_T2  )*w1H(ind(i))+table%heat_com_prime(i_nH(ind(i))+1,i_T2  )*w2H(ind(i))
+                 fprimeb=table%heat_com_prime(i_nH(ind(i)),i_T2+1)*w1H(ind(i))+table%heat_com_prime(i_nH(ind(i))+1,i_T2+1)*w2H(ind(i))
+              endif
               alpha=fprimea
               beta=3d0*(fb-fa)/h2-(2d0*fprimea+fprimeb)/h
               gamma=(fprimea+fprimeb)/h2-2d0*(fb-fa)/h3
@@ -1070,12 +1090,15 @@ subroutine cmp_metals(T2,nH,mu,metal_tot,metal_prime,aexp)
   real(kind=8)::TT,lTT,deltaT,lcool1,lcool2,lcool1_prime,lcool2_prime
   real(kind=8)::ZZ,deltaZ
   real(kind=8)::c1=0.4,c2=10.0,TT0=1d5,TTC=1d6,alpha1=0.15
-  real(kind=8)::ux,g_courty,f_courty=1d0,g_courty_prime,f_courty_prime
+  real(kind=8)::ux,g_courty,f_courty=1d0,g_courty_prime,f_courty_prime,boost
   integer::iT,iZ
 
   ZZ=1d0/aexp-1d0
   TT=T2*mu
   lTT=log10(TT)
+
+  boost = 1d0
+  if(n_shield>0d0)boost=MAX(exp(-nH/n_shield),1.0D-20)
 
   ! This is a simple model to take into account the ionization background
   ! on metal cooling (calibrated using CLOUDY).
@@ -1088,10 +1111,10 @@ subroutine cmp_metals(T2,nH,mu,metal_tot,metal_prime,aexp)
         iZ=max(iZ,1)
         deltaZ=z_courty(iZ+1)-z_courty(iZ)
         ux=1d-4*(phi_courty(iZ+1)*(ZZ-z_courty(iZ))/deltaZ &
-             & + phi_courty(iZ)*(z_courty(iZ+1)-ZZ)/deltaZ )/nH
+             & + phi_courty(iZ)*(z_courty(iZ+1)-ZZ)/deltaZ )/(nH/boost)
      endif
   else ! Theuns or Teyssier
-     ux=1d-4*J0simple(aexp)/1d-22/nH
+     ux=1d-4*J0simple(aexp)/1d-22/(nH/boost)
   endif
   g_courty=c1*(TT/TT0)**alpha1+c2*exp(-TTC/TT)
   g_courty_prime=(c1*alpha1*(TT/TT0)**alpha1+c2*exp(-TTC/TT)*TTC/TT)/TT
@@ -1182,6 +1205,7 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
   n_HEI   = n_spec(4) ! He
   n_HEII  = n_spec(5) ! He+
   n_HEIII = n_spec(6) ! He++
+  !write(*,*)T,nH,mu,n_spec(1),n_spec(2),n_spec(3),n_spec(4),n_spec(5),n_spec(6)
   ! Bremstrahlung
   cb1 = cool_bre(HI  ,T)*n_E*n_HII  /nH**2
   cb2 = cool_bre(HEI ,T)*n_E*n_HEII /nH**2
@@ -1254,7 +1278,7 @@ subroutine cmp_chem_eq(T,n_H,t_rad_spec,n_spec,n_TOT,mu)
   real(kind=8)::t_rec_HI,t_rec_HEI,t_rec_HEII
   real(kind=8)::t_ion_HI,t_ion_HEI,t_ion_HEII
   real(kind=8)::t_ion2_HI,t_ion2_HEI,t_ion2_HEII
-  real(kind=8)::x1,err_nE
+  real(kind=8)::x1,err_nE,boost
 
   xx=(1.-Y)
   yy=Y/(1.-Y)/4.
@@ -1274,11 +1298,14 @@ subroutine cmp_chem_eq(T,n_H,t_rad_spec,n_spec,n_TOT,mu)
   n_E = n_H
   err_nE = 1.
 
+  boost = 1d0
+  if(n_shield>0d0)boost=MAX(exp(-n_H/n_shield),1.0D-20)
+
   do while(err_nE > 1.d-8)
 
-     t_ion2_HI   = t_ion_HI   + t_rad_HI  /MAX(n_E,1e-15*n_H)
-     t_ion2_HEI  = t_ion_HEI  + t_rad_HEI /MAX(n_E,1e-15*n_H)
-     t_ion2_HEII = t_ion_HEII + t_rad_HEII/MAX(n_E,1e-15*n_H)
+     t_ion2_HI   = t_ion_HI   + t_rad_HI  /(MAX(n_E,1e-15*n_H)/boost)
+     t_ion2_HEI  = t_ion_HEI  + t_rad_HEI /(MAX(n_E,1e-15*n_H)/boost)
+     t_ion2_HEII = t_ion_HEII + t_rad_HEII/(MAX(n_E,1e-15*n_H)/boost)
 
      n_HI  = t_rec_HI/(t_ion2_HI+t_rec_HI)*n_H
      n_HII = t_ion2_HI/(t_ion2_HI+t_rec_HI)*n_H
@@ -1296,6 +1323,9 @@ subroutine cmp_chem_eq(T,n_H,t_rad_spec,n_spec,n_TOT,mu)
 
   n_TOT    =n_E+n_HI+n_HII+n_HEI+n_HEII+n_HEIII
   mu       =n_H/xx/n_TOT
+
+!  write(*,*)T,n_H,mu,n_E,n_TOT
+
   n_spec(1)=n_E
   n_spec(2)=n_HI
   n_spec(3)=n_HII

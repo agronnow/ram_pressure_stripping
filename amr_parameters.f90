@@ -362,5 +362,6 @@ module amr_parameters
   real(dp)::velocity_multiplier = 0.0   ! Artificially boost orbit velocity, 0=no boost                        []
   integer::seed_init = 0                ! Initial seed for RNG used in supernova feedback                      []
   real(dp)::dt_floor = 0.0              ! Minimum allowed delta_t, if 0 no minimum
+  real(dp)::n_shield = 0.0              ! Density normalisation for exponential self-shielding, 0=no shielding [cm^-3]
 
 end module amr_parameters

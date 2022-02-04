@@ -135,6 +135,7 @@ subroutine condinit(x,u,dx,nn)
   rho0g=n0g*mu_cloud
   c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
   P_wind = ndens_wind*T_wind/scale_T2
+  write(*,*)"mu,n0",rho0g,mu_cloud
 
   do i=1,nn
 #if NDIM==3
