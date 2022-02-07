@@ -12,7 +12,7 @@ subroutine adaptive_loop
 #ifndef WITHOUTMPI
   integer(kind=8)::n_step
   integer::info,tot_pt
-  real(kind=8)::tt1,tt2,muspt,muspt_this_step,wallsec,dumpsec
+  real(kind=8)::tt1,tt2,muspt,muspt_this_step,wallsec,dumpsec,cura
   real(kind=4)::real_mem,real_mem_tot
   real(kind=8),save::tstart=0.0
 #endif
@@ -33,7 +33,7 @@ subroutine adaptive_loop
   if(rt.or.neq_chem) &
        & call rt_init_hydro          ! Initialize radiation variables
 #endif
-  if(poisson)call init_poisson       ! Initialize poisson variables
+  if(poisson)call init_poisson       ! Initialize poisson variablesboun
 #ifdef ATON
   if(aton)call init_radiation        ! Initialize radiation variables
 #endif
@@ -45,8 +45,14 @@ subroutine adaptive_loop
         call set_table(dble(aexp))    ! Initialize cooling look up table
   endif
 #else
-  if(cooling.and..not.neq_chem) &
-       call set_table(dble(aexp_ini))    ! Initialize cooling look up table
+  if(cooling.and..not.neq_chem)then
+     if(evolve_uvb)then
+        cura = get_uvb_expfac(t)
+        call set_table(cura)    ! Initialize cooling look up table
+     else
+        call set_table(dble(aexp_ini))    ! Initialize cooling look up table
+     endif
+  endif
 #endif
   if(pic)call init_part              ! Initialize particle variables
   if(pic)call init_tree              ! Initialize particle tree

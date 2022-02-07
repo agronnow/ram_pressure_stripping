@@ -1843,19 +1843,20 @@ subroutine init_subgrid_feedback
 end subroutine init_subgrid_feedback
 
 
-subroutine GetMuAndTemperature(T2,nH,mu,T,nHI)
-!Note: T2 is T/mu
-  use amr_parameters, ONLY: dp, aexp
-  use cooling_module, ONLY: set_rates, cmp_chem_eq
+subroutine GetMuAndTemperature(Tovermu,nH,mu,T2,nHI)
+  use amr_commons, ONLY: t
+  use amr_parameters, ONLY: dp!, aexp
+  use cooling_module, ONLY: set_rates, cmp_chem_eq, get_uvb_expfac
   implicit none
-  real(dp)::T2,T,nH,mu,nHI,z
+  real(dp)::Tovermu,T2,nH,mu,nHI,z,cura
   real(dp)::mu_old,err_mu,mu_left,mu_right,n_TOT
   real(dp),dimension(1:3) :: t_rad_spec,h_rad_spec
   real(dp),dimension(1:6) :: n_spec
   integer::niter
 
-    call set_rates(t_rad_spec,h_rad_spec,aexp)
-    z = 1.d0/aexp-1.D0
+    cura = get_uvb_expfac(t)
+    call set_rates(t_rad_spec,h_rad_spec,cura)
+    z = 1.d0/cura-1.D0
 
     ! Iteration to find mu
     err_mu=1.
@@ -1864,8 +1865,8 @@ subroutine GetMuAndTemperature(T2,nH,mu,T,nHI)
     niter=0
     do while (err_mu > 1.d-4 .and. niter <= 50)
        mu_old=0.5*(mu_left+mu_right)
-       T = T2*mu_old
-       call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu,z)
+       T2 = Tovermu*mu_old
+       call cmp_chem_eq(T2,nH,t_rad_spec,n_spec,n_TOT,mu,z)
        nHI = n_spec(2)
        err_mu = (mu-mu_old)/mu_old
        if(err_mu>0.)then

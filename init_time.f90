@@ -45,8 +45,8 @@ subroutine init_time
      ! Compute Friedman model look up table
      if(myid==1)write(*,*)'Computing Friedman model'
      call friedman(dble(omega_m),dble(omega_l),dble(omega_k), &
-          & 1.d-6,dble(aexp_ini), &
-          & aexp_frw,hexp_frw,tau_frw,t_frw,n_frw)
+        & 1.d-6,dble(aexp_ini), &
+        & aexp_frw,hexp_frw,tau_frw,t_frw,n_frw)
 
      ! Compute initial conformal time
      ! Find neighboring expansion factors
@@ -241,6 +241,11 @@ subroutine init_time
            if(nrestart==0)then
               if(myid==1)write(*,*)'Starting with T/mu (K) = ',T2_start
            end if
+        else if (evolve_uvb)then
+           call set_model(Nmodel,dble(J21*1d-21),-1.0d0,dble(a_spec),-1.0d0,dble(z_reion), &
+                & -1,2, &
+                & dble(0.674),dble(0.04),dble(0.315),dble(0.685), &
+                & dble(aexp_ini),T2_sim)
         else
            call set_model(Nmodel,dble(J21*1d-21),-1.0d0,dble(a_spec),-1.0d0,dble(z_reion), &
                 & -1,2, &
@@ -267,6 +272,11 @@ subroutine init_time
         if(nrestart==0)then
            if(myid==1)write(*,*)'Starting with T/mu (K) = ',T2_start
         end if
+     else if (evolve_uvb)then
+        call set_model(Nmodel,dble(J21*1d-21),-1.0d0,dble(a_spec),-1.0d0,dble(z_reion), &
+             & -1,2, &
+             & dble(0.674),dble(0.04),dble(0.315),dble(0.685), &
+             & dble(aexp_ini),T2_sim)
      else
         call set_model(Nmodel,dble(J21*1d-21),-1.0d0,dble(a_spec),-1.0d0,dble(z_reion), &
              & -1,2, &

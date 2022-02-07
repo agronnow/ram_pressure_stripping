@@ -1717,5 +1717,52 @@ function selfshielding_factor(nH,z)
   selfshielding_factor = (1d0 - f)*(1d0+(nH/n0)**beta)**alpha1 + f*(1d0+nH/n0)**alpha2
 end function selfshielding_factor
 
+function get_uvb_expfac(tsim)
+  use hydro_parameters, only: tinit_sim,tzfile
+
+  implicit none
+  real(kind=8)::get_uvb_expfac,tsim,z,dt,cosmo_time,scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2
+  logical,save::firstcall=.true.
+  character(len=256)::fileloc
+  logical::file_exists = .false.
+  real(kind=8),allocatable::tab_t(:),tab_z(:)
+  integer::i,ilun,itab,ntab
+
+  if (firstcall)then
+    call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
+    fileloc=trim(tzfile)
+    inquire(file=fileloc,exist=file_exists)
+    if(file_exists) then
+       open(newunit=ilun, file=fileloc)
+       ntab=0
+       do
+          read(ilun,*,end=1200)
+          ntab=ntab+1
+       end do
+1200         rewind(ilun)
+       allocate(tab_t(ntab))
+       allocate(tab_z(ntab))
+       do i=1,ntab
+          read(ilun,*)tab_t(i), tab_z(i)
+       end do
+       close(ilun)
+    else
+       write(*,*)"ERROR: File ",trim(tzfile)," missing!"
+       STOP
+    endif
+  endif
+
+  cosmo_time = tsim*scale_t/3.154e16 + tinit_sim
+  !Note: this table is ordered descending in time
+  itab = 1
+  do while (tab_t(itab) > cosmo_time)
+    itab=itab+1
+  enddo
+  z = (tab_z(itab-1)*(tab_t(itab) - cosmo_time) + tab_z(itab)*(cosmo_time - tab_t(itab-1)))/(tab_t(itab)-tab_t(itab-1))
+  !write(*,*)tsim,cosmo_time,z
+
+  get_uvb_expfac = 1d0/(z+1d0)
+end function get_uvb_expfac
+
 end module cooling_module
 

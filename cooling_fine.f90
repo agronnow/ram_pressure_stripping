@@ -13,6 +13,7 @@ subroutine cooling_fine(ilevel)
   !-------------------------------------------------------------------
   integer::ncache,i,igrid,ngrid,t2_neg_grid,t2_neg_level
   integer,dimension(1:nvector),save::ind_grid
+  real(dp)::cura
 
   if(numbtot(1,ilevel)==0)return
   if(verbose)write(*,111)ilevel
@@ -32,16 +33,22 @@ subroutine cooling_fine(ilevel)
   end do
   if (t2_neg_level > 0)write(*,*)"WARNING: ",t2_neg_level," negative temperatures in solve_cooling on level ",ilevel,", replaced with cooling floor"
 
-  if((cooling.and..not.neq_chem).and.ilevel==levelmin.and.cosmo)then
+  if((cooling.and..not.neq_chem).and.ilevel==levelmin)then
+     if(cosmo)then
 #ifdef grackle
-     if(use_grackle==0)then
-        if(myid==1)write(*,*)'Computing new cooling table'
-        call set_table(dble(aexp))
-     endif
+         if(use_grackle==0)then
+            if(myid==1)write(*,*)'Computing new cooling table'
+            call set_table(dble(aexp))
+         endif
 #else
-     if(myid==1)write(*,*)'Computing new cooling table'
-     call set_table(dble(aexp))
+         if(myid==1)write(*,*)'Computing new cooling table'
+         call set_table(dble(aexp))
+     else if(evolve_uvb)then
+         if(myid==1)write(*,*)'Computing new cooling table for redshift z=',1d0/cura-1d0
+         cura = get_uvb_expfac(t)
+         call set_table(cura)
 #endif
+     endif
   endif
 
 111 format('   Entering cooling_fine for level',i2)

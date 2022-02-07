@@ -46,11 +46,12 @@ subroutine read_params
        & ,tend_theta_camera,tend_phi_camera,method_frame,varmin_frame,varmax_frame
   namelist/prob_params/x1_c,x2_c,x3_c,nrestart_wind,vel_wind,rad_wind,rhomax_wind,T_wind,ndens_wind,T_cloud,Rad_cloud,R_s,rhodm0,n0g &
        & ,r_cut,t_pot_grow_start,pot_grow_rate,r_tidal,Z_wind,Z_cloud,evolve_rtidal &
-       & ,rtidalfile,orbitfile,sfhistfile,prob_debug,subgrid_feedback,coarse_step_fb,momentum_fb,simpson_fb &
+       & ,rtidalfile,orbitfile,sfhistfile,tzfile,prob_debug,subgrid_feedback,coarse_step_fb,momentum_fb,simpson_fb &
        & ,allow_coarse_SN, Rcool_correction, cioffi_mom, sn_smooth_transition &
        & ,SN_batch_size,mominj_rad,mom_fac,SN_blast_mass,rho_SN,vsfr_fac,vsfr_pow &
        & ,tinit_sim,tbeg_wind,sfr_boost,dt_sfhist,dt_sfrlog,r_plummer, M_plummer, ein_n, SN_inject_x, SN_inject_y, SN_inject_z &
-       & ,inner_dens,outer_dens,r_inner,inner_slope,outer_slope,Tmu_min,use_heating,velocity_multiplier,seed_init,dt_floor,n_shield,rahmati_shielding
+       & ,inner_dens,outer_dens,r_inner,inner_slope,outer_slope,Tmu_min,use_heating &
+       & ,velocity_multiplier,seed_init,dt_floor,n_shield,rahmati_shielding,evolve_uvb
 
   ! MPI initialization
 #ifndef WITHOUTMPI

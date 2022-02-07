@@ -21,7 +21,6 @@ boxlen=4.0
 &COOLING_PARAMS
 cooling = .true.
 metal = .true.
-self_shielding = .true.
 /
 
 &POISSON_PARAMS
@@ -47,7 +46,6 @@ units_length  = 0.308567758128200E+22 ! kpc
 
 &INIT_PARAMS
 nregion=1
-aexp_ini=0.33
 /
 
 &OUTPUT_PARAMS
@@ -116,6 +114,7 @@ Z_cloud = 0.01
 rtidalfile = '/Users/users/gronnow/ramses/patch/asger/ram_pressure_stripping/rtidal-draco-mvir14e11-new.dat'
 orbitfile = '/Users/users/gronnow/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco-mvir14e11.dat'
 sfhistfile = '/Users/users/gronnow/ramses/patch/asger/ram_pressure_stripping/sfhist-draco.dat'
+tzfile = '/Users/users/gronnow/ramses/patch/asger/ram_pressure_stripping/time-redshift.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
 coarse_step_fb = .false.
@@ -143,5 +142,6 @@ Tmu_min = 120.0!8650.0
 use_heating = .true.
 n_shield = 0.0
 rahmati_shielding = .true.
+evolve_uvb = .true.
 /
 

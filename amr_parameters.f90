@@ -325,6 +325,7 @@ module amr_parameters
   character(len=256)::rtidalfile        ! Path to file containing tidal radius up to end time of simulation
   character(len=256)::orbitfile         ! Path to file containing orbit velocity up to end time of simulation
   character(len=256)::sfhistfile        ! Path to file containing star formation history
+  character(len=256)::tzfile            ! Path to file containing time-redshift table for evolving UVB
   logical::prob_debug = .false.         ! Turn some extra debug logging on/off
   logical::subgrid_feedback = .true.    ! Turn SN feedback on/off
   logical::coarse_step_fb = .false.     ! Only do feedback at coarse steps, saves time for low SFR galaxies
@@ -361,8 +362,9 @@ module amr_parameters
   logical::use_heating = .false.        ! Allow UV heating
   real(dp)::velocity_multiplier = 0.0   ! Artificially boost orbit velocity, 0=no boost                        []
   integer::seed_init = 0                ! Initial seed for RNG used in supernova feedback                      []
-  real(dp)::dt_floor = 0.0              ! Minimum allowed delta_t, if 0 no minimum
+  real(dp)::dt_floor = 0.0              ! Minimum allowed delta_t, if 0 no minimum                             [K]
   real(dp)::n_shield = 0.0              ! Density normalisation for exponential self-shielding, 0=no shielding [cm^-3]
   logical::rahmati_shielding = .false.  ! Use photoionization+heating self-shielding approx. of Rahmati+ 2013
+  logical::evolve_uvb = .true.          ! Evolve UV background with redshift during simulation
 
 end module amr_parameters

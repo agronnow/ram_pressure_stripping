@@ -117,7 +117,7 @@ subroutine condinit(x,u,dx,nn)
            write(*,*)"ERROR: File ",trim(rtidalfile)," missing!"
            STOP
         endif
-        write(*,*)'rtidal: ',rtinit,' idtab: ',itab
+!        write(*,*)'rtidal: ',rtinit,' idtab: ',itab
      endif
 
      if(ein_n > 0d0)then
@@ -135,7 +135,7 @@ subroutine condinit(x,u,dx,nn)
   rho0g=n0g*mu_cloud
   c_s2 = kb*T_cloud/(mu_cloud*mh)/scale_v**2 !square of isothermal sound speed in cloud centre
   P_wind = ndens_wind*T_wind/scale_T2
-  write(*,*)"mu,n0",rho0g,mu_cloud
+!  write(*,*)"mu,n0",rho0g,mu_cloud
 
   do i=1,nn
 #if NDIM==3
@@ -237,17 +237,18 @@ end subroutine condinit
 
 subroutine GetMuFromTemperature(T,nH,mu)
 !Note: T is assumed here to be actual temperature in Kelvin, NOT T/mu
-  use amr_parameters, ONLY: dp, aexp
-  use cooling_module, ONLY: set_rates, cmp_chem_eq
+  use amr_parameters, ONLY: dp!, aexp
+  use cooling_module, ONLY: set_rates, cmp_chem_eq, get_uvb_expfac
   implicit none
-  real(dp)::T,nH,mu,z
+  real(dp)::T,nH,mu,z,cura
   real(dp)::mu_old,err_mu,mu_left,mu_right,n_TOT
   real(dp),dimension(1:3) :: t_rad_spec,h_rad_spec
   real(dp),dimension(1:6) :: n_spec
   integer::niter
 
-    call set_rates(t_rad_spec,h_rad_spec,aexp)
-    z = 1.d0/aexp-1.D0
+    cura = get_uvb_expfac(0d0)
+    call set_rates(t_rad_spec,h_rad_spec,cura)
+    z = 1.d0/cura-1.D0
 
     ! Iteration to find mu
     err_mu=1.
