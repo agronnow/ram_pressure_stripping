@@ -1449,7 +1449,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
   real(dp)::scale,dx_min,dx_loc,vol_loc,rmax2,rmax,vol_min,dx_SN,cellweight,adjacency
   real(dp)::dr_SNs,dxxs,dyys,dzzs,cellweight_mom,cellweight_eng,xs,ys,zs,dr_cells
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_eng
-  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens,massratio_crit,fe
+  real(dp)::mom_ejecta,mom_inj,mom_term,fZ,R_cool,Tovermu,T2,nH,mu,numdens,massratio_crit,fe,nHI
   real(dp)::engfac,ektot,etherm,ektot_all,prs,fkin,R_pds,t_pds,ZonZsolar,massratio,totmom,totmom_all,einjtot,einjtot_all
   real(dp),dimension(1:3)::skip_loc
   real(dp),dimension(1:twotondim,1:ndim)::xc
@@ -1628,7 +1628,7 @@ subroutine subgrid_Sedov_blast(xSN,mSN,rSN,vol_gas,level_SN,wtot,ncellsSN,nSN,SN
                                  prs = (uold(ind_cell(i),ndim+2) - 0.5d0*(uold(ind_cell(i),2)**2 + uold(ind_cell(i),3)**2 + uold(ind_cell(i),4)**2)/max(uold(ind_cell(i),1),smallr))*(gamma-1.0)
                                  Tovermu = prs/max(uold(ind_cell(i),1),smallr)*scale_T2
                                  nH = max(uold(ind_cell(i),1),smallr)*scale_nH
-                                 call GetMuAndTemperature(Tovermu,nH,mu,T2)
+                                 call GetMuAndTemperature(Tovermu,nH,mu,T2,nHI)
                                  numdens = max(uold(ind_cell(i),1),smallr)/mu
                                  ZonZsolar = uold(ind_cell(i),imetal)/uold(ind_cell(i),1)/0.02
                                  if (simpson_fb)then
@@ -1843,18 +1843,19 @@ subroutine init_subgrid_feedback
 end subroutine init_subgrid_feedback
 
 
-subroutine GetMuAndTemperature(T2,nH,mu,T)
+subroutine GetMuAndTemperature(T2,nH,mu,T,nHI)
 !Note: T2 is T/mu
   use amr_parameters, ONLY: dp, aexp
   use cooling_module, ONLY: set_rates, cmp_chem_eq
   implicit none
-  real(dp)::T2,T,nH,mu
+  real(dp)::T2,T,nH,mu,nHI,z
   real(dp)::mu_old,err_mu,mu_left,mu_right,n_TOT
   real(dp),dimension(1:3) :: t_rad_spec,h_rad_spec
   real(dp),dimension(1:6) :: n_spec
   integer::niter
 
     call set_rates(t_rad_spec,h_rad_spec,aexp)
+    z = 1.d0/aexp-1.D0
 
     ! Iteration to find mu
     err_mu=1.
@@ -1864,7 +1865,8 @@ subroutine GetMuAndTemperature(T2,nH,mu,T)
     do while (err_mu > 1.d-4 .and. niter <= 50)
        mu_old=0.5*(mu_left+mu_right)
        T = T2*mu_old
-       call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu)
+       call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu,z)
+       nHI = n_spec(2)
        err_mu = (mu-mu_old)/mu_old
        if(err_mu>0.)then
           mu_left =0.5*(mu_left+mu_right)

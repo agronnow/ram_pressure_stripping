@@ -24,6 +24,8 @@ subroutine backup_hydro(filename, filename_desc)
   integer :: info_var_count
   character(len=100) :: field_name
 
+  real(dp)::mu,nHI,Tovermu,T2,prs,nH,scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2
+
   if (verbose) write(*,*)'Entering backup_hydro'
 
   call title(myid, nchar)
@@ -51,7 +53,7 @@ subroutine backup_hydro(filename, filename_desc)
   end if
 
   write(unit_out) ncpu
-  write(unit_out) nvar
+  write(unit_out) nvar+2 !Include mu and n_HI fields
   write(unit_out) ndim
   write(unit_out) nlevelmax
   write(unit_out) nboundary
@@ -137,6 +139,30 @@ subroutine backup_hydro(filename, filename_desc)
                  call generic_dump(field_name, info_var_count, xdp, unit_out, dump_info_flag, unit_info)
               end do
 #endif
+              ! Write mu
+              call units(scale_l,scale_t,scale_d,scale_v,scale_nH,scale_T2)
+              write(field_name, '("scalar_", i0.2)') nvar - ndim - 3 - nener + 1
+              do i = 1, ncache
+                 prs = (uold(ind_grid(i)+iskip,ndim+2) - 0.5d0*(uold(ind_grid(i)+iskip,2)**2 + uold(ind_grid(i)+iskip,3)**2 + uold(ind_grid(i)+iskip,4)**2)/max(uold(ind_grid(i)+iskip,1),smallr))*(gamma-1.0)
+                 Tovermu = prs/max(uold(ind_grid(i)+iskip,1),smallr)*scale_T2
+                 nH = max(uold(ind_grid(i)+iskip,1),smallr)*scale_nH
+                 call GetMuAndTemperature(Tovermu,nH,mu,T2,nHI)
+                 xdp(i) = mu
+              enddo
+              call generic_dump(field_name, info_var_count, xdp, unit_out, dump_info_flag, unit_info)
+
+              ! Write HI density
+              write(field_name, '("scalar_", i0.2)') nvar - ndim - 3 - nener + 2
+              do i = 1, ncache
+                 prs = (uold(ind_grid(i)+iskip,ndim+2) - 0.5d0*(uold(ind_grid(i)+iskip,2)**2 + uold(ind_grid(i)+iskip,3)**2 + uold(ind_grid(i)+iskip,4)**2)/max(uold(ind_grid(i)+iskip,1),smallr))*(gamma-1.0)
+                 Tovermu = prs/max(uold(ind_grid(i)+iskip,1),smallr)*scale_T2
+                 nH = max(uold(ind_grid(i)+iskip,1),smallr)*scale_nH
+                 call GetMuAndTemperature(Tovermu,nH,mu,T2,nHI)
+                 xdp(i) = nHI
+              enddo
+              call generic_dump(field_name, info_var_count, xdp, unit_out, dump_info_flag, unit_info)
+
+
               ! We did one output, deactivate dumping of variables
               dump_info_flag = .false.
            end do

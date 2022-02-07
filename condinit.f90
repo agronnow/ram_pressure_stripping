@@ -240,13 +240,14 @@ subroutine GetMuFromTemperature(T,nH,mu)
   use amr_parameters, ONLY: dp, aexp
   use cooling_module, ONLY: set_rates, cmp_chem_eq
   implicit none
-  real(dp)::T,nH,mu
+  real(dp)::T,nH,mu,z
   real(dp)::mu_old,err_mu,mu_left,mu_right,n_TOT
   real(dp),dimension(1:3) :: t_rad_spec,h_rad_spec
   real(dp),dimension(1:6) :: n_spec
   integer::niter
 
     call set_rates(t_rad_spec,h_rad_spec,aexp)
+    z = 1.d0/aexp-1.D0
 
     ! Iteration to find mu
     err_mu=1.
@@ -256,7 +257,7 @@ subroutine GetMuFromTemperature(T,nH,mu)
     do while (err_mu > 1.d-4 .and. niter <= 50)
        mu_old=0.5*(mu_left+mu_right)
        !T = T2*mu_old
-       call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu)
+       call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu,z)
        err_mu = (mu-mu_old)/mu_old
        if(err_mu>0.)then
           mu_left =0.5*(mu_left+mu_right)

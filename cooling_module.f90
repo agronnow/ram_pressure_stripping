@@ -1116,6 +1116,7 @@ subroutine cmp_metals(T2,nH,mu,metal_tot,metal_prime,aexp)
   else ! Theuns or Teyssier
      ux=1d-4*J0simple(aexp)/1d-22/(nH/boost)
   endif
+  if(rahmati_shielding)ux = selfshielding_factor(nH,ZZ)*ux
   g_courty=c1*(TT/TT0)**alpha1+c2*exp(-TTC/TT)
   g_courty_prime=(c1*alpha1*(TT/TT0)**alpha1+c2*exp(-TTC/TT)*TTC/TT)/TT
   f_courty=1d0/(1d0+ux/g_courty)
@@ -1165,13 +1166,15 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
   implicit none
 
   real(kind=8),dimension(1:3)::t_rad_spec,h_rad_spec
-  real(kind=8) ::T2,nH,cool_tot,heat_tot,cool_com,heat_com,mu_out,aexp
+  real(kind=8) ::T2,nH,cool_tot,heat_tot,cool_com,heat_com,mu_out,aexp,z,f_shield
   real(kind=8) ::mu,mu_old,err_mu,mu_left,mu_right
   real(kind=8) ::T
   real(kind=8) ::n_E,n_HI,n_HII,n_HEI,n_HEII,n_HEIII,n_TOT
   real(kind=8),dimension(1:6)::n_spec
   real(kind=8) ::cb1,cb2,cb3,ci1,ci2,ci3,cr1,cr2,cr3,cd,ce1,ce2,ce3,ch1,ch2,ch3,coc,coh
   integer::niter
+
+  z = 1.d0/aexp-1.D0
 
   ! Iteration to find mu
   err_mu=1.
@@ -1181,7 +1184,7 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
   do while (err_mu > 1.d-4 .and. niter <= 50)
      mu_old=0.5*(mu_left+mu_right)
      T = T2*mu_old
-     call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu)
+     call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu,z)
      err_mu = (mu-mu_old)/mu_old
      if(err_mu>0.)then
         mu_left =0.5*(mu_left+mu_right)
@@ -1197,6 +1200,9 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
      write(*,*) 'ERROR in cmp_cooling : too many iterations.'
      STOP
   endif
+
+  f_shield = 1d0
+  if (rahmati_shielding)f_shield = selfshielding_factor(nH,z)
 
   ! Get equilibrium abundances
   n_E     = n_spec(1) ! electrons
@@ -1225,7 +1231,7 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
   ce2 = cool_exc(HEI, T)*n_E*n_HEI  /nH**2
   ce3 = cool_exc(HEII,T)*n_E*n_HEII /nH**2
   ! Radiative heating
-  ch1 = h_rad_spec(HI  )    *n_HI   /nH**2
+  ch1 = f_shield*h_rad_spec(HI  )    *n_HI   /nH**2
   ch2 = h_rad_spec(HEI )    *n_HEI  /nH**2
   ch3 = h_rad_spec(HEII)    *n_HEII /nH**2
   ! Total cooling and heating rates
@@ -1266,10 +1272,10 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
   endif
 end subroutine cmp_cooling
 !=======================================================================
-subroutine cmp_chem_eq(T,n_H,t_rad_spec,n_spec,n_TOT,mu)
+subroutine cmp_chem_eq(T,n_H,t_rad_spec,n_spec,n_TOT,mu,z)
 !=======================================================================
   implicit none
-  real(kind=8)::T,n_H,n_TOT,mu
+  real(kind=8)::T,n_H,n_TOT,mu,z
   real(kind=8),dimension(1:3)::t_rad_spec
   real(kind=8),dimension(1:6)::n_spec
   real(kind=8)::xx,yy
@@ -1294,6 +1300,8 @@ subroutine cmp_chem_eq(T,n_H,t_rad_spec,n_spec,n_TOT,mu)
   t_rad_HEII = t_rad_spec(HEII)
   t_rec_HEII = taux_rec  (HEII,T)
   t_ion_HEII = taux_ion  (HEII,T)
+
+  if(rahmati_shielding)t_rad_HI = selfshielding_factor(n_H,z)*t_rad_HI
 
   n_E = n_H
   err_nE = 1.
@@ -1683,6 +1691,31 @@ function HsurH0(z,omega0,omegaL,OmegaR)
   real(kind=8) :: HsurH0,z,omega0,omegaL,omegaR
   HsurH0=sqrt(Omega0*(1.d0+z)**3+OmegaR*(1.d0+z)**2+OmegaL)
 end function HsurH0
+
+function selfshielding_factor(nH,z)
+!Self-shielding approximation of eq. A1 in Rahmati et al. 2013
+  implicit none
+  real(kind=8)::selfshielding_factor,nH,z,dz,n0,alpha1,alpha2,beta,f
+  integer::itab
+  real(kind=8),dimension(1:6)::z_tab     =(/     0d0,      1d0,      2d0,      3d0,      4d0,      5d0/)
+  real(kind=8),dimension(1:6)::n0_tab    =(/1.148d-3, 5.129d-3, 8.701d-3, 7.413d-3, 5.888d-3, 4.467d-3/)
+  real(kind=8),dimension(1:6)::alpha1_tab=(/ -3.98d0,  -2.94d0,  -2.22d0,  -1.99d0,  -2.05d0,  -2.63d0/)
+  real(kind=8),dimension(1:6)::alpha2_tab=(/ -1.09d0,  -0.90d0,  -1.09d0,  -0.88d0,  -0.75d0,  -0.57d0/)
+  real(kind=8),dimension(1:6)::beta_tab  =(/  1.29d0,   1.21d0,   1.75d0,   1.72d0,   1.93d0,   1.77d0/)
+  real(kind=8),dimension(1:6)::f_tab     =(/    1d-2,     3d-2,     3d-2,     4d-2,     2d-2,     1d-2/)
+
+  dz = z_tab(2)-z_tab(1)
+  itab = idint((z-z_tab(1))/dz)+1 !Assume table is evenly spaced in z
+  if (itab < 1)itab=1
+  if (itab > 6)itab=6
+  n0 = (n0_tab(itab)*(z_tab(itab+1) - z) + n0_tab(itab+1)*(z - z_tab(itab)))/dz
+  alpha1 = (alpha1_tab(itab)*(z_tab(itab+1) - z) + alpha1_tab(itab+1)*(z - z_tab(itab)))/dz
+  alpha2 = (alpha2_tab(itab)*(z_tab(itab+1) - z) + alpha2_tab(itab+1)*(z - z_tab(itab)))/dz
+  beta = (beta_tab(itab)*(z_tab(itab+1) - z) + beta_tab(itab+1)*(z - z_tab(itab)))/dz
+  f = (f_tab(itab)*(z_tab(itab+1) - z) + f_tab(itab+1)*(z - z_tab(itab)))/dz
+
+  selfshielding_factor = (1d0 - f)*(1d0+(nH/n0)**beta)**alpha1 + f*(1d0+nH/n0)**alpha2
+end function selfshielding_factor
 
 end module cooling_module
 

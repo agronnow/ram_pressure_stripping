@@ -84,6 +84,7 @@ subroutine init_hydro
      read(ilun)nlevelmax2
      read(ilun)nboundary2
      read(ilun)gamma2
+     nvar2=nvar2-2 !Remove mu and n_HI fields
      if(myid==1)then
         write(*,*)'Restart - Non-thermal pressure / Passive scalar mapping'
         write(*,'(A50)')"__________________________________________________"
@@ -236,6 +237,8 @@ subroutine init_hydro
                     end do
                  end do
 #endif
+                 read(ilun)xx !Read dummy mu field
+                 read(ilun)xx !Read dummy n_HI field
               end do
               deallocate(ind_grid,xx)
            end if
