@@ -1752,7 +1752,7 @@ function get_uvb_expfac(tsim)
     endif
   endif
 
-  cosmo_time = tsim*scale_t/3.154e16 + tinit_sim
+  cosmo_time = tsim*scale_t/3.154d16 + tinit_sim
   !Note: this table is ordered descending in time
   itab = 1
   do while (tab_t(itab) > cosmo_time)

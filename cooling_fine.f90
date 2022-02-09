@@ -44,8 +44,8 @@ subroutine cooling_fine(ilevel)
          if(myid==1)write(*,*)'Computing new cooling table'
          call set_table(dble(aexp))
      else if(evolve_uvb)then
-         if(myid==1)write(*,*)'Computing new cooling table for redshift z=',1d0/cura-1d0
          cura = get_uvb_expfac(t)
+         if(myid==1)write(*,*)'Computing new cooling table for redshift z=',1d0/cura-1d0
          call set_table(cura)
 #endif
      endif
