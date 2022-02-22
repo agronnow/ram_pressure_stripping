@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.5
 tend=20.0
-output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/corrwind/n5e-4/'
+output_dir='/p/project/icei-prace-2020-0005/draco/mvir14e11/corrwind/n1e-3/'
 /
 
 &HYDRO_PARAMS
@@ -61,6 +61,8 @@ slope_type=3
 scheme='muscl'
 riemann='hllc'
 pressure_fix = .true.
+!smallr = 1d-9
+!smallc = 1d-9
 /
 
 &REFINE_PARAMS
@@ -98,19 +100,19 @@ x2_c=0.25
 x3_c=0.5
 nrestart_wind = 1000
 vel_wind=13.21729091991593918 !13.77649242330087986 !12.64737027032685
-rad_wind = 0.2790139901350311 !0.28144423454245976
-rhomax_wind = 1.e-3
+rad_wind = 0.22500815593911125
+rhomax_wind = 2.e-3
 T_wind=1.8d6
-ndens_wind=5.d-4
+ndens_wind=1.d-3
 T_cloud=1.d4
-Rad_cloud=0.2790139901350311 !0.28144423454245976
-R_s=1.46 !Kaplinghat+19
-rhodm0=1.12 !Kaplinghat+19
-n0g=4.799602506980033 !4.739554326856751
-r_cut=0.2790139901350311  !0.28144423454245976
+Rad_cloud=0.22500815593911125
+R_s=1.46
+rhodm0=1.12
+n0g=4.894074913400105
+r_cut=0.22500815593911125
 t_pot_grow_start = 0.0 !0.1
 pot_grow_rate = 0.0 !3.0
-r_tidal = 14.87035894184391971 !13.23007970429652858 !3.152842055082989425 !0.8
+r_tidal = 14.87035894184391971 !3.152842055082989425 !0.8
 Z_wind = 0.1
 Z_cloud = 0.01
 rtidalfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco-mvir14e11-new.dat'
@@ -130,21 +132,24 @@ mominj_rad = 1
 mom_fac = 1.0
 SN_blast_mass = 0.0001
 rho_SN = 0.0118
-vsfr_fac = 12.59 !7.94 Baccinni+
-vsfr_pow = 2.03 !1.91 Baccinni+
+vsfr_fac = 12.59 !7.94
+vsfr_pow = 2.03 !1.91
 tinit_sim = 3.3
 tbeg_wind = 0.0 !0.454144942123127
 sfr_boost = 1.0
 dt_sfhist = 0.01
 dt_sfrlog = 0.001
-r_plummer = 0.196 !Walker+07, Massari+20
-M_plummer = 0.013 !Martin+08, Massari+20
+r_plummer = 0.196
+M_plummer = 0.013
 ein_n = 0.0
 Tmu_min = 120.0!8650.0
 use_heating = .true.
 dt_floor = 0.0
-velocity_multiplier=0.5
-seed_init = 100
+velocity_multiplier = 0.5
+n_shield=0.0
 rahmati_shielding = .true.
 evolve_uvb = .true.
+!seed_init = 20
+sound_speed_thresh = 2.5d3
+flatten_mode = 2
 /

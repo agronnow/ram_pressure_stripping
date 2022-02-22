@@ -20,6 +20,8 @@ subroutine godunov_fine(ilevel)
   if(static)return
   if(verbose)write(*,111)ilevel
 
+  if (ilevel == nlevelmax)call flag_flatten(ilevel, ncache)
+  
   ! Loop over active grids by vector sweeps
   ncache=active(ilevel)%ngrid
   do igrid=1,ncache,nvector

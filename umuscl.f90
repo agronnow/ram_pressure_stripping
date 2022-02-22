@@ -64,6 +64,8 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
   ! Velocity divergence
   real(dp),dimension(1:nvector,if1:if2,jf1:jf2,kf1:kf2)::divu
 
+  integer,dimension(1:nvector,iu1:iu2,ju1:ju2,ku1:ku2)::flatten_flag
+  
   ! Local scalar variables
   integer::i,j,k,l,ivar
   integer::ilo,ihi,jlo,jhi,klo,khi
@@ -73,10 +75,10 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
   klo=MIN(1,ku1+2); khi=MAX(1,ku2-2)
 
   ! Translate to primative variables, compute sound speeds
-  call ctoprim(uin,qin,cin,gravin,dt,ngrid)
+  call ctoprim(uin,qin,cin,gravin,dt,ngrid,flatten_flag)
 
   ! Compute TVD slopes
-  call uslope(qin,dq,dx,dt,ngrid)
+  call uslope(qin,dq,dx,dt,ngrid,flatten_flag)
 
   ! Compute 3D traced-states in all three directions
   if(scheme=='muscl')then
@@ -105,7 +107,7 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
   ! Solve for 1D flux in X direction
   call cmpflxm(qm,iu1+1,iu2+1,ju1  ,ju2  ,ku1  ,ku2  , &
        &       qp,iu1  ,iu2  ,ju1  ,ju2  ,ku1  ,ku2  , &
-       &          if1  ,if2  ,jlo  ,jhi  ,klo  ,khi  , 2,3,4,fx,tx,ngrid)
+       &          if1  ,if2  ,jlo  ,jhi  ,klo  ,khi  , 2,3,4,fx,tx,ngrid,flatten_flag)
   ! Save flux in output array
   do i=if1,if2
   do j=jlo,jhi
@@ -135,7 +137,7 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
 #if NDIM>1
   call cmpflxm(qm,iu1  ,iu2  ,ju1+1,ju2+1,ku1  ,ku2  , &
        &       qp,iu1  ,iu2  ,ju1  ,ju2  ,ku1  ,ku2  , &
-       &          ilo  ,ihi  ,jf1  ,jf2  ,klo  ,khi  , 3,2,4,fx,tx,ngrid)
+       &          ilo  ,ihi  ,jf1  ,jf2  ,klo  ,khi  , 3,2,4,fx,tx,ngrid,flatten_flag)
   ! Save flux in output array
   do i=ilo,ihi
   do j=jf1,jf2
@@ -165,7 +167,7 @@ subroutine unsplit(uin,gravin,pin,flux,tmp,dx,dy,dz,dt,ngrid)
 #if NDIM>2
   call cmpflxm(qm,iu1  ,iu2  ,ju1  ,ju2  ,ku1+1,ku2+1, &
        &       qp,iu1  ,iu2  ,ju1  ,ju2  ,ku1  ,ku2  , &
-       &          ilo  ,ihi  ,jlo  ,jhi  ,kf1  ,kf2  , 4,2,3,fx,tx,ngrid)
+       &          ilo  ,ihi  ,jlo  ,jhi  ,kf1  ,kf2  , 4,2,3,fx,tx,ngrid,flatten_flag)
   ! Save flux in output array
   do i=ilo,ihi
   do j=jlo,jhi
@@ -742,7 +744,7 @@ end subroutine trace3d
 subroutine cmpflxm(qm,im1,im2,jm1,jm2,km1,km2, &
      &             qp,ip1,ip2,jp1,jp2,kp1,kp2, &
      &                ilo,ihi,jlo,jhi,klo,khi, ln,lt1,lt2, &
-     &            flx,tmp,ngrid)
+     &            flx,tmp,ngrid,flatten_flag)
   use amr_parameters
   use hydro_parameters
   use const
@@ -770,6 +772,7 @@ subroutine cmpflxm(qm,im1,im2,jm1,jm2,km1,km2, &
 #else
   real(dp),dimension(1:nvector,1:nvar+1),save::fgdnv
 #endif
+  integer,dimension(1:nvector,ip1:ip2,jp1:jp2,kp1:kp2)::flatten_flag
 #if NVAR > NDIM + 2
   integer ::n
 #endif
@@ -830,7 +833,11 @@ subroutine cmpflxm(qm,im1,im2,jm1,jm2,km1,km2, &
            else if (riemann.eq.'llf')then
               call riemann_llf     (qleft,qright,fgdnv,ngrid)
            else if (riemann.eq.'hllc')then
-              call riemann_hllc    (qleft,qright,fgdnv,ngrid)
+              if (flatten_flag(l,i,j,k)>0)then ! Fall back from HLLC to more diffusive HLL solver for cells flagged for flattening
+                 call riemann_hll     (qleft,qright,fgdnv,ngrid)
+              else
+                 call riemann_hllc    (qleft,qright,fgdnv,ngrid)
+              endif
            else if (riemann.eq.'hll')then
               call riemann_hll     (qleft,qright,fgdnv,ngrid)
            else
@@ -898,7 +905,7 @@ end subroutine cmpflxm
 !###########################################################
 !###########################################################
 !###########################################################
-subroutine ctoprim(uin,q,c,gravin,dt,ngrid)
+subroutine ctoprim(uin,q,c,gravin,dt,ngrid,flatten_flag)
   use amr_parameters
   use hydro_parameters
   use const
@@ -920,6 +927,10 @@ subroutine ctoprim(uin,q,c,gravin,dt,ngrid)
 #if NENER>0
   integer ::irad
 #endif
+
+  integer,dimension(1:nvector,iu1:iu2,ju1:ju2,ku1:ku2)::flatten_flag
+
+  flatten_flag = 0
 
   smalle = smallc**2/gamma/(gamma-one)
   dtxhalf = dt*half
@@ -972,6 +983,11 @@ subroutine ctoprim(uin,q,c,gravin,dt,ngrid)
 #endif
               c(l,i,j,k)=sqrt(c(l,i,j,k)*oneoverrho)
 
+              if (uin(l,i,j,k,imetal)/uin(l,i,j,k,1) > 10.0) then ! Cells that should be flattened have been flaggen in flag_flatten by artificially boosting their metallicities
+                 write(*,*)'WARNING: Velocity + sound speed above threshold at ',i,j,k,l,' - c_s:',c(l,i,j,k),' velocities:',q(l,i,j,k,2),q(l,i,j,k,3),q(l,i,j,k,4)
+                 flatten_flag(l,iu1:iu2,ju1:ju2,ku1:ku2) = flatten_mode ! flatten_mode determines severity of numerical diffusion added: 1=use HLL solver, 2=use both HLL solver and minmod slope limiter
+              endif
+
               ! Gravity predictor step
               q(l,i,j,k,2) = q(l,i,j,k,2) + gravin(l,i,j,k,1)*dtxhalf
 #if NDIM>1
@@ -995,6 +1011,7 @@ subroutine ctoprim(uin,q,c,gravin,dt,ngrid)
               do l = 1, ngrid
                  oneoverrho = one/q(l,i,j,k,1)
                  q(l,i,j,k,n) = uin(l,i,j,k,n)*oneoverrho
+                 if ((n == imetal) .and. (q(l,i,j,k,imetal) > 10.0))q(l,i,j,k,imetal) = q(l,i,j,k,imetal)/1d6 !Restore metallicities of cells flagged for flattening
               end do
            end do
         end do
@@ -1007,7 +1024,7 @@ end subroutine ctoprim
 !###########################################################
 !###########################################################
 !###########################################################
-subroutine uslope(q,dq,dx,dt,ngrid)
+subroutine uslope(q,dq,dx,dt,ngrid,flatten_flag)
   use amr_parameters
   use hydro_parameters
   use const
@@ -1035,6 +1052,8 @@ subroutine uslope(q,dq,dx,dt,ngrid)
 #endif
   integer::ilo,ihi,jlo,jhi,klo,khi
 
+  integer,dimension(1:nvector,iu1:iu2,ju1:ju2,ku1:ku2)::flatten_flag
+  
   ilo=MIN(1,iu1+1); ihi=MAX(1,iu2-1)
   jlo=MIN(1,ju1+1); jhi=MAX(1,ju2-1)
   klo=MIN(1,ku1+1); khi=MAX(1,ku2-1)
@@ -1370,62 +1389,102 @@ subroutine uslope(q,dq,dx,dt,ngrid)
         do k = klo, khi
            do j = jlo, jhi
               do i = ilo, ihi
-                 do l = 1, ngrid
-                    dflll = q(l,i-1,j-1,k-1,n)-q(l,i,j,k,n)
-                    dflml = q(l,i-1,j  ,k-1,n)-q(l,i,j,k,n)
-                    dflrl = q(l,i-1,j+1,k-1,n)-q(l,i,j,k,n)
-                    dfmll = q(l,i  ,j-1,k-1,n)-q(l,i,j,k,n)
-                    dfmml = q(l,i  ,j  ,k-1,n)-q(l,i,j,k,n)
-                    dfmrl = q(l,i  ,j+1,k-1,n)-q(l,i,j,k,n)
-                    dfrll = q(l,i+1,j-1,k-1,n)-q(l,i,j,k,n)
-                    dfrml = q(l,i+1,j  ,k-1,n)-q(l,i,j,k,n)
-                    dfrrl = q(l,i+1,j+1,k-1,n)-q(l,i,j,k,n)
+                 if(flatten_flag(l,i,j,k)==2)then
+                    ! Fall back to minmod scheme to add diffusion to cells flagged for slope flattening
+                    ! slopes in first coordinate direction
+                    do l = 1, ngrid
+                       dlft = q(l,i  ,j,k,n) - q(l,i-1,j,k,n)
+                       drgt = q(l,i+1,j,k,n) - q(l,i  ,j,k,n)
+                       if((dlft*drgt)<=zero) then
+                          dq(l,i,j,k,n,1) = zero
+                       else if(dlft>0) then
+                          dq(l,i,j,k,n,1) = min(dlft,drgt)
+                       else
+                          dq(l,i,j,k,n,1) = max(dlft,drgt)
+                       end if
+                    end do
+                    ! slopes in second coordinate direction
+                    do l = 1, ngrid
+                       dlft = q(l,i,j  ,k,n) - q(l,i,j-1,k,n)
+                       drgt = q(l,i,j+1,k,n) - q(l,i,j  ,k,n)
+                       if((dlft*drgt)<=zero) then
+                          dq(l,i,j,k,n,2) = zero
+                       else if(dlft>0) then
+                          dq(l,i,j,k,n,2) = min(dlft,drgt)
+                       else
+                          dq(l,i,j,k,n,2) = max(dlft,drgt)
+                       end if
+                    end do
+                    ! slopes in third coordinate direction
+                    do l = 1, ngrid
+                       dlft = q(l,i,j,k  ,n) - q(l,i,j,k-1,n)
+                       drgt = q(l,i,j,k+1,n) - q(l,i,j,k  ,n)
+                       if((dlft*drgt)<=zero) then
+                          dq(l,i,j,k,n,3) = zero
+                       else if(dlft>0) then
+                          dq(l,i,j,k,n,3) = min(dlft,drgt)
+                       else
+                          dq(l,i,j,k,n,3) = max(dlft,drgt)
+                       end if
+                    end do
+                 else
+                    do l = 1, ngrid
+                       dflll = q(l,i-1,j-1,k-1,n)-q(l,i,j,k,n)
+                       dflml = q(l,i-1,j  ,k-1,n)-q(l,i,j,k,n)
+                       dflrl = q(l,i-1,j+1,k-1,n)-q(l,i,j,k,n)
+                       dfmll = q(l,i  ,j-1,k-1,n)-q(l,i,j,k,n)
+                       dfmml = q(l,i  ,j  ,k-1,n)-q(l,i,j,k,n)
+                       dfmrl = q(l,i  ,j+1,k-1,n)-q(l,i,j,k,n)
+                       dfrll = q(l,i+1,j-1,k-1,n)-q(l,i,j,k,n)
+                       dfrml = q(l,i+1,j  ,k-1,n)-q(l,i,j,k,n)
+                       dfrrl = q(l,i+1,j+1,k-1,n)-q(l,i,j,k,n)
 
-                    dfllm = q(l,i-1,j-1,k  ,n)-q(l,i,j,k,n)
-                    dflmm = q(l,i-1,j  ,k  ,n)-q(l,i,j,k,n)
-                    dflrm = q(l,i-1,j+1,k  ,n)-q(l,i,j,k,n)
-                    dfmlm = q(l,i  ,j-1,k  ,n)-q(l,i,j,k,n)
-                    dfmmm = q(l,i  ,j  ,k  ,n)-q(l,i,j,k,n)
-                    dfmrm = q(l,i  ,j+1,k  ,n)-q(l,i,j,k,n)
-                    dfrlm = q(l,i+1,j-1,k  ,n)-q(l,i,j,k,n)
-                    dfrmm = q(l,i+1,j  ,k  ,n)-q(l,i,j,k,n)
-                    dfrrm = q(l,i+1,j+1,k  ,n)-q(l,i,j,k,n)
+                       dfllm = q(l,i-1,j-1,k  ,n)-q(l,i,j,k,n)
+                       dflmm = q(l,i-1,j  ,k  ,n)-q(l,i,j,k,n)
+                       dflrm = q(l,i-1,j+1,k  ,n)-q(l,i,j,k,n)
+                       dfmlm = q(l,i  ,j-1,k  ,n)-q(l,i,j,k,n)
+                       dfmmm = q(l,i  ,j  ,k  ,n)-q(l,i,j,k,n)
+                       dfmrm = q(l,i  ,j+1,k  ,n)-q(l,i,j,k,n)
+                       dfrlm = q(l,i+1,j-1,k  ,n)-q(l,i,j,k,n)
+                       dfrmm = q(l,i+1,j  ,k  ,n)-q(l,i,j,k,n)
+                       dfrrm = q(l,i+1,j+1,k  ,n)-q(l,i,j,k,n)
 
-                    dfllr = q(l,i-1,j-1,k+1,n)-q(l,i,j,k,n)
-                    dflmr = q(l,i-1,j  ,k+1,n)-q(l,i,j,k,n)
-                    dflrr = q(l,i-1,j+1,k+1,n)-q(l,i,j,k,n)
-                    dfmlr = q(l,i  ,j-1,k+1,n)-q(l,i,j,k,n)
-                    dfmmr = q(l,i  ,j  ,k+1,n)-q(l,i,j,k,n)
-                    dfmrr = q(l,i  ,j+1,k+1,n)-q(l,i,j,k,n)
-                    dfrlr = q(l,i+1,j-1,k+1,n)-q(l,i,j,k,n)
-                    dfrmr = q(l,i+1,j  ,k+1,n)-q(l,i,j,k,n)
-                    dfrrr = q(l,i+1,j+1,k+1,n)-q(l,i,j,k,n)
+                       dfllr = q(l,i-1,j-1,k+1,n)-q(l,i,j,k,n)
+                       dflmr = q(l,i-1,j  ,k+1,n)-q(l,i,j,k,n)
+                       dflrr = q(l,i-1,j+1,k+1,n)-q(l,i,j,k,n)
+                       dfmlr = q(l,i  ,j-1,k+1,n)-q(l,i,j,k,n)
+                       dfmmr = q(l,i  ,j  ,k+1,n)-q(l,i,j,k,n)
+                       dfmrr = q(l,i  ,j+1,k+1,n)-q(l,i,j,k,n)
+                       dfrlr = q(l,i+1,j-1,k+1,n)-q(l,i,j,k,n)
+                       dfrmr = q(l,i+1,j  ,k+1,n)-q(l,i,j,k,n)
+                       dfrrr = q(l,i+1,j+1,k+1,n)-q(l,i,j,k,n)
 
-                    vmin = min(dflll,dflml,dflrl,dfmll,dfmml,dfmrl,dfrll,dfrml,dfrrl, &
-                         &     dfllm,dflmm,dflrm,dfmlm,dfmmm,dfmrm,dfrlm,dfrmm,dfrrm, &
-                         &     dfllr,dflmr,dflrr,dfmlr,dfmmr,dfmrr,dfrlr,dfrmr,dfrrr)
-                    vmax = max(dflll,dflml,dflrl,dfmll,dfmml,dfmrl,dfrll,dfrml,dfrrl, &
-                         &     dfllm,dflmm,dflrm,dfmlm,dfmmm,dfmrm,dfrlm,dfrmm,dfrrm, &
-                         &     dfllr,dflmr,dflrr,dfmlr,dfmmr,dfmrr,dfrlr,dfrmr,dfrrr)
+                       vmin = min(dflll,dflml,dflrl,dfmll,dfmml,dfmrl,dfrll,dfrml,dfrrl, &
+                            &     dfllm,dflmm,dflrm,dfmlm,dfmmm,dfmrm,dfrlm,dfrmm,dfrrm, &
+                            &     dfllr,dflmr,dflrr,dfmlr,dfmmr,dfmrr,dfrlr,dfrmr,dfrrr)
+                       vmax = max(dflll,dflml,dflrl,dfmll,dfmml,dfmrl,dfrll,dfrml,dfrrl, &
+                            &     dfllm,dflmm,dflrm,dfmlm,dfmmm,dfmrm,dfrlm,dfrmm,dfrrm, &
+                            &     dfllr,dflmr,dflrr,dfmlr,dfmmr,dfmrr,dfrlr,dfrmr,dfrrr)
 
-                    dfx  = half*(q(l,i+1,j,k,n)-q(l,i-1,j,k,n))
-                    dfy  = half*(q(l,i,j+1,k,n)-q(l,i,j-1,k,n))
-                    dfz  = half*(q(l,i,j,k+1,n)-q(l,i,j,k-1,n))
-                    dff  = half*(abs(dfx)+abs(dfy)+abs(dfz))
+                       dfx  = half*(q(l,i+1,j,k,n)-q(l,i-1,j,k,n))
+                       dfy  = half*(q(l,i,j+1,k,n)-q(l,i,j-1,k,n))
+                       dfz  = half*(q(l,i,j,k+1,n)-q(l,i,j,k-1,n))
+                       dff  = half*(abs(dfx)+abs(dfy)+abs(dfz))
 
-                    if(dff>zero)then
-                       slop = min(one,min(abs(vmin),abs(vmax))/dff)
-                    else
-                       slop = one
-                    endif
+                       if(dff>zero)then
+                          slop = min(one,min(abs(vmin),abs(vmax))/dff)
+                       else
+                          slop = one
+                       endif
 
-                    dlim = slop
+                       dlim = slop
 
-                    dq(l,i,j,k,n,1) = dlim*dfx
-                    dq(l,i,j,k,n,2) = dlim*dfy
-                    dq(l,i,j,k,n,3) = dlim*dfz
+                       dq(l,i,j,k,n,1) = dlim*dfx
+                       dq(l,i,j,k,n,2) = dlim*dfy
+                       dq(l,i,j,k,n,3) = dlim*dfz
 
-                 end do
+                    end do
+                 endif
               end do
            end do
         end do

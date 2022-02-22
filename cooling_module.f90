@@ -1747,7 +1747,7 @@ function get_uvb_expfac(tsim)
        end do
        close(ilun)
     else
-       write(*,*)"ERROR: File ",trim(tzfile)," missing!"
+       write(*,*)"ERROR: Redshift-time table file ",trim(tzfile)," missing!"
        STOP
     endif
   endif

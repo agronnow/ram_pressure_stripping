@@ -1845,7 +1845,7 @@ end subroutine init_subgrid_feedback
 
 subroutine GetMuAndTemperature(Tovermu,nH,mu,T2,nHI)
   use amr_commons, ONLY: t
-  use amr_parameters, ONLY: dp!, aexp
+  use amr_parameters, ONLY: dp, aexp, evolve_uvb
   use cooling_module, ONLY: set_rates, cmp_chem_eq, get_uvb_expfac
   implicit none
   real(dp)::Tovermu,T2,nH,mu,nHI,z,cura
@@ -1854,35 +1854,39 @@ subroutine GetMuAndTemperature(Tovermu,nH,mu,T2,nHI)
   real(dp),dimension(1:6) :: n_spec
   integer::niter
 
-    cura = get_uvb_expfac(t)
-    call set_rates(t_rad_spec,h_rad_spec,cura)
-    z = 1.d0/cura-1.D0
+  if(evolve_uvb)then
+     cura = get_uvb_expfac(t)
+  else
+     cura = aexp
+  endif
+  call set_rates(t_rad_spec,h_rad_spec,cura)
+  z = 1.d0/cura-1.D0
 
-    ! Iteration to find mu
-    err_mu=1.
-    mu_left=0.5
-    mu_right=1.3
-    niter=0
-    do while (err_mu > 1.d-4 .and. niter <= 50)
-       mu_old=0.5*(mu_left+mu_right)
-       T2 = Tovermu*mu_old
-       call cmp_chem_eq(T2,nH,t_rad_spec,n_spec,n_TOT,mu,z)
-       nHI = n_spec(2)
-       err_mu = (mu-mu_old)/mu_old
-       if(err_mu>0.)then
-          mu_left =0.5*(mu_left+mu_right)
-          mu_right=mu_right
-       else
-          mu_left =mu_left
-          mu_right=0.5*(mu_left+mu_right)
-       end if
-       err_mu=ABS(err_mu)
-       niter=niter+1
-    end do
-    if (niter > 50) then
-       write(*,*) 'ERROR in calculation of mu : too many iterations.'
-       STOP
-    endif
+  ! Iteration to find mu
+  err_mu=1.
+  mu_left=0.5
+  mu_right=1.3
+  niter=0
+  do while (err_mu > 1.d-4 .and. niter <= 50)
+     mu_old=0.5*(mu_left+mu_right)
+     T2 = Tovermu*mu_old
+     call cmp_chem_eq(T2,nH,t_rad_spec,n_spec,n_TOT,mu,z)
+     nHI = n_spec(2)
+     err_mu = (mu-mu_old)/mu_old
+     if(err_mu>0.)then
+        mu_left =0.5*(mu_left+mu_right)
+        mu_right=mu_right
+     else
+        mu_left =mu_left
+        mu_right=0.5*(mu_left+mu_right)
+     end if
+     err_mu=ABS(err_mu)
+     niter=niter+1
+  end do
+  if (niter > 50) then
+     write(*,*) 'ERROR in calculation of mu : too many iterations.'
+     STOP
+  endif
 end subroutine GetMuAndTemperature
 
 !###########################################################

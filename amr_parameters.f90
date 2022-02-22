@@ -348,7 +348,7 @@ module amr_parameters
   real(dp)::dt_sfhist = 0.0             ! Time interval between SF history updates in SNIa rate calculation    [Gyr]
   real(dp)::dt_sfrlog = 0.0             ! Time interval between SF history log output                          [Gyr]
   real(dp)::r_plummer = 0.0             ! Plummer radius used in SNIa prob. (and stellar pot. if M_plummer>0)  [kpc]
-  real(dp)::M_plummer = 0.0             ! Plummer mass used in stellar potential                               [code mass units]
+  real(dp)::M_plummer = 0.0             ! Plummer mass used in stellar potential                               [sim mass units]
   real(dp)::ein_n = 0.0                 ! Einasto DM profile n (shape) parameter, if zero NFW is used instead  []
   real(dp)::SN_inject_x = 0.0           ! Center x coordinate of injection SN for runs with SN_INJECT defined  [kpc]
   real(dp)::SN_inject_y = 0.0           ! Center y coordinate of injection SN for runs with SN_INJECT defined  [kpc]
@@ -366,5 +366,7 @@ module amr_parameters
   real(dp)::n_shield = 0.0              ! Density normalisation for exponential self-shielding, 0=no shielding [cm^-3]
   logical::rahmati_shielding = .false.  ! Use photoionization+heating self-shielding approx. of Rahmati+ 2013
   logical::evolve_uvb = .true.          ! Evolve UV background with redshift during simulation
-
+  real(dp)::sound_speed_thresh = 1d10   ! Threshold flow+sound speed at which flattening is applied(see below) [sim velocity units]
+  integer::flatten_mode = 0             ! 0=no flattening, 1=use HLL solver, 2=use HLL and minmod limiter      []
+  
 end module amr_parameters

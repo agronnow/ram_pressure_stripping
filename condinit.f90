@@ -85,7 +85,7 @@ subroutine condinit(x,u,dx,nn)
            itab = idint((cosmo_time-tab_tv(1))/dt)+1 !Assume table is evenly spaced in t
            velinit = (tab_vel(itab)*(tab_tv(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_tv(itab)))/dt
         else
-           write(*,*)"ERROR: File ",trim(orbitfile)," missing!"
+           write(*,*)"ERROR: Time-orbit velocity table file ",trim(orbitfile)," missing!"
            STOP
         endif
      else
@@ -114,7 +114,7 @@ subroutine condinit(x,u,dx,nn)
            itab = idint((cosmo_time-tab_tr(1))/dt)+1 !Assume table is evenly spaced in t
            rtinit = (tab_rt(itab)*(tab_tr(itab+1) - cosmo_time) + tab_rt(itab+1)*(cosmo_time - tab_tr(itab)))/dt
         else
-           write(*,*)"ERROR: File ",trim(rtidalfile)," missing!"
+           write(*,*)"ERROR: Time-tidal radius table file ",trim(rtidalfile)," missing!"
            STOP
         endif
 !        write(*,*)'rtidal: ',rtinit,' idtab: ',itab
@@ -237,7 +237,7 @@ end subroutine condinit
 
 subroutine GetMuFromTemperature(T,nH,mu)
 !Note: T is assumed here to be actual temperature in Kelvin, NOT T/mu
-  use amr_parameters, ONLY: dp!, aexp
+  use amr_parameters, ONLY: dp, aexp, evolve_uvb
   use cooling_module, ONLY: set_rates, cmp_chem_eq, get_uvb_expfac
   implicit none
   real(dp)::T,nH,mu,z,cura
@@ -246,33 +246,37 @@ subroutine GetMuFromTemperature(T,nH,mu)
   real(dp),dimension(1:6) :: n_spec
   integer::niter
 
-    cura = get_uvb_expfac(0d0)
-    call set_rates(t_rad_spec,h_rad_spec,cura)
-    z = 1.d0/cura-1.D0
+  if(evolve_uvb)then
+     cura = get_uvb_expfac(0d0)
+  else
+     cura = aexp
+  endif
+  call set_rates(t_rad_spec,h_rad_spec,cura)
+  z = 1.d0/cura-1.D0
 
-    ! Iteration to find mu
-    err_mu=1.
-    mu_left=0.5
-    mu_right=1.3
-    niter=0
-    do while (err_mu > 1.d-4 .and. niter <= 50)
-       mu_old=0.5*(mu_left+mu_right)
-       !T = T2*mu_old
-       call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu,z)
-       err_mu = (mu-mu_old)/mu_old
-       if(err_mu>0.)then
-          mu_left =0.5*(mu_left+mu_right)
-          mu_right=mu_right
-       else
-          mu_left =mu_left
-          mu_right=0.5*(mu_left+mu_right)
-       end if
-       err_mu=ABS(err_mu)
-       niter=niter+1
-    end do
-    if (niter > 50) then
-       write(*,*) 'ERROR in calculation of mu : too many iterations.'
-       STOP
-    endif
+  ! Iteration to find mu
+  err_mu=1.
+  mu_left=0.5
+  mu_right=1.3
+  niter=0
+  do while (err_mu > 1.d-4 .and. niter <= 50)
+     mu_old=0.5*(mu_left+mu_right)
+     !T = T2*mu_old
+     call cmp_chem_eq(T,nH,t_rad_spec,n_spec,n_TOT,mu,z)
+     err_mu = (mu-mu_old)/mu_old
+     if(err_mu>0.)then
+        mu_left =0.5*(mu_left+mu_right)
+        mu_right=mu_right
+     else
+        mu_left =mu_left
+        mu_right=0.5*(mu_left+mu_right)
+     end if
+     err_mu=ABS(err_mu)
+     niter=niter+1
+  end do
+  if (niter > 50) then
+     write(*,*) 'ERROR in calculation of mu : too many iterations.'
+     STOP
+  endif
 end subroutine GetMuFromTemperature
 
