@@ -1389,10 +1389,10 @@ subroutine uslope(q,dq,dx,dt,ngrid,flatten_flag)
         do k = klo, khi
            do j = jlo, jhi
               do i = ilo, ihi
-                 if(flatten_flag(l,i,j,k)==2)then
-                    ! Fall back to minmod scheme to add diffusion to cells flagged for slope flattening
-                    ! slopes in first coordinate direction
-                    do l = 1, ngrid
+                 do l = 1, ngrid
+                    if(flatten_flag(l,i,j,k)==2)then
+                       ! Fall back to minmod scheme to add diffusion to cells flagged for slope flattening
+                       ! slopes in first coordinate direction
                        dlft = q(l,i  ,j,k,n) - q(l,i-1,j,k,n)
                        drgt = q(l,i+1,j,k,n) - q(l,i  ,j,k,n)
                        if((dlft*drgt)<=zero) then
@@ -1402,9 +1402,9 @@ subroutine uslope(q,dq,dx,dt,ngrid,flatten_flag)
                        else
                           dq(l,i,j,k,n,1) = max(dlft,drgt)
                        end if
-                    end do
+!                    end do
                     ! slopes in second coordinate direction
-                    do l = 1, ngrid
+!                    do l = 1, ngrid
                        dlft = q(l,i,j  ,k,n) - q(l,i,j-1,k,n)
                        drgt = q(l,i,j+1,k,n) - q(l,i,j  ,k,n)
                        if((dlft*drgt)<=zero) then
@@ -1414,9 +1414,9 @@ subroutine uslope(q,dq,dx,dt,ngrid,flatten_flag)
                        else
                           dq(l,i,j,k,n,2) = max(dlft,drgt)
                        end if
-                    end do
+!                    end do
                     ! slopes in third coordinate direction
-                    do l = 1, ngrid
+!                    do l = 1, ngrid
                        dlft = q(l,i,j,k  ,n) - q(l,i,j,k-1,n)
                        drgt = q(l,i,j,k+1,n) - q(l,i,j,k  ,n)
                        if((dlft*drgt)<=zero) then
@@ -1426,9 +1426,7 @@ subroutine uslope(q,dq,dx,dt,ngrid,flatten_flag)
                        else
                           dq(l,i,j,k,n,3) = max(dlft,drgt)
                        end if
-                    end do
-                 else
-                    do l = 1, ngrid
+                    else
                        dflll = q(l,i-1,j-1,k-1,n)-q(l,i,j,k,n)
                        dflml = q(l,i-1,j  ,k-1,n)-q(l,i,j,k,n)
                        dflrl = q(l,i-1,j+1,k-1,n)-q(l,i,j,k,n)
@@ -1482,9 +1480,8 @@ subroutine uslope(q,dq,dx,dt,ngrid,flatten_flag)
                        dq(l,i,j,k,n,1) = dlim*dfx
                        dq(l,i,j,k,n,2) = dlim*dfy
                        dq(l,i,j,k,n,3) = dlim*dfz
-
-                    end do
-                 endif
+                    endif
+                 end do
               end do
            end do
         end do
