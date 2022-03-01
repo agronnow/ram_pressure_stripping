@@ -161,7 +161,7 @@ subroutine condinit(x,u,dx,nn)
        rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
     endif
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
-    if (P_cloud < P_wind)then !((evolve_rtidal .and. (currad > rtinit)) .or. ((.not.(evolve_rtidal)) .and. (P_cloud < P_wind)))then
+    if ((P_cloud < P_wind) .or. (rad_cloud==0))then !((evolve_rtidal .and. (currad > rtinit)) .or. ((.not.(evolve_rtidal)) .and. (P_cloud < P_wind)))then
       q(i,1) = ndens_wind*mu_wind
       q(i,ndim+2) = P_wind
       q(i,2) = 0.0      !x-velocity

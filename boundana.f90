@@ -32,7 +32,8 @@ subroutine boundana(x,u,dx,ibound,ncell)
   integer::ivar,i
   real(dp),dimension(1:nvector,1:nvar),save::q ! Primitive variables
   real(dp),save::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
-  real(dp)::Pwind,nH,vel,cosmo_time!,v0
+  real(dp)::Pwind,nH,vel,cosmo_time
+  real(dp),save::vel0=-1d0
   real(dp),allocatable,save::tab_t(:),tab_vel(:)
   real(dp),save::dt
   integer::itab,ilun
@@ -85,6 +86,8 @@ subroutine boundana(x,u,dx,ibound,ncell)
      cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
      itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
      vel = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
+     if (vel0 < 0.0)vel0=vel
+!     write(*,*)"t, vel: ",cosmo_time,vel
   else !Static run
      vel = 0.0
   endif
@@ -92,7 +95,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
 !  vel = vel*velocity_multiplier
 
 !  v0=vel
-  vel = vel*(1d0+velocity_multiplier*((vel-13.2)/10.0))!(0.8-0.1*t))
+  vel = vel*(1d0+velocity_multiplier*((vel-vel0)/10.0))!13.2 !(0.8-0.1*t))
 !  write(*,*)t,vel/v0
 
   q(1:ncell,1) = ndens_wind*mu_wind	!density

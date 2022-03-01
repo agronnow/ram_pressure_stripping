@@ -18,6 +18,7 @@ subroutine flag_flatten(ilevel)
   integer,dimension(1:nvector,1:twondim),save::indn
   real(dp)::vel,cs,prs
 
+  if(verbose)write(*,*)"Entering flag_flatten"
   ! Loop over active grids
   ncache=active(ilevel)%ngrid
   do igrid=1,ncache,nvector
@@ -81,5 +82,7 @@ subroutine flag_flatten(ilevel)
 
   end do
   ! End loop over grids
+
+  if(verbose)write(*,*)"Exiting flag_flatten"
 
 end subroutine flag_flatten
