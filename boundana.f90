@@ -77,6 +77,9 @@ subroutine boundana(x,u,dx,ibound,ncell)
            close(ilun)
         endif
         dt = tab_t(2) - tab_t(1)
+        cosmo_time = tinit_sim*3.154e16/scale_t-tbeg_wind
+        itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
+        vel0 = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
      endif
      firstcall = .false.
   endif
@@ -86,17 +89,13 @@ subroutine boundana(x,u,dx,ibound,ncell)
      cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
      itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
      vel = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
-     if (vel0 < 0.0)vel0=vel
+     !Boost injection velocity to get the correct velocity inside the volume at the front of the galaxy
+     !velocity_multiplier must be calibrated for each potential
+     vel = vel*(1d0+velocity_multiplier*((vel-vel0)/10.0))
 !     write(*,*)"t, vel: ",cosmo_time,vel
   else !Static run
      vel = 0.0
   endif
-
-!  vel = vel*velocity_multiplier
-
-!  v0=vel
-  vel = vel*(1d0+velocity_multiplier*((vel-vel0)/10.0))!13.2 !(0.8-0.1*t))
-!  write(*,*)t,vel/v0
 
   q(1:ncell,1) = ndens_wind*mu_wind	!density
   q(1:ncell,2) = 0.0	        !x-velocity
