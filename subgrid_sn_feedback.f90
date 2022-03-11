@@ -709,15 +709,18 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #if NDIM==3
                    z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
 #endif
-                   nSN_loc=nSN_loc+1
-                   xSN_loc(nSN_loc,1)=x
-                   xSN_loc(nSN_loc,2)=y
+                   if (y > x2_c*boxlen + 4.0)then !Skip SNe in stripped gas >4 kpc behind galaxy
+                      write(*,*)"Skipping SN far upstream at ",x,y,z
+                   else
+                      nSN_loc=nSN_loc+1
+                      xSN_loc(nSN_loc,1)=x
+                      xSN_loc(nSN_loc,2)=y
 #if NDIM==3
-                   xSN_loc(nSN_loc,3)=z
+                      xSN_loc(nSN_loc,3)=z
 #endif
-                   levelSN_loc(nSN_loc) = ilevel
-                   mSN_loc(nSN_loc)=SN_batch_size*10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
-                   !if (outputSN) then
+                      levelSN_loc(nSN_loc) = ilevel
+                      mSN_loc(nSN_loc)=SN_batch_size*10.0*2d33/(scale_d*scale_l**3) !Always assume 10 solar mass ejection
+
                       fileloc=trim(output_dir)//'sn.dat'
                       ilun=140
                       inquire(file=fileloc,exist=file_exist)
@@ -736,7 +739,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 !                      write(ilun,'(4E26.16,I5,E26.16,E26.16,I5)') t, x, y, z, ilevel, PoissMean, uold(ind_cell(i),1), myid!, oldseed(1), oldseed(2), oldseed(3), oldseed(4)
 !#endif
                       close(ilun)
-                   !endif
+                   endif
                 !   do iSN=1,nSN
                 !      uold(ind_cell(i),ndim+2) = uold(ind_cell(i),ndim+2) + 10.0*2d33/(scale_d*scale_l**3)*ESN/vol_loc
                 !      write(*,*) "SN explosion!"

@@ -5,7 +5,7 @@
 subroutine boundana(x,u,dx,ibound,ncell)
   use amr_commons, ONLY: t
   use amr_parameters
-  use hydro_parameters, ONLY: nvar,nener,boundary_var,gamma,imetal
+  use hydro_parameters
   use cooling_module, ONLY: kb
   implicit none
   integer ::ibound                        ! Index of boundary region
@@ -42,6 +42,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
   real(dp),save::mu_wind
   logical::file_exists
   logical,save::firstcall=.true.
+  logical,save::first_vel_max=.true.
 
 !#ifdef SOLVERmhd
 !  do ivar=1,nvar+3
@@ -92,6 +93,13 @@ subroutine boundana(x,u,dx,ibound,ncell)
      !Boost injection velocity to get the correct velocity inside the volume at the front of the galaxy
      !velocity_multiplier must be calibrated for each potential
      vel = vel*(1d0+velocity_multiplier*((vel-vel0)/10.0))
+     if(vel > vel_max)then
+        if (first_vel_max)then
+           write(*,*)'WARNING: velocity ',vel,' exceeds vel_max, set to ',vel_max
+           first_vel_max=.false.
+        endif
+        vel=vel_max
+     endif
 !     write(*,*)"t, vel: ",cosmo_time,vel
   else !Static run
      vel = 0.0

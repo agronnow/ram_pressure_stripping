@@ -11,14 +11,36 @@ subroutine flag_flatten(ilevel)
   use hydro_commons
   implicit none
   integer::ilevel,ncache,i,j,iskip
-  integer::igrid,ind,idim,ngrid,ivar
+  integer::igrid,ind,idim,ngrid,ivar,ix,iy,iz
   integer::nx_loc
+  real(dp),dimension(1:twotondim,1:3)::xc
+  real(dp),dimension(1:3)::skip_loc
   integer,dimension(1:nvector),save::ind_grid,ind_cell
   integer,dimension(1:nvector,0:twondim),save::igridn
   integer,dimension(1:nvector,1:twondim),save::indn
-  real(dp)::vel,cs,prs
+  real(dp)::vel,cs,prs,x,y,z,scale
 
   if(verbose)write(*,*)"Entering flag_flatten"
+
+  nx_loc=(icoarse_max-icoarse_min+1)
+  skip_loc=(/0.0d0,0.0d0,0.0d0/)
+  if(ndim>0)skip_loc(1)=dble(icoarse_min)
+  if(ndim>1)skip_loc(2)=dble(jcoarse_min)
+  if(ndim>2)skip_loc(3)=dble(kcoarse_min)
+  scale=boxlen/dble(nx_loc)
+  
+  ! Cells center position relative to grid center position
+  do ind=1,twotondim
+     iz=(ind-1)/4
+     iy=(ind-1-4*iz)/2
+     ix=(ind-1-2*iy-4*iz)
+     xc(ind,1)=(dble(ix)-0.5D0)*0.5D0**ilevel
+     xc(ind,2)=(dble(iy)-0.5D0)*0.5D0**ilevel
+#if NDIM==3
+     xc(ind,3)=(dble(iz)-0.5D0)*0.5D0**ilevel
+#endif
+  end do     
+
   ! Loop over active grids
   ncache=active(ilevel)%ngrid
   do igrid=1,ncache,nvector
@@ -67,7 +89,10 @@ subroutine flag_flatten(ilevel)
               prs = prs*(gamma-1.0)
               cs = sqrt(gamma*prs/max(uold(ind_cell(i),1),smallr))
               if (cs+vel > sound_speed_thresh) then ! Flag for flattening
-                 write(*,*)'Flagged cell for flattening with c_s=',cs,'vel=',vel,'rho=',uold(ind_cell(i),1),'prs=',prs,'T=',0.6*prs/(uold(ind_cell(i),1)*7.75d-5)
+                 x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
+                 y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
+                 z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
+                 write(*,*)'Flagged cell at ',x,",",y,",",z,' for flattening with c_s=',cs,'vel=',vel,'rho=',uold(ind_cell(i),1),'prs=',prs,'T=',0.6*prs/(uold(ind_cell(i),1)*7.75d-5)
                  if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) < 10.0)uold(ind_cell(i),imetal) = uold(ind_cell(i),imetal)*1d6 ! If not flagged already
                  do idim=1,ndim
                     if (uold(indn(i,2*idim-1),imetal)/uold(indn(i,2*idim-1),1) < 10.0)uold(indn(i,2*idim-1),imetal) = uold(indn(i,2*idim-1),imetal)*1d6

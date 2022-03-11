@@ -360,7 +360,8 @@ module amr_parameters
   real(dp)::r_inner = 0.0               ! Radius to switch from inner to outer exponential density             [kpc]
   real(dp)::Tmu_min = 10.0              ! Minimum temperature*mu allowed after cooling                         [K*amu]
   logical::use_heating = .false.        ! Allow UV heating
-  real(dp)::velocity_multiplier = 0.0   ! Artificially boost orbit velocity, 0=no boost                        []
+  real(dp)::velocity_multiplier = 0.0   ! Artificially boost injection velocity, 0=no boost                    []
+  real(dp)::vel_max = 1d10              ! Maximum allowed injection velocity, higher velocities are capped     [sim velocity units]
   integer::seed_init = 0                ! Initial seed for RNG used in supernova feedback                      []
   real(dp)::dt_floor = 0.0              ! Minimum allowed delta_t, if 0 no minimum                             [K]
   real(dp)::n_shield = 0.0              ! Density normalisation for exponential self-shielding, 0=no shielding [cm^-3]
