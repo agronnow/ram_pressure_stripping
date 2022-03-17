@@ -128,7 +128,7 @@ subroutine condinit(x,u,dx,nn)
         ! NFW
         Phi0 = -2d0*twopi*rhodm0*R_s**2
      endif
-     if(M_plummer > 0.0)Phi0 = Phi0 - M_plummer/r_plummer
+     !if(M_plummer > 0.0)Phi0 = Phi0 - M_plummer/r_plummer
      firstcall = .false.
   endif
   
@@ -158,7 +158,7 @@ subroutine condinit(x,u,dx,nn)
           rho_cloud = outer_dens*dexp(-outer_slope*currad)
        endif
     else
-       rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
+       rho_cloud = rho0g*dexp(-(PhiR-(Phi0 - M_plummer/r_plummer))/c_s2)
     endif
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
     if ((P_cloud < P_wind) .or. (rad_cloud==0))then !((evolve_rtidal .and. (currad > rtinit)) .or. ((.not.(evolve_rtidal)) .and. (P_cloud < P_wind)))then

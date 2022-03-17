@@ -709,7 +709,7 @@ subroutine subgrid_sn_feedback(ilevel, icount)
 #if NDIM==3
                    z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
 #endif
-                   if (y > x2_c*boxlen + 4.0)then !Skip SNe in stripped gas >4 kpc behind galaxy
+                   if (y > x2_c*boxlen + 3.0)then !Skip SNe in stripped gas >3 kpc behind galaxy
                       write(*,*)"Skipping SN far upstream at ",x,y,z
                    else
                       nSN_loc=nSN_loc+1

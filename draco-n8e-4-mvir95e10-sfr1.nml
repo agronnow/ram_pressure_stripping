@@ -50,8 +50,8 @@ nregion=1
 
 &OUTPUT_PARAMS
 delta_tout=0.25
-tend=14.0
-output_dir='/p/project/icei-prace-2020-0005/draco/mvir125e10/n8e-4/medres/sfr1/fixedplummer/'
+tend=16.0
+output_dir='/p/project/icei-prace-2020-0005/draco/mvir95e10/n8e-4/medres/sfr1/newseed/'
 /
 
 &HYDRO_PARAMS
@@ -115,8 +115,8 @@ pot_grow_rate = 0.0 !3.0
 r_tidal = 14.87035894184391971 !3.152842055082989425 !0.8
 Z_wind = 0.1
 Z_cloud = 0.01
-rtidalfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco-mvir125e10.dat'
-orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco-mvir125e10.dat'
+rtidalfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco-mvir95e10.dat'
+orbitfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco-mvir95e10.dat'
 sfhistfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/sfhist-draco.dat'
 tzfile = '/p/home/jusers/groennow1/jusuf/src/ramses/patch/asger/ram_pressure_stripping/time-redshift.dat'
 prob_debug = .false.
@@ -134,7 +134,7 @@ SN_blast_mass = 0.0001
 rho_SN = 0.0118
 vsfr_fac = 12.59 !7.94
 vsfr_pow = 2.03 !1.91
-tinit_sim = 3.5 !end time: 4.7
+tinit_sim = 3.6 !end time: 5.0
 tbeg_wind = 0.0 !0.454144942123127
 sfr_boost = 1.0
 dt_sfhist = 0.01
@@ -145,11 +145,11 @@ ein_n = 0.0
 Tmu_min = 120.0!8650.0
 use_heating = .true.
 dt_floor = 0.0
-velocity_multiplier = 0.47
+velocity_multiplier = 0.5
 n_shield=0.0
 rahmati_shielding = .true.
 evolve_uvb = .true.
-seed_init = 40
-sound_speed_thresh = 1.7d3
+seed_init = 20
+sound_speed_thresh = 1.5d3
 flatten_mode = 2
 /

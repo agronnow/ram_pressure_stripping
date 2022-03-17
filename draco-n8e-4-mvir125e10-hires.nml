@@ -13,7 +13,7 @@ cost_weighting=.false.
 
 &AMR_PARAMS
 levelmin=4
-levelmax=11
+levelmax=12
 ngridmax=20000
 boxlen=24.0
 /
@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.25
 tend=14.0
-output_dir='/p/project/icei-prace-2020-0005/draco/mvir125e10/n8e-4/medres/sfr1/fixedplummer/'
+output_dir='/p/project/icei-prace-2020-0005/draco/mvir125e10/n8e-4/hires/sfr1/newseed/'
 /
 
 &HYDRO_PARAMS
@@ -149,7 +149,7 @@ velocity_multiplier = 0.47
 n_shield=0.0
 rahmati_shielding = .true.
 evolve_uvb = .true.
-seed_init = 40
-sound_speed_thresh = 1.7d3
+seed_init = 70
+sound_speed_thresh = 1.3d3
 flatten_mode = 2
 /
