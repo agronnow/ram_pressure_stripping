@@ -64,7 +64,7 @@ subroutine condinit(x,u,dx,nn)
      call GetMuFromTemperature(T_wind,nH,mu_wind)
 
      cosmo_time = tinit_sim*3.154e16/scale_t-tbeg_wind
-     if (vel_wind > 0.0) then
+     if ((vel_wind > 0.0) .and. (len_trim(orbitfile) > 0)) then
         fileloc=trim(orbitfile)
         inquire(file=fileloc,exist=file_exists)
         if(file_exists) then
@@ -89,6 +89,7 @@ subroutine condinit(x,u,dx,nn)
            STOP
         endif
      else
+        write(*,*)"Using constant velocity of ",vel_wind
         velinit = vel_wind
      endif
 
@@ -128,7 +129,7 @@ subroutine condinit(x,u,dx,nn)
         ! NFW
         Phi0 = -2d0*twopi*rhodm0*R_s**2
      endif
-     !if(M_plummer > 0.0)Phi0 = Phi0 - M_plummer/r_plummer
+     if(use_old_profile)Phi0 = Phi0 - M_plummer/r_plummer
      firstcall = .false.
   endif
   
@@ -158,7 +159,8 @@ subroutine condinit(x,u,dx,nn)
           rho_cloud = outer_dens*dexp(-outer_slope*currad)
        endif
     else
-       rho_cloud = rho0g*dexp(-(PhiR-(Phi0 - M_plummer/r_plummer))/c_s2)
+       if(.not.(use_old_profile))Phi0 = Phi0 - M_plummer/r_plummer
+       rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
     endif
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
     if ((P_cloud < P_wind) .or. (rad_cloud==0))then !((evolve_rtidal .and. (currad > rtinit)) .or. ((.not.(evolve_rtidal)) .and. (P_cloud < P_wind)))then

@@ -369,5 +369,6 @@ module amr_parameters
   logical::evolve_uvb = .true.          ! Evolve UV background with redshift during simulation
   real(dp)::sound_speed_thresh = 1d10   ! Threshold flow+sound speed at which flattening is applied(see below) [sim velocity units]
   integer::flatten_mode = 0             ! 0=no flattening, 1=use HLL solver, 2=use HLL and minmod limiter      []
+  logical::use_old_profile = .true.     ! Use slightly wrong pot. in init. dens. for consistency with old sims
   
 end module amr_parameters

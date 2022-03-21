@@ -35,7 +35,7 @@ subroutine gravana(x,f,dx,ncell)
   zmass = x3_c*boxlen
 
   if (firstcall)call units(scale_l,scale_t,scale_d,scale_v,scale_nh,scale_t2)
-  if ((firstcall) .and. (vel_wind > 0.0))then
+  if ((firstcall) .and. (vel_wind > 0.0) .and. (evolve_rtidal))then
      fileloc=trim(rtidalfile)
      inquire(file=fileloc,exist=file_exists)
      ntab = 0
@@ -77,7 +77,7 @@ subroutine gravana(x,f,dx,ncell)
      elseif (pot_grow_rate > 0.0)then
         r_max = min(max(r_cut, r_cut*(1d0+pot_grow_rate*(t-t_pot_grow_start))), r_tidal) ! Evolving r_cut
      else
-        r_max = r_cut
+        r_max = r_tidal !r_cut
      endif
      if (r < r_max) then
        if (ein_n > 0d0)then

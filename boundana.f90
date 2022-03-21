@@ -59,7 +59,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
      nH = ndens_wind*scale_nH
      call GetMuFromTemperature(T_wind,nH,mu_wind)
 
-     if (vel_wind > 0.0)then
+     if ((vel_wind > 0.0) .and. (len_trim(orbitfile)>0))then
         fileloc=trim(orbitfile)
         inquire(file=fileloc,exist=file_exists)
         ntab = 0
@@ -86,7 +86,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
   endif
   Pwind = ndens_wind*T_wind/scale_T2
 
-  if (vel_wind > 0.0)then
+  if ((vel_wind > 0.0) .and. (len_trim(orbitfile)>0))then
      cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
      itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
      vel = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
@@ -102,7 +102,7 @@ subroutine boundana(x,u,dx,ibound,ncell)
      endif
 !     write(*,*)"t, vel: ",cosmo_time,vel
   else !Static run
-     vel = 0.0
+     vel = vel_wind
   endif
 
   q(1:ncell,1) = ndens_wind*mu_wind	!density

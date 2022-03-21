@@ -52,7 +52,7 @@ aexp_ini=1.0
 &OUTPUT_PARAMS
 delta_tout=0.5
 tend=20.0
-output_dir='/p/project/icei-prace-2020-0005/fornax/new/sfr3/'
+output_dir='/p/project/icei-prace-2020-0005/fornax/corrplummer/sfr3/'
 /
 
 &HYDRO_PARAMS
@@ -149,4 +149,5 @@ evolve_uvb = .false.
 !seed_init = 20
 sound_speed_thresh = 2.5d3
 flatten_mode = 2
+use_old_profile = .false.
 /
