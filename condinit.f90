@@ -33,7 +33,7 @@ subroutine condinit(x,u,dx,nn)
   integer::i,ilun,itab,ntab
   real(dp)::currad,xc,yc,zc,rho0g,rho0dm,rho_cloud,c_s2,PhiR,P_wind,P_cloud,nH
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
-  real(dp),save::mu_cloud,mu_wind,Phi0
+  real(dp),save::mu_cloud,mu_wind,Phi0,Phi0p
   real(dp),save::r_max=0.0,velinit=0.0,rtinit=0.0
   real(dp)::tinit
   character(len=256)::fileloc
@@ -129,7 +129,12 @@ subroutine condinit(x,u,dx,nn)
         ! NFW
         Phi0 = -2d0*twopi*rhodm0*R_s**2
      endif
-     if(use_old_profile)Phi0 = Phi0 - M_plummer/r_plummer
+     if(use_old_profile)then
+        Phi0 = Phi0 - M_plummer/r_plummer
+        Phi0p = 0d0
+     else
+        Phi0p = -M_plummer/r_plummer
+     endif
      firstcall = .false.
   endif
   
@@ -159,8 +164,7 @@ subroutine condinit(x,u,dx,nn)
           rho_cloud = outer_dens*dexp(-outer_slope*currad)
        endif
     else
-       if(.not.(use_old_profile))Phi0 = Phi0 - M_plummer/r_plummer
-       rho_cloud = rho0g*dexp(-(PhiR-Phi0)/c_s2)
+       rho_cloud = rho0g*dexp(-(PhiR-Phi0-Phi0p)/c_s2)
     endif
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
     if ((P_cloud < P_wind) .or. (rad_cloud==0))then !((evolve_rtidal .and. (currad > rtinit)) .or. ((.not.(evolve_rtidal)) .and. (P_cloud < P_wind)))then
