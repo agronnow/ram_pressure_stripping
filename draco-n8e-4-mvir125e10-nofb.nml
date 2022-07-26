@@ -13,7 +13,7 @@ cost_weighting=.false.
 
 &AMR_PARAMS
 levelmin=4
-levelmax=11
+levelmax=12
 ngridmax=20000
 boxlen=24.0
 /
@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.25
 tend=14.0
-output_dir='/projects/0/einf3070/draco/mvir125e10/n8e-4/shieldall/'
+output_dir='/projects/0/einf3070/draco/mvir125e10/n8e-4/nofb/hires/'
 /
 
 &HYDRO_PARAMS
@@ -117,10 +117,10 @@ Z_wind = 0.1
 Z_cloud = 0.01
 rtidalfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco-mvir125e10.dat'
 orbitfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco-mvir125e10.dat'
-sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-draco.dat'
+sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-draco-losfr.dat'
 tzfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/time-redshift.dat'
 prob_debug = .false.
-subgrid_feedback=.true.
+subgrid_feedback=.false.
 coarse_step_fb = .false.
 simpson_fb = .false.
 allow_coarse_SN = .false.
@@ -153,5 +153,4 @@ seed_init = 40
 sound_speed_thresh = 1.7d3
 flatten_mode = 2
 use_old_profile=.true.
-shield_all=.true.
 /

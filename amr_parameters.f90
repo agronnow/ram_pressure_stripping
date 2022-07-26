@@ -359,6 +359,7 @@ module amr_parameters
   real(dp)::outer_slope = 0.0           ! Slope 'b' for outer exponential                                      []
   real(dp)::r_inner = 0.0               ! Radius to switch from inner to outer exponential density             [kpc]
   real(dp)::Tmu_min = 10.0              ! Minimum temperature*mu allowed after cooling                         [K*amu]
+  real(dp)::Tmu_max = 0.0               ! If >0 maximum temperature*mu allowed after cooling                   [K*amu]
   logical::use_heating = .false.        ! Allow UV heating
   real(dp)::velocity_multiplier = 0.0   ! Artificially boost injection velocity, 0=no boost                    []
   real(dp)::vel_max = 1d10              ! Maximum allowed injection velocity, higher velocities are capped     [sim velocity units]
@@ -370,5 +371,6 @@ module amr_parameters
   real(dp)::sound_speed_thresh = 1d10   ! Threshold flow+sound speed at which flattening is applied(see below) [sim velocity units]
   integer::flatten_mode = 0             ! 0=no flattening, 1=use HLL solver, 2=use HLL and minmod limiter      []
   logical::use_old_profile = .true.     ! Use slightly wrong pot. in init. dens. for consistency with old sims
+  logical::shield_all = .false.         ! Apply self-shielding also to HeI, HeII, and compton heating
   
 end module amr_parameters

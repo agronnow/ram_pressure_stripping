@@ -1820,21 +1820,26 @@ subroutine init_subgrid_feedback
   character(LEN=256)::fileloc,dummy
   character(LEN=5)::nchar
   integer::ilun,icpu,ccpu
+  logical::file_exist
 
   if(verbose)write(*,*)'Entering init_subgrid_feedback'
   if(nrestart>0)then
       call title(nrestart,nchar)
-      if(myid==1)then
-        ! Open file
-        fileloc=trim(output_dir)//'output_'//TRIM(nchar)//'/subgrid_sn_seeds'//TRIM(nchar)//'.txt'
-        open(newunit=ilun,file=fileloc)
-        read(ilun,*)dummy
-        do icpu=1,ncpu
-            read(ilun,*) ccpu, allseeds(:,icpu)
-        enddo
-        close(ilun)
+      fileloc=trim(output_dir)//'output_'//TRIM(nchar)//'/subgrid_sn_seeds'//TRIM(nchar)//'.txt'
+      inquire(file=fileloc,exist=file_exist)
+      if(file_exist) then
+         if(myid==1)then
+            open(newunit=ilun,file=fileloc)
+            read(ilun,*)dummy
+            do icpu=1,ncpu
+               read(ilun,*) ccpu, allseeds(:,icpu)
+            enddo
+            close(ilun)
+         endif
+         call MPI_SCATTER(allseeds,IRandNumSize,MPI_INTEGER,localseedsn,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
+      else
+         iseed=seed_init
       endif
-      call MPI_SCATTER(allseeds,IRandNumSize,MPI_INTEGER,localseedsn,IRandNumSize,MPI_INTEGER,0,MPI_COMM_WORLD,info)
   else
      iseed=seed_init
   endif

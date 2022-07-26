@@ -570,7 +570,14 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
         do i=1,n
            write(*,*)i,tau(ind(i)),T2(ind(i)),nH(ind(i)),i_nH(ind(i))
         end do
-        STOP
+        if ((n==1).and.(tau(ind(i)) > Tmu_max).and.(Tmu_max > 0.))then
+           write(*,*)"WARNING: Too many iterations in cooling"
+           write(*,*)"Temperature above max ",Tmu_max,"K replaced by maximum: tau=",tau(ind(i))," tau_ini=",tau_ini(ind(i))," rho=",nH(ind(i))," Z=",zzz(ind(i))," t_max=",time_max(ind(i))," t_old=",time_old(ind(i))," t=",time(ind(i))
+           tau(ind(i)) = Tmu_max
+           ok_cool(ind(i))=.false.
+        else
+           STOP
+        endif
      endif
 
      n_active=0
@@ -701,6 +708,10 @@ subroutine solve_cooling(nH,T2,zsolar,boost,dt,deltaT2,ncell,ok_cool,t2_neg)
         tau(i) = Tmu_min
      elseif (tau(i)<Tmu_min)then
         tau(i)=Tmu_min
+     endif
+     if ((tau(i) > Tmu_max).and.(Tmu_max > 0.))then
+        write(*,*)"WARNING: Temperature about max ",Tmu_max,"K replaced by maximum: tau=",tau(i)," tau_ini=",tau_ini(i)," rho=",nH(i)," Z=",zzz(i)," t_max=",time_max(i)," t_old=",time_old(i)," t=",time(i)," ok_cool=",ok_cool(i)
+        tau(i) = Tmu_max
      endif
   end do
 !  if (tau_negative) then
@@ -1231,7 +1242,7 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
   ce2 = cool_exc(HEI, T)*n_E*n_HEI  /nH**2
   ce3 = cool_exc(HEII,T)*n_E*n_HEII /nH**2
   ! Radiative heating
-  ch1 = f_shield*h_rad_spec(HI  )    *n_HI   /nH**2
+  if(.not.(shield_all))ch1 = f_shield*h_rad_spec(HI  )    *n_HI   /nH**2
   ch2 = h_rad_spec(HEI )    *n_HEI  /nH**2
   ch3 = h_rad_spec(HEII)    *n_HEII /nH**2
   ! Total cooling and heating rates
@@ -1246,6 +1257,11 @@ subroutine cmp_cooling(T2,nH,t_rad_spec,h_rad_spec,cool_tot,heat_tot,cool_com,he
   ! Mean molecular weight
   mu_out = mu
 
+  if(shield_all)then
+     heat_tot = f_shield*heat_tot
+     heat_com = f_shield*heat_com
+  endif
+  
   if (if_cooling_functions) then
      cool_out=max(cool_tot,smallnum_cooling)
      heat_out=max(heat_tot,smallnum_cooling)

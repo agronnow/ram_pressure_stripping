@@ -984,7 +984,7 @@ subroutine ctoprim(uin,q,c,gravin,dt,ngrid,flatten_flag)
               c(l,i,j,k)=sqrt(c(l,i,j,k)*oneoverrho)
 
               if (uin(l,i,j,k,imetal)/uin(l,i,j,k,1) > 10.0) then ! Cells that should be flattened have been flaggen in flag_flatten by artificially boosting their metallicities
-                 write(*,*)'WARNING: Velocity + sound speed above threshold at ',i,j,k,l,' - c_s:',c(l,i,j,k),' velocities:',q(l,i,j,k,2),q(l,i,j,k,3),q(l,i,j,k,4)
+                 !write(*,*)'WARNING: Velocity + sound speed above threshold at ',i,j,k,l,' - c_s:',c(l,i,j,k),' velocities:',q(l,i,j,k,2),q(l,i,j,k,3),q(l,i,j,k,4)
                  flatten_flag(l,iu1:iu2,ju1:ju2,ku1:ku2) = flatten_mode ! flatten_mode determines severity of numerical diffusion added: 1=use HLL solver, 2=use both HLL solver and minmod slope limiter
               endif
 

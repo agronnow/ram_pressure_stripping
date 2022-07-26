@@ -15,7 +15,7 @@ cost_weighting=.false.
 levelmin=4
 levelmax=11
 ngridmax=20000
-boxlen=24.0
+boxlen=16.0
 /
 
 &COOLING_PARAMS
@@ -51,7 +51,7 @@ nregion=1
 &OUTPUT_PARAMS
 delta_tout=0.25
 tend=14.0
-output_dir='/projects/0/einf3070/draco/mvir125e10/n8e-4/shieldall/'
+output_dir='/projects/0/einf3070/draco/mvir125e10/n8e-4/mhires/'
 /
 
 &HYDRO_PARAMS
@@ -66,9 +66,9 @@ pressure_fix = .true.
 /
 
 &REFINE_PARAMS
-x_refine = 12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0
-y_refine = 6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0,6.0
-z_refine = 12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0,12.0
+x_refine = 8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
+y_refine = 4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0,4.0
+z_refine = 8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0,8.0
 !x_refine = 16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0
 !y_refine = 16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0
 !z_refine = 16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0,16.0
@@ -117,7 +117,7 @@ Z_wind = 0.1
 Z_cloud = 0.01
 rtidalfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/rtidal-draco-mvir125e10.dat'
 orbitfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/orbitvelocity-draco-mvir125e10.dat'
-sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-draco.dat'
+sfhistfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/sfhist-draco-losfr.dat'
 tzfile = '/home/agronnow/src/ramses/patch/asger/ram_pressure_stripping/time-redshift.dat'
 prob_debug = .false.
 subgrid_feedback=.true.
@@ -153,5 +153,5 @@ seed_init = 40
 sound_speed_thresh = 1.7d3
 flatten_mode = 2
 use_old_profile=.true.
-shield_all=.true.
+Tmu_max = 1.d10
 /

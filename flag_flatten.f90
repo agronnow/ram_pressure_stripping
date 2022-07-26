@@ -9,8 +9,9 @@ subroutine flag_flatten(ilevel)
 
   use amr_commons
   use hydro_commons
+  use mpi_mod
   implicit none
-  integer::ilevel,ncache,i,j,iskip
+  integer::ilevel,ncache,i,j,iskip,nflat
   integer::igrid,ind,idim,ngrid,ivar,ix,iy,iz
   integer::nx_loc
   real(dp),dimension(1:twotondim,1:3)::xc
@@ -28,7 +29,9 @@ subroutine flag_flatten(ilevel)
   if(ndim>1)skip_loc(2)=dble(jcoarse_min)
   if(ndim>2)skip_loc(3)=dble(kcoarse_min)
   scale=boxlen/dble(nx_loc)
-  
+
+  nflat=0
+
   ! Cells center position relative to grid center position
   do ind=1,twotondim
      iz=(ind-1)/4
@@ -92,11 +95,12 @@ subroutine flag_flatten(ilevel)
                  x=(xg(ind_grid(i),1)+xc(ind,1)-skip_loc(1))*scale
                  y=(xg(ind_grid(i),2)+xc(ind,2)-skip_loc(2))*scale
                  z=(xg(ind_grid(i),3)+xc(ind,3)-skip_loc(3))*scale
-                 write(*,*)'Flagged cell at ',x,",",y,",",z,' for flattening with c_s=',cs,'vel=',vel,'rho=',uold(ind_cell(i),1),'prs=',prs,'T=',0.6*prs/(uold(ind_cell(i),1)*7.75d-5)
-                 if (uold(ind_cell(i),imetal)/uold(ind_cell(i),1) < 10.0)uold(ind_cell(i),imetal) = uold(ind_cell(i),imetal)*1d6 ! If not flagged already
+                 if (nflat < 5)write(*,*)'Flagged cell at ',x,",",y,",",z,' for flattening with c_s=',cs,'vel=',vel,'rho=',uold(ind_cell(i),1),'prs=',prs,'T=',0.6*prs/(uold(ind_cell(i),1)*7.75d-5)
+                 nflat=nflat+1
+                 if (uold(ind_cell(i),imetal)/max(uold(ind_cell(i),1),smallr) < 10.0)uold(ind_cell(i),imetal) = uold(ind_cell(i),imetal)*1d6 ! If not flagged already
                  do idim=1,ndim
-                    if (uold(indn(i,2*idim-1),imetal)/uold(indn(i,2*idim-1),1) < 10.0)uold(indn(i,2*idim-1),imetal) = uold(indn(i,2*idim-1),imetal)*1d6
-                    if (uold(indn(i,2*idim  ),imetal)/uold(indn(i,2*idim  ),1) < 10.0)uold(indn(i,2*idim  ),imetal) = uold(indn(i,2*idim  ),imetal)*1d6
+                    if (uold(indn(i,2*idim-1),imetal)/max(uold(indn(i,2*idim-1),1),smallr) < 10.0)uold(indn(i,2*idim-1),imetal) = uold(indn(i,2*idim-1),imetal)*1d6
+                    if (uold(indn(i,2*idim  ),imetal)/max(uold(indn(i,2*idim  ),1),smallr) < 10.0)uold(indn(i,2*idim  ),imetal) = uold(indn(i,2*idim  ),imetal)*1d6
                  enddo
               endif
            end do
@@ -107,6 +111,8 @@ subroutine flag_flatten(ilevel)
 
   end do
   ! End loop over grids
+
+  if (nflat>=5)write(*,*)"Flagged ",nflat," cells for flattening on cpu ",myid
 
   if(verbose)write(*,*)"Exiting flag_flatten"
 
