@@ -32,9 +32,9 @@ subroutine boundana(x,u,dx,ibound,ncell)
   integer::ivar,i
   real(dp),dimension(1:nvector,1:nvar),save::q ! Primitive variables
   real(dp),save::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
-  real(dp)::Pwind,nH,vel,cosmo_time
-  real(dp),save::vel0=-1d0
-  real(dp),allocatable,save::tab_t(:),tab_vel(:)
+  real(dp)::Pwind,nH,vel,cosmo_time,ndens
+  real(dp),save::vel0=-1d0,ndens0=-1d0
+  real(dp),allocatable,save::tab_t(:),tab_vel(:),tab_dens(:)
   real(dp),save::dt
   integer::itab,ilun
   integer,save::ntab
@@ -72,8 +72,9 @@ subroutine boundana(x,u,dx,ibound,ncell)
 10         rewind(ilun)
            allocate(tab_t(ntab))
            allocate(tab_vel(ntab))
+           allocate(tab_dens(ntab))
            do i=1,ntab
-              read(ilun,*)tab_t(i), tab_vel(i)
+              read(ilun,*)tab_t(i), tab_vel(i), tab_dens(i)
            end do
            close(ilun)
         endif
@@ -81,15 +82,26 @@ subroutine boundana(x,u,dx,ibound,ncell)
         cosmo_time = tinit_sim*3.154e16/scale_t-tbeg_wind
         itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
         vel0 = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
+        ndens0 = (tab_dens(itab)*(tab_t(itab+1) - cosmo_time) + tab_dens(itab+1)*(cosmo_time - tab_t(itab)))/dt
      endif
      firstcall = .false.
   endif
+!  if (evol_ndens)then
+!     Pwind = ndens0*T_wind/scale_T2
+!  else
   Pwind = ndens_wind*T_wind/scale_T2
+!  endif
 
   if ((vel_wind > 0.0) .and. (len_trim(orbitfile)>0))then
      cosmo_time = t+tinit_sim*3.154e16/scale_t-tbeg_wind
      itab = idint((cosmo_time-tab_t(1))/dt)+1 !Assume table is evenly spaced in t
      vel = (tab_vel(itab)*(tab_t(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_t(itab)))/dt
+     if (evol_ndens)then
+        ndens = (tab_dens(itab)*(tab_t(itab+1) - cosmo_time) + tab_dens(itab+1)*(cosmo_time - tab_t(itab)))/dt
+     else
+        ndens = ndens_wind
+     endif
+
      !Boost injection velocity to get the correct velocity inside the volume at the front of the galaxy
      !velocity_multiplier must be calibrated for each potential
      vel = vel*(1d0+velocity_multiplier*((vel-vel0)/10.0))
@@ -100,12 +112,14 @@ subroutine boundana(x,u,dx,ibound,ncell)
         endif
         vel=vel_max
      endif
+     if(evol_ndens)ndens = ndens*(1d0-ndens_multiplier*(ndens-ndens0)/ndens0)*ndens_norm
 !     write(*,*)"t, vel: ",cosmo_time,vel
   else !Static run
      vel = vel_wind
+     ndens = ndens_wind
   endif
 
-  q(1:ncell,1) = ndens_wind*mu_wind	!density
+  q(1:ncell,1) = ndens*mu_wind	!density
   q(1:ncell,2) = 0.0	        !x-velocity
   q(1:ncell,3) = vel !vel_wind*1.e5/scale_v	!y-velocity (given in km/s)
 #if NDIM == 3

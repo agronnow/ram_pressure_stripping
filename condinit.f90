@@ -34,11 +34,11 @@ subroutine condinit(x,u,dx,nn)
   real(dp)::currad,xc,yc,zc,rho0g,rho0dm,rho_cloud,c_s2,PhiR,P_wind,P_cloud,nH
   real(dp)::scale_nH,scale_T2,scale_l,scale_d,scale_t,scale_v,scale_prs
   real(dp),save::mu_cloud,mu_wind,Phi0,Phi0p
-  real(dp),save::r_max=0.0,velinit=0.0,rtinit=0.0
+  real(dp),save::r_max=0.0,velinit=0.0,rtinit=0.0,ndens_init=0.0
   real(dp)::tinit
   character(len=256)::fileloc
   logical::file_exists = .false.
-  real(dp),allocatable::tab_tr(:),tab_tv(:),tab_vel(:),tab_rt(:)
+  real(dp),allocatable::tab_tr(:),tab_tv(:),tab_vel(:),tab_dens(:),tab_rt(:)
   real(dp)::dt,cosmo_time
   logical,save::firstcall=.true.
   real(dp),save::gamma3n,ein_M
@@ -57,6 +57,8 @@ subroutine condinit(x,u,dx,nn)
   xc = x1_c*boxlen
   yc = x2_c*boxlen
   zc = x3_c*boxlen
+
+  if(.not. evol_ndens)ndens_init = ndens_wind
   if (firstcall) then
      nH = n0g*scale_nH
      call GetMuFromTemperature(T_cloud,nH,mu_cloud)
@@ -77,13 +79,15 @@ subroutine condinit(x,u,dx,nn)
 10         rewind(ilun)
            allocate(tab_tv(ntab))
            allocate(tab_vel(ntab))
+           allocate(tab_dens(ntab))
            do i=1,ntab
-              read(ilun,*)tab_tv(i), tab_vel(i)
+              read(ilun,*)tab_tv(i), tab_vel(i), tab_dens(i)
            end do
            close(ilun)
            dt = tab_tv(2) - tab_tv(1)
            itab = idint((cosmo_time-tab_tv(1))/dt)+1 !Assume table is evenly spaced in t
            velinit = (tab_vel(itab)*(tab_tv(itab+1) - cosmo_time) + tab_vel(itab+1)*(cosmo_time - tab_tv(itab)))/dt
+           if (evol_ndens)ndens_init = ndens_norm*(tab_dens(itab)*(tab_tv(itab+1) - cosmo_time) + tab_dens(itab+1)*(cosmo_time - tab_tv(itab)))/dt
         else
            write(*,*)"ERROR: Time-orbit velocity table file ",trim(orbitfile)," missing!"
            STOP
@@ -168,7 +172,7 @@ subroutine condinit(x,u,dx,nn)
     endif
     P_cloud = (rho_cloud*T_cloud/mu_cloud)/scale_T2
     if ((P_cloud < P_wind) .or. (rad_cloud==0))then !((evolve_rtidal .and. (currad > rtinit)) .or. ((.not.(evolve_rtidal)) .and. (P_cloud < P_wind)))then
-      q(i,1) = ndens_wind*mu_wind
+      q(i,1) = ndens_init*mu_wind
       q(i,ndim+2) = P_wind
       q(i,2) = 0.0      !x-velocity
       q(i,3) = velinit ! vel_wind*1.e5/scale_v !y-velocity (given in km/s)

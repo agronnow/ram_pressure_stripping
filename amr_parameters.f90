@@ -372,5 +372,8 @@ module amr_parameters
   integer::flatten_mode = 0             ! 0=no flattening, 1=use HLL solver, 2=use HLL and minmod limiter      []
   logical::use_old_profile = .true.     ! Use slightly wrong pot. in init. dens. for consistency with old sims
   logical::shield_all = .false.         ! Apply self-shielding also to HeI, HeII, and compton heating
+  logical::evol_ndens = .false.         ! Inject density gradient read from orbitfile
+  real(dp)::ndens_multiplier = 0.0      ! Artificially reduce injected density, 0=no reduction
+  real(dp)::ndens_norm = 1d0            ! Multiply density from file by this when evol_ndens is true
   
 end module amr_parameters
